@@ -406,6 +406,25 @@ export default function DashboardClient({ user }: { user: any }) {
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Auto-size columns for better readability
+    const columnWidths = [
+      { wch: 5 },  // ID
+      { wch: 18 }, // Created At
+      { wch: 40 }, // Task Name
+      { wch: 20 }, // Entity
+      { wch: 20 }, // Owner
+      { wch: 12 }, // Due Date
+      { wch: 15 }, // Completion Date
+      { wch: 15 }, // Task Status
+      { wch: 20 }, // Reviewer
+      { wch: 18 }, // Review Status
+      { wch: 15 }, // Review Date
+      { wch: 40 }, // Owner Comments
+      { wch: 40 }  // Reviewer Comments
+    ];
+    worksheet['!cols'] = columnWidths;
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
     XLSX.writeFile(workbook, `Intellicar_Tasks_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
