@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, getEmailFromName } from "@/lib/email";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 // Helper to check if a task is overdue
 function isOverdue(dueDate: Date | null) {
@@ -80,7 +82,13 @@ export async function GET(req: Request) {
   const type = url.searchParams.get("type") || "all"; // 'all', 'users', or 'manager'
 
   const authHeader = req.headers.get("authorization");
-  if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const session = await getServerSession(authOptions);
+  
+  // Allow if called by Vercel Cron (CRON_SECRET) OR if called by a logged-in Master Admin
+  const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  const isAdmin = session?.user?.email === "pavanreddy@intellicar.in" || session?.user?.role === "ADMIN";
+  
+  if (process.env.NODE_ENV === "production" && !isCron && !isAdmin) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
