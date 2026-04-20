@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -388,46 +389,84 @@ export default function DashboardClient({ user }: { user: any }) {
   }, [activeFilter, startDate, endDate, itemsPerPage]);
 
   // Export Handlers
-  const exportToExcel = () => {
-    const exportData = filteredTasksToDisplay.map(t => ({
-      ID: t.id,
-      "Created At": formatDateTime(t.createdAt),
-      "Task Name": t.taskName,
-      Entity: t.entityName,
-      Owner: t.ownerName,
-      "Due Date": formatDate(t.dueDate),
-      "Completion Date": formatDate(t.completionDate),
-      "Task Status": t.taskStatus,
-      Reviewer: t.reviewerName,
-      "Review Status": t.reviewStatus,
-      "Review Date": formatDate(t.reviewCompletionDate),
-      "Owner Comments": t.ownerComments || "",
-      "Reviewer Comments": t.reviewerComments || ""
-    }));
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Tasks");
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    
-    // Auto-size columns for better readability
-    const columnWidths = [
-      { wch: 5 },  // ID
-      { wch: 18 }, // Created At
-      { wch: 40 }, // Task Name
-      { wch: 20 }, // Entity
-      { wch: 20 }, // Owner
-      { wch: 12 }, // Due Date
-      { wch: 15 }, // Completion Date
-      { wch: 15 }, // Task Status
-      { wch: 20 }, // Reviewer
-      { wch: 18 }, // Review Status
-      { wch: 15 }, // Review Date
-      { wch: 40 }, // Owner Comments
-      { wch: 40 }  // Reviewer Comments
+    // Add Title
+    worksheet.mergeCells('A1:M2');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'INTELLICAR TELEMATICS - FINANCE TASK MANAGEMENT';
+    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } }; // Blue color
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Define Columns and Widths
+    worksheet.columns = [
+      { key: 'id', width: 8 },
+      { key: 'createdAt', width: 20 },
+      { key: 'taskName', width: 45 },
+      { key: 'entity', width: 25 },
+      { key: 'owner', width: 25 },
+      { key: 'dueDate', width: 15 },
+      { key: 'completionDate', width: 18 },
+      { key: 'taskStatus', width: 18 },
+      { key: 'reviewer', width: 25 },
+      { key: 'reviewStatus', width: 25 },
+      { key: 'reviewDate', width: 18 },
+      { key: 'ownerComments', width: 50 },
+      { key: 'reviewerComments', width: 50 }
     ];
-    worksheet['!cols'] = columnWidths;
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
-    XLSX.writeFile(workbook, `Intellicar_Tasks_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    // Style Headers (Row 3)
+    const headerRow = worksheet.getRow(3);
+    headerRow.values = [
+      'ID', 'Created At', 'Task Name', 'Entity', 'Owner', 'Due Date', 'Completion Date', 
+      'Task Status', 'Reviewer', 'Review Status', 'Review Date', 'Owner Comments', 'Reviewer Comments'
+    ];
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } }; // Slate 600
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // Add AutoFilter
+    worksheet.autoFilter = 'A3:M3';
+
+    // Add Data
+    filteredTasksToDisplay.forEach(t => {
+      const row = worksheet.addRow({
+        id: t.id,
+        createdAt: formatDateTime(t.createdAt),
+        taskName: t.taskName,
+        entity: t.entityName,
+        owner: t.ownerName,
+        dueDate: formatDate(t.dueDate),
+        completionDate: formatDate(t.completionDate),
+        taskStatus: t.taskStatus,
+        reviewer: t.reviewerName,
+        reviewStatus: t.reviewStatus,
+        reviewDate: formatDate(t.reviewCompletionDate),
+        ownerComments: t.ownerComments || "",
+        reviewerComments: t.reviewerComments || ""
+      });
+      row.alignment = { vertical: 'middle', wrapText: true };
+    });
+
+    // Add Borders to all active cells
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      row.eachCell({ includeEmpty: false }, (cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+
+    // Generate and Download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Intellicar_Tasks_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const exportToPDF = () => {
