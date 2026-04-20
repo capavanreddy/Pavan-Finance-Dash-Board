@@ -24,6 +24,26 @@ type Task = {
   reviewerComments: string | null;
 };
 
+const hours12 = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const minutes = ["00", "15", "30", "45"];
+const ampm = ["AM", "PM"];
+
+const convertTo12h = (time24: string) => {
+  if (!time24 || !time24.includes(':')) return { h: "09", m: "00", s: "AM" };
+  const [h, m] = time24.split(':');
+  const hours = parseInt(h);
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return { h: String(h12), m, s: suffix };
+};
+
+const convertTo24h = (h12: string, m: string, suffix: string) => {
+  let h = parseInt(h12);
+  if (suffix === 'PM' && h < 12) h += 12;
+  if (suffix === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m}`;
+};
+
 export default function DashboardClient({ user }: { user: any }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -503,13 +523,14 @@ export default function DashboardClient({ user }: { user: any }) {
                   <div>
                     <h3 style={{ margin: "0 0 24px 0" }}>Auto-Email Frequency</h3>
                     
-                    <div style={{ marginBottom: "32px" }}>
-                      <h4 style={{ margin: "0 0 12px 0", fontSize: "0.875rem", color: "#64748b" }}>Pending Reminders (Owners)</h4>
-                      <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+                    {/* Reminders Schedule */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h4 style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 600 }}>Pending Reminders (Owners)</h4>
                         <select 
                           value={settings.reminderFrequency}
                           onChange={(e) => setSettings({...settings, reminderFrequency: e.target.value})}
-                          style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                          style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
                         >
                           <option value="DAILY">Daily</option>
                           <option value="WEEKLY">Weekly</option>
@@ -517,48 +538,130 @@ export default function DashboardClient({ user }: { user: any }) {
                           <option value="CUSTOM">Custom</option>
                           <option value="OFF">Turn Off</option>
                         </select>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. 09:00, 18:00"
-                          value={settings.reminderTimes}
-                          onChange={(e) => setSettings({...settings, reminderTimes: e.target.value})}
-                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
-                        />
                       </div>
-                      <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Enter times in HH:mm format, separated by commas.</p>
+
+                      {settings.reminderFrequency !== 'OFF' && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                          {settings.reminderTimes.split(',').map((t, idx) => {
+                            const timeObj = convertTo12h(t.trim());
+                            return (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <select 
+                                  value={timeObj.h}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(e.target.value, timeObj.m, timeObj.s);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {hours12.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span>:</span>
+                                <select 
+                                  value={timeObj.m}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, e.target.value, timeObj.s);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <select 
+                                  value={timeObj.s}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, timeObj.m, e.target.value);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", color: "#2563eb", fontWeight: 700 }}
+                                >
+                                  {ampm.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <button 
+                                  onClick={() => {
+                                    const times = settings.reminderTimes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, reminderTimes: times.join(',') || "09:00"});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: "4px", fontSize: "1.25rem", padding: "0 4px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button 
+                            onClick={() => setSettings({...settings, reminderTimes: settings.reminderTimes + ",09:00"})}
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.875rem" }}
+                          >
+                            + Add Time
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ marginBottom: "32px" }}>
-                      <h4 style={{ margin: "0 0 12px 0", fontSize: "0.875rem", color: "#64748b" }}>Manager Report Summary</h4>
-                      <div style={{ display: "flex", gap: "16px" }}>
+                    {/* Manager Report Schedule */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h4 style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 600 }}>Manager Report Summary</h4>
                         <select 
                           value={settings.managerReportFrequency}
                           onChange={(e) => setSettings({...settings, managerReportFrequency: e.target.value})}
-                          style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                          style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
                         >
                           <option value="DAILY">Daily</option>
                           <option value="WEEKLY">Weekly</option>
                           <option value="MONTHLY">Monthly</option>
-                          <option value="CUSTOM">Custom</option>
                           <option value="OFF">Turn Off</option>
                         </select>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. 10:00"
-                          value={settings.managerReportTimes}
-                          onChange={(e) => setSettings({...settings, managerReportTimes: e.target.value})}
-                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
-                        />
                       </div>
+
+                      {settings.managerReportFrequency !== 'OFF' && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "fit-content" }}>
+                          {(() => {
+                            const timeObj = convertTo12h(settings.managerReportTimes);
+                            return (
+                              <>
+                                <select 
+                                  value={timeObj.h}
+                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(e.target.value, timeObj.m, timeObj.s)})}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {hours12.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span>:</span>
+                                <select 
+                                  value={timeObj.m}
+                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(timeObj.h, e.target.value, timeObj.s)})}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <select 
+                                  value={timeObj.s}
+                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(timeObj.h, timeObj.m, e.target.value)})}
+                                  style={{ border: "none", outline: "none", color: "#2563eb", fontWeight: 700 }}
+                                >
+                                  {ampm.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
 
-                    <button 
-                      onClick={handleSaveSettings}
-                      disabled={isSavingSettings}
-                      style={{ background: "#2563eb", color: "white", padding: "12px 24px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}
-                    >
-                      {isSavingSettings ? "Saving..." : "Save Automation Settings"}
-                    </button>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ background: "#2563eb", color: "white", padding: "12px 32px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Automation Settings"}
+                      </button>
+                    </div>
                   </div>
                 )}
 
