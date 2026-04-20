@@ -24,6 +24,18 @@ function formatDate(dateStr: Date | string | null) {
   return `${day}-${month}-${year}`;
 }
 
+// Format date and time as DD-MMM-YYYY HH:mm
+function formatDateTime(dateStr: Date | string | null) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = d.toLocaleString('en-GB', { month: 'short' });
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}-${month}-${year} ${hours}:${minutes}`;
+}
+
 // Reusable HTML Table Generator mirroring the Google Sheet layout
 function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
   let html = `<h2 align="center" style="font-family: sans-serif; color: #333;">${title}</h2>`;
@@ -61,7 +73,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
 
       html += `<tr style="${rowStyle}">
         <td style="white-space: nowrap;">${index + 1}</td>
-        <td style="white-space: nowrap;">${formatDate(t.createdAt)}</td>
+        <td style="white-space: nowrap;">${formatDateTime(t.createdAt)}</td>
         <td style="white-space: nowrap;">${t.ownerName}</td>
         <td style="white-space: nowrap;">${t.reviewerName === "Not Applicable" ? "NA" : t.reviewerName || ""}</td>
         <td style="min-width: 150px;">${t.taskName}</td>
@@ -193,7 +205,7 @@ export async function GET(req: Request) {
             <tr>
               <td>${emp}</td>
               <td>${empPendingOwner.length}</td>
-              <td style="${overdueCount > 0 ? 'color: red; font-weight: bold;' : ''}">${overdueCount}</td>
+              <td style="${overdueCount > 0 ? 'background-color: #ffe6e6; color: red; font-weight: bold;' : ''}">${overdueCount}</td>
               <td>${empPendingReview}</td>
             </tr>
           `;

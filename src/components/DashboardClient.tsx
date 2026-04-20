@@ -89,8 +89,11 @@ export default function DashboardClient({ user }: { user: any }) {
     if (!window.confirm(`Are you sure you want to send the ${type === 'users' ? 'Employee Reminders' : 'Manager Report'} now?`)) return;
     
     try {
-      // Pass the token so the frontend can trigger it even if CRON_SECRET is required
-      const res = await fetch(`/api/cron/daily-summary?type=${type}`, {
+      const now = new Date();
+      const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+      const localIso = new Date(now.getTime() - offsetMs).toISOString().split('T')[0];
+      
+      const res = await fetch(`/api/cron/daily-summary?type=${type}&clientDate=${localIso}`, {
         headers: { "Authorization": "Bearer intellicar-cron-123" }
       });
       if (res.ok) {
@@ -115,6 +118,18 @@ export default function DashboardClient({ user }: { user: any }) {
     const month = d.toLocaleString('en-GB', { month: 'short' });
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
+  };
+
+  // Format date and time as DD-MMM-YYYY HH:mm
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return "--";
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
   };
 
   const filteredTasksToDisplay = tasks.filter(t => {
@@ -209,7 +224,7 @@ export default function DashboardClient({ user }: { user: any }) {
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
                       <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
-                      <td style={tdStyle}><span style={{ color: "#64748b" }}>{formatDate(task.createdAt)}</span></td>
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
                       <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", maxWidth: "250px", whiteSpace: "normal" }}>{task.taskName}</td>
                       <td style={tdStyle}>{task.entityName}</td>
                       <td style={tdStyle}>{task.ownerName}</td>
