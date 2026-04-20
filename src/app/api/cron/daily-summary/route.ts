@@ -102,7 +102,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const type = url.searchParams.get("type") || "all"; // 'all', 'users', or 'manager'
+  let type = url.searchParams.get("type") || "all"; // 'all', 'users', or 'manager'
   const clientDateStr = url.searchParams.get("clientDate");
   const referenceDate = clientDateStr ? new Date(clientDateStr) : new Date();
 
@@ -114,7 +114,44 @@ export async function GET(req: Request) {
   const isAdmin = session?.user?.email === "pavanreddy@intellicar.in" || (session?.user as any)?.role === "ADMIN";
   
   if (process.env.NODE_ENV === "production" && !isCron && !isAdmin) {
-    return NextResponse.json({ message: "Unauthorized (Session: " + (session ? "Found" : "None") + ")" }, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Automation Logic: Check schedule if triggered by Cron
+  if (isCron) {
+    try {
+      const settings = await prisma.systemSettings.findUnique({ where: { id: "singleton" } });
+      if (settings) {
+        // Convert current UTC to IST (UTC+5:30)
+        const now = new Date();
+        const istDate = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+        const currentHHmm = `${String(istDate.getUTCHours()).padStart(2, '0')}:${String(istDate.getUTCMinutes()).padStart(2, '0')}`;
+        
+        let shouldRemind = false;
+        let shouldReport = false;
+
+        if (settings.reminderFrequency !== 'OFF') {
+          const rTimes = settings.reminderTimes.split(',').map(t => t.trim());
+          if (rTimes.includes(currentHHmm)) shouldRemind = true;
+        }
+
+        if (settings.managerReportFrequency !== 'OFF') {
+          const mTimes = settings.managerReportTimes.split(',').map(t => t.trim());
+          if (mTimes.includes(currentHHmm)) shouldReport = true;
+        }
+
+        if (!shouldRemind && !shouldReport) {
+          return NextResponse.json({ message: `Skipping. Current IST ${currentHHmm} does not match schedule.` });
+        }
+
+        // Adjust 'type' based on what matched
+        if (shouldRemind && shouldReport) type = "all";
+        else if (shouldRemind) type = "users";
+        else if (shouldReport) type = "manager";
+      }
+    } catch (e) {
+      console.error("Settings check failed", e);
+    }
   }
 
   try {

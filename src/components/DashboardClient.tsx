@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail } from "lucide-react";
 
 type Task = {
   id: number;
@@ -31,9 +31,17 @@ export default function DashboardClient({ user }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
-  const [showUsersModal, setShowUsersModal] = useState(false);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE'>('SCHEDULE');
+  const [settings, setSettings] = useState({
+    reminderFrequency: 'DAILY',
+    reminderTimes: '09:00,18:00',
+    managerReportFrequency: 'DAILY',
+    managerReportTimes: '10:00'
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const isAdmin = user?.email === "pavanreddy@intellicar.in" || user?.role === "ADMIN";
 
@@ -53,7 +61,40 @@ export default function DashboardClient({ user }: { user: any }) {
 
   useEffect(() => {
     fetchTasks();
+    if (isAdmin) fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings", error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      });
+      if (res.ok) {
+        alert("Settings saved successfully!");
+      } else {
+        alert("Failed to save settings.");
+      }
+    } catch (error) {
+      console.error("Failed to save settings", error);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const fetchUsersList = async () => {
     if (!isAdmin) return;
@@ -214,17 +255,9 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
           
           {isAdmin && (
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <button onClick={() => { setShowUsersModal(true); fetchUsersList(); }} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
-                <Users size={18} /> Manage Users
-              </button>
-              <button onClick={() => handleTriggerEmail("users")} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
-                Send Reminders
-              </button>
-              <button onClick={() => handleTriggerEmail("manager")} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
-                Send Manager Report
-              </button>
-            </div>
+            <button onClick={() => { setShowOptionsModal(true); fetchUsersList(); fetchSettings(); }} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
+              <Sliders size={18} /> Options
+            </button>
           )}
 
           <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", transition: "all 0.2s" }} className="btn-primary">
@@ -433,45 +466,162 @@ export default function DashboardClient({ user }: { user: any }) {
         />
       )}
 
-      {showUsersModal && (
+      {showOptionsModal && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
-          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "600px", padding: "32px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>Manage Users</h2>
-              <button onClick={() => setShowUsersModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem" }}>×</button>
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "800px", height: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
+            <div style={{ padding: "24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>Admin Options</h2>
+              <button onClick={() => setShowOptionsModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem" }}>×</button>
             </div>
             
-            {usersLoading ? (
-              <p style={{ textAlign: "center", color: "#64748b" }}>Loading users...</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Name</th>
-                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Email</th>
-                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersList.map(u => (
-                    <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
-                      <td style={{ padding: "12px 8px" }}>{u.email}</td>
-                      <td style={{ padding: "12px 8px" }}>
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* Sidebar Tabs */}
+              <div style={{ width: "200px", background: "#f8fafc", borderRight: "1px solid #e2e8f0", padding: "16px" }}>
+                <button 
+                  onClick={() => setActiveOptionsTab('SCHEDULE')} 
+                  style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'SCHEDULE' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                >
+                  Automation
+                </button>
+                <button 
+                  onClick={() => setActiveOptionsTab('MAILS')} 
+                  style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MAILS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                >
+                  Manual Mails
+                </button>
+                <button 
+                  onClick={() => setActiveOptionsTab('USERS')} 
+                  style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'USERS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
+                >
+                  User Management
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div style={{ flex: 1, padding: "32px", overflow: "auto" }}>
+                {activeOptionsTab === 'SCHEDULE' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Auto-Email Frequency</h3>
+                    
+                    <div style={{ marginBottom: "32px" }}>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: "0.875rem", color: "#64748b" }}>Pending Reminders (Owners)</h4>
+                      <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
                         <select 
-                          value={u.role}
-                          onChange={(e) => handleUpdateRole(u.id, e.target.value)}
-                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", cursor: "pointer", background: "white" }}
+                          value={settings.reminderFrequency}
+                          onChange={(e) => setSettings({...settings, reminderFrequency: e.target.value})}
+                          style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
                         >
-                          <option value="USER">USER</option>
-                          <option value="ADMIN">ADMIN</option>
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="CUSTOM">Custom</option>
+                          <option value="OFF">Turn Off</option>
                         </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 09:00, 18:00"
+                          value={settings.reminderTimes}
+                          onChange={(e) => setSettings({...settings, reminderTimes: e.target.value})}
+                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+                      <p style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Enter times in HH:mm format, separated by commas.</p>
+                    </div>
+
+                    <div style={{ marginBottom: "32px" }}>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: "0.875rem", color: "#64748b" }}>Manager Report Summary</h4>
+                      <div style={{ display: "flex", gap: "16px" }}>
+                        <select 
+                          value={settings.managerReportFrequency}
+                          onChange={(e) => setSettings({...settings, managerReportFrequency: e.target.value})}
+                          style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                        >
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="CUSTOM">Custom</option>
+                          <option value="OFF">Turn Off</option>
+                        </select>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 10:00"
+                          value={settings.managerReportTimes}
+                          onChange={(e) => setSettings({...settings, managerReportTimes: e.target.value})}
+                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      style={{ background: "#2563eb", color: "white", padding: "12px 24px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600 }}
+                    >
+                      {isSavingSettings ? "Saving..." : "Save Automation Settings"}
+                    </button>
+                  </div>
+                )}
+
+                {activeOptionsTab === 'MAILS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Manual Triggers</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      <button onClick={() => handleTriggerEmail("users")} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                        <Mail size={24} color="#2563eb" />
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontWeight: 600 }}>Send Pending Reminders</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Instantly mail all owners about their pending tasks.</div>
+                        </div>
+                      </button>
+                      <button onClick={() => handleTriggerEmail("manager")} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                        <Mail size={24} color="#2563eb" />
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontWeight: 600 }}>Send Manager Report</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Instantly mail the consolidated summary to Admin.</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeOptionsTab === 'USERS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>User Management</h3>
+                    {usersLoading ? (
+                      <p>Loading users...</p>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                            <th style={{ padding: "12px 8px" }}>Name</th>
+                            <th style={{ padding: "12px 8px" }}>Email</th>
+                            <th style={{ padding: "12px 8px" }}>Role</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersList.map(u => (
+                            <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
+                              <td style={{ padding: "12px 8px" }}>{u.email}</td>
+                              <td style={{ padding: "12px 8px" }}>
+                                <select 
+                                  value={u.role}
+                                  onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                                  style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                                >
+                                  <option value="USER">USER</option>
+                                  <option value="ADMIN">ADMIN</option>
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
