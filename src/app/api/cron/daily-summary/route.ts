@@ -76,7 +76,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
         <td style="white-space: nowrap;">${formatDateTime(t.createdAt)}</td>
         <td style="white-space: nowrap;">${t.ownerName}</td>
         <td style="white-space: nowrap;">${t.reviewerName === "Not Applicable" ? "NA" : t.reviewerName || ""}</td>
-        <td style="min-width: 150px;">${t.taskName}</td>
+        <td style="min-width: 400px; max-width: 750px; white-space: normal; word-wrap: break-word;">${t.taskName}</td>
         <td style="white-space: nowrap;">${t.entityName}</td>
         <td style="white-space: nowrap;">${t.taskType}</td>
         <td style="white-space: nowrap;">${t.departmentName}</td>

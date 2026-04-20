@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2 } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send } from "lucide-react";
 
 type Task = {
   id: number;
@@ -31,6 +31,9 @@ export default function DashboardClient({ user }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const isAdmin = user?.email === "pavanreddy@intellicar.in" || user?.role === "ADMIN";
 
@@ -51,6 +54,39 @@ export default function DashboardClient({ user }: { user: any }) {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const fetchUsersList = async () => {
+    if (!isAdmin) return;
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setUsersList(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
+      if (res.ok) {
+        fetchUsersList(); // Refresh
+      } else {
+        alert("Failed to update user role.");
+      }
+    } catch (error) {
+      console.error("Failed to update role", error);
+    }
+  };
 
   const handleUpdate = async (taskId: number, field: string, value: string) => {
     try {
@@ -82,6 +118,26 @@ export default function DashboardClient({ user }: { user: any }) {
       }
     } catch (error) {
       console.error("Failed to delete task", error);
+    }
+  };
+
+  const handleRequestDelete = async (taskId: number) => {
+    const comment = window.prompt("Please provide a reason for deleting this task:");
+    if (comment === null) return; // User cancelled
+    
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/request-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment })
+      });
+      if (res.ok) {
+        alert("Deletion request sent to Master Admin successfully.");
+      } else {
+        alert("Failed to send deletion request.");
+      }
+    } catch (error) {
+      console.error("Failed to request delete", error);
     }
   };
 
@@ -160,11 +216,14 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
           
           {isAdmin && (
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={() => handleTriggerEmail("users")} style={{ background: "#f1f5f9", color: "#334155", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer", fontWeight: 500, fontSize: "0.75rem", transition: "all 0.2s" }} className="btn-secondary">
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button onClick={() => { setShowUsersModal(true); fetchUsersList(); }} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
+                <Users size={18} /> Manage Users
+              </button>
+              <button onClick={() => handleTriggerEmail("users")} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
                 Send Reminders
               </button>
-              <button onClick={() => handleTriggerEmail("manager")} style={{ background: "#f1f5f9", color: "#334155", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer", fontWeight: 500, fontSize: "0.75rem", transition: "all 0.2s" }} className="btn-secondary">
+              <button onClick={() => handleTriggerEmail("manager")} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
                 Send Manager Report
               </button>
             </div>
@@ -208,14 +267,14 @@ export default function DashboardClient({ user }: { user: any }) {
                   <th style={thStyle}>Review Date</th>
                   <th style={thStyle}>Owner Comments</th>
                   <th style={thStyle}>Reviewer Comments</th>
-                  {isAdmin && <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>}
+                  <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={isAdmin ? 14 : 13} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={14} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
                 ) : filteredTasksToDisplay.length === 0 ? (
-                  <tr><td colSpan={isAdmin ? 14 : 13} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found in the system.</td></tr>
+                  <tr><td colSpan={14} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found in the system.</td></tr>
                 ) : (
                   filteredTasksToDisplay.map((task) => {
                     const today = new Date();
@@ -225,7 +284,7 @@ export default function DashboardClient({ user }: { user: any }) {
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
                       <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
-                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", maxWidth: "250px", whiteSpace: "normal" }}>{task.taskName}</td>
+                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "400px", maxWidth: "750px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>{task.entityName}</td>
                       <td style={tdStyle}>{task.ownerName}</td>
                       <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
@@ -336,19 +395,26 @@ export default function DashboardClient({ user }: { user: any }) {
                         )}
                       </td>
 
-                      {/* Delete Action (Admin Only) */}
-                      {isAdmin && (
-                        <td style={{ ...tdStyle, textAlign: "center" }}>
+                      {/* Delete / Request Delete Action */}
+                      <td style={{ ...tdStyle, textAlign: "center" }}>
+                        {isAdmin ? (
                           <button 
                             onClick={() => handleDelete(task.id)}
                             style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", padding: "6px", borderRadius: "6px", transition: "all 0.2s" }}
-                            className="btn-delete"
                             title="Delete Task"
                           >
                             <Trash2 size={18} />
                           </button>
-                        </td>
-                      )}
+                        ) : (
+                          <button 
+                            onClick={() => handleRequestDelete(task.id)}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", color: "#f59e0b", padding: "6px", borderRadius: "6px", transition: "all 0.2s" }}
+                            title="Request Delete"
+                          >
+                            <Send size={18} />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                     );
                   })
@@ -367,6 +433,49 @@ export default function DashboardClient({ user }: { user: any }) {
             fetchTasks();
           }} 
         />
+      )}
+
+      {showUsersModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "600px", padding: "32px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>Manage Users</h2>
+              <button onClick={() => setShowUsersModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem" }}>×</button>
+            </div>
+            
+            {usersLoading ? (
+              <p style={{ textAlign: "center", color: "#64748b" }}>Loading users...</p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Name</th>
+                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Email</th>
+                    <th style={{ padding: "12px 8px", color: "#64748b", fontWeight: 600 }}>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.map(u => (
+                    <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
+                      <td style={{ padding: "12px 8px" }}>{u.email}</td>
+                      <td style={{ padding: "12px 8px" }}>
+                        <select 
+                          value={u.role}
+                          onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", cursor: "pointer", background: "white" }}
+                        >
+                          <option value="USER">USER</option>
+                          <option value="ADMIN">ADMIN</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       )}
 
       <style dangerouslySetInnerHTML={{__html: `
