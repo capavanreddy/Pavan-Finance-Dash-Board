@@ -619,14 +619,18 @@ export default function DashboardClient({ user }: { user: any }) {
                       </div>
 
                       {settings.managerReportFrequency !== 'OFF' && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "fit-content" }}>
-                          {(() => {
-                            const timeObj = convertTo12h(settings.managerReportTimes);
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                          {settings.managerReportTimes.split(',').map((t, idx) => {
+                            const timeObj = convertTo12h(t.trim());
                             return (
-                              <>
+                              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                                 <select 
                                   value={timeObj.h}
-                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(e.target.value, timeObj.m, timeObj.s)})}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(e.target.value, timeObj.m, timeObj.s);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
                                   style={{ border: "none", outline: "none", fontWeight: 600 }}
                                 >
                                   {hours12.map(h => <option key={h} value={h}>{h}</option>)}
@@ -634,21 +638,44 @@ export default function DashboardClient({ user }: { user: any }) {
                                 <span>:</span>
                                 <select 
                                   value={timeObj.m}
-                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(timeObj.h, e.target.value, timeObj.s)})}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, e.target.value, timeObj.s);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
                                   style={{ border: "none", outline: "none", fontWeight: 600 }}
                                 >
                                   {minutes.map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
                                 <select 
                                   value={timeObj.s}
-                                  onChange={(e) => setSettings({...settings, managerReportTimes: convertTo24h(timeObj.h, timeObj.m, e.target.value)})}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, timeObj.m, e.target.value);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
                                   style={{ border: "none", outline: "none", color: "#2563eb", fontWeight: 700 }}
                                 >
                                   {ampm.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
-                              </>
+                                <button 
+                                  onClick={() => {
+                                    const times = settings.managerReportTimes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, managerReportTimes: times.join(',') || "10:00"});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: "4px", fontSize: "1.25rem", padding: "0 4px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
                             );
-                          })()}
+                          })}
+                          <button 
+                            onClick={() => setSettings({...settings, managerReportTimes: settings.managerReportTimes + ",10:00"})}
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.875rem" }}
+                          >
+                            + Add Time
+                          </button>
                         </div>
                       )}
                     </div>
