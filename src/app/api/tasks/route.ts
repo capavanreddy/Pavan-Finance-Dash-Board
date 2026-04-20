@@ -32,8 +32,16 @@ export async function GET(req: NextRequest) {
     const filteredTasks = allTasks.filter(task => {
       const ownerEmail = getEmailFromName(task.ownerName);
       const reviewerEmail = getEmailFromName(task.reviewerName);
-      // We can also check requestFrom if it is an email or maps to an email, but let's stick to owner/reviewer for now
-      return ownerEmail === userEmail || reviewerEmail === userEmail;
+      
+      // Owner can always see their tasks
+      if (ownerEmail === userEmail) return true;
+      
+      // Reviewer can only see the task if the owner has finished it
+      if (reviewerEmail === userEmail) {
+        return task.taskStatus === "Completed" || task.reviewStatus === "Pending" || task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required";
+      }
+
+      return false;
     });
 
     return NextResponse.json(filteredTasks, { status: 200 });

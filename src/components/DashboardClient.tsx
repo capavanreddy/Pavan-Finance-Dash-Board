@@ -30,6 +30,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const [showForm, setShowForm] = useState(false);
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
 
   const isAdmin = user?.email === "pavanreddy@intellicar.in" || user?.role === "ADMIN";
 
@@ -106,6 +107,14 @@ export default function DashboardClient({ user }: { user: any }) {
   const pendingReviewCount = tasks.filter(t => t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner").length;
   const completedCount = tasks.filter(t => t.taskStatus === "Completed" && (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required")).length;
 
+  const filteredTasksToDisplay = tasks.filter(t => {
+    if (activeFilter === 'ALL') return true;
+    if (activeFilter === 'PENDING_ACTION') return t.taskStatus !== "Completed";
+    if (activeFilter === 'PENDING_REVIEW') return t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner";
+    if (activeFilter === 'COMPLETED') return t.taskStatus === "Completed" && (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required");
+    return true;
+  });
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc", color: "#0f172a" }}>
       {/* Header */}
@@ -149,10 +158,10 @@ export default function DashboardClient({ user }: { user: any }) {
       <div style={{ flex: 1, overflow: "auto", padding: "32px" }}>
         {/* Metric Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px", marginBottom: "32px" }}>
-          <MetricCard title="Total Tasks" value={tasks.length} icon={<LayoutDashboard size={20} color="#3b82f6" />} bg="#eff6ff" />
-          <MetricCard title="Pending Action" value={pendingActionCount} icon={<Clock size={20} color="#f59e0b" />} bg="#fffbeb" />
-          <MetricCard title="Pending Review" value={pendingReviewCount} icon={<AlertCircle size={20} color="#ef4444" />} bg="#fef2f2" />
-          <MetricCard title="Fully Completed" value={completedCount} icon={<CheckCircle2 size={20} color="#10b981" />} bg="#ecfdf5" />
+          <MetricCard title="Total Tasks" value={tasks.length} icon={<LayoutDashboard size={20} color="#3b82f6" />} bg="#eff6ff" isActive={activeFilter === 'ALL'} onClick={() => setActiveFilter('ALL')} />
+          <MetricCard title="Pending Action" value={pendingActionCount} icon={<Clock size={20} color="#f59e0b" />} bg="#fffbeb" isActive={activeFilter === 'PENDING_ACTION'} onClick={() => setActiveFilter('PENDING_ACTION')} />
+          <MetricCard title="Pending Review" value={pendingReviewCount} icon={<AlertCircle size={20} color="#ef4444" />} bg="#fef2f2" isActive={activeFilter === 'PENDING_REVIEW'} onClick={() => setActiveFilter('PENDING_REVIEW')} />
+          <MetricCard title="Fully Completed" value={completedCount} icon={<CheckCircle2 size={20} color="#10b981" />} bg="#ecfdf5" isActive={activeFilter === 'COMPLETED'} onClick={() => setActiveFilter('COMPLETED')} />
         </div>
 
         {/* Data Table */}
@@ -180,11 +189,15 @@ export default function DashboardClient({ user }: { user: any }) {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={isAdmin ? 14 : 13} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
-                ) : tasks.length === 0 ? (
+                ) : filteredTasksToDisplay.length === 0 ? (
                   <tr><td colSpan={isAdmin ? 14 : 13} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found in the system.</td></tr>
                 ) : (
-                  tasks.map((task) => (
-                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s" }} className="table-row">
+                  filteredTasksToDisplay.map((task) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < today;
+                    return (
+                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
                       <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
                       <td style={tdStyle}><span style={{ color: "#64748b" }}>{new Date(task.createdAt).toLocaleDateString()}</span></td>
                       <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", maxWidth: "250px", whiteSpace: "normal" }}>{task.taskName}</td>
@@ -306,7 +319,8 @@ export default function DashboardClient({ user }: { user: any }) {
                         </td>
                       )}
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -335,9 +349,23 @@ export default function DashboardClient({ user }: { user: any }) {
 
 // Subcomponents
 
-function MetricCard({ title, value, icon, bg }: { title: string, value: number, icon: any, bg: string }) {
+function MetricCard({ title, value, icon, bg, isActive, onClick }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void }) {
   return (
-    <div style={{ background: "white", padding: "24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)", display: "flex", alignItems: "center", gap: "16px" }}>
+    <div 
+      onClick={onClick}
+      style={{ 
+        background: "white", 
+        padding: "24px", 
+        borderRadius: "12px", 
+        border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
+        boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "16px",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.2s"
+      }}
+    >
       <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {icon}
       </div>
