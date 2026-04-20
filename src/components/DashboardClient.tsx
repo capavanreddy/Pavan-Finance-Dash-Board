@@ -200,12 +200,10 @@ export default function DashboardClient({ user }: { user: any }) {
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc", color: "#0f172a" }}>
       {/* Header */}
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", padding: "16px 32px", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", padding: "8px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px" }}>
-            <LayoutDashboard color="white" size={20} />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <img src="/logo.png" alt="Intellicar Logo" style={{ height: "45px", width: "auto" }} />
           <div>
-            <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", letterSpacing: "-0.025em" }}>Intellicar Operations</h1>
+            <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", letterSpacing: "-0.025em" }}>Intellicar Telematics</h1>
             <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>Enterprise Task Management</p>
           </div>
         </div>

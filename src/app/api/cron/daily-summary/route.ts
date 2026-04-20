@@ -228,7 +228,8 @@ export async function GET(req: Request) {
         <div style="background-color: #f1f5f9; padding: 30px 15px;">
           <div style="max-width: 1400px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;">Intellicar Operations</h1>
+              <img src="https://intellicar-finance-team-task-manager.vercel.app/logo.png" alt="Intellicar Logo" style="height: 60px; width: auto; margin-bottom: 15px;" />
+              <h1 style="color: #2563eb; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;">Intellicar Telematics</h1>
               <p style="color: #64748b; font-family: 'Segoe UI', Arial, sans-serif; margin-top: 5px;">Daily Task Management Report - ${formatDate(referenceDate)}</p>
             </div>
             ${summaryHtml}
