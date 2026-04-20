@@ -38,10 +38,11 @@ function formatDateTime(dateStr: Date | string | null) {
 
 // Reusable HTML Table Generator mirroring the Google Sheet layout
 function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
-  let html = `<h2 align="center" style="font-family: sans-serif; color: #333;">${title}</h2>`;
+  let html = `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 100%; overflow-x: auto; margin-bottom: 40px;">`;
+  html += `<h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; font-weight: 600;">${title}</h2>`;
   html += `
-    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11px; text-align: center;">
-      <tr style="background-color: #f4f4f4; font-weight: bold; color: #333;">
+    <table cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; font-size: 12px; text-align: left; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+      <tr style="background-color: #2563eb; color: #ffffff; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">
         <th>S.No</th>
         <th>Time Stamp</th>
         <th>Owner Name</th>
@@ -69,7 +70,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
   } else {
     tasks.forEach((t, index) => {
       const overdue = isOverdue(t.dueDate, referenceDate) && t.taskStatus !== "Completed";
-      const rowStyle = overdue ? 'background-color: #ffe6e6;' : ''; // Light red background for overdue
+      const rowStyle = overdue ? 'background-color: #fef2f2; border-bottom: 1px solid #fee2e2;' : 'background-color: #ffffff; border-bottom: 1px solid #e2e8f0;'; // Light red background for overdue, normal otherwise
 
       html += `<tr style="${rowStyle}">
         <td style="white-space: nowrap;">${index + 1}</td>
@@ -95,7 +96,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
     });
   }
 
-  html += `</table><br/><br/>`;
+  html += `</table></div>`;
   return html;
 }
 
@@ -181,10 +182,11 @@ export async function GET(req: Request) {
         "Sharath", "Chandana", "Nikhat", "Venkat", "Sidharth Saneja"
       ];
 
-      let summaryHtml = `<h2 align="center" style="font-family: sans-serif; color: #333;">Summary of Pending Tasks</h2>`;
+      let summaryHtml = `<div style="font-family: 'Segoe UI', Arial, sans-serif; margin-bottom: 40px; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">`;
+      summaryHtml += `<h2 style="color: #0f172a; margin-top: 0; margin-bottom: 20px; font-weight: 600; text-align: center;">Summary of Pending Tasks</h2>`;
       summaryHtml += `
-        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 60%; margin: 0 auto; font-family: Arial, sans-serif; font-size: 12px; text-align: center;">
-          <tr style="background-color: #f4f4f4; font-weight: bold; color: #333;">
+        <table cellpadding="12" cellspacing="0" style="border-collapse: collapse; width: 80%; margin: 0 auto; background-color: #ffffff; font-size: 13px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <tr style="background-color: #1e293b; color: #ffffff; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">
             <th>Name</th>
             <th>Pending Owner</th>
             <th>Overdue Owner</th>
@@ -202,10 +204,10 @@ export async function GET(req: Request) {
         if (empPendingOwner.length > 0 || empPendingReview > 0) {
           hasAnyPending = true;
           summaryHtml += `
-            <tr>
-              <td>${emp}</td>
+            <tr style="border-bottom: 1px solid #e2e8f0; color: #334155;">
+              <td style="font-weight: 500;">${emp}</td>
               <td>${empPendingOwner.length}</td>
-              <td style="${overdueCount > 0 ? 'background-color: #ffe6e6; color: red; font-weight: bold;' : ''}">${overdueCount}</td>
+              <td style="${overdueCount > 0 ? 'background-color: #fef2f2; color: #ef4444; font-weight: bold;' : ''}">${overdueCount}</td>
               <td>${empPendingReview}</td>
             </tr>
           `;
@@ -216,14 +218,24 @@ export async function GET(req: Request) {
         summaryHtml += `<tr><td colspan="4" style="padding: 16px;">No pending tasks for any candidate.</td></tr>`;
       }
 
-      summaryHtml += `</table><br/><br/>`;
+      summaryHtml += `</table></div>`;
 
       // 6. Send Consolidated Email to Manager
       const managerEmail = "pavanreddy@intellicar.in";
       const allConsolidatedTasks = allTasks.filter(t => t.taskStatus !== "Completed" || (t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner"));
       
-      let consolidatedHtml = summaryHtml;
-      consolidatedHtml += generateGridHtml(allConsolidatedTasks, "Consolidated Pending Tasks", referenceDate);
+      let consolidatedHtml = `
+        <div style="background-color: #f1f5f9; padding: 30px 15px;">
+          <div style="max-width: 1400px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; font-family: 'Segoe UI', Arial, sans-serif; margin: 0;">Intellicar Operations</h1>
+              <p style="color: #64748b; font-family: 'Segoe UI', Arial, sans-serif; margin-top: 5px;">Daily Task Management Report - ${formatDate(referenceDate)}</p>
+            </div>
+            ${summaryHtml}
+            ${generateGridHtml(allConsolidatedTasks, "Consolidated Pending Tasks", referenceDate)}
+          </div>
+        </div>
+      `;
 
       await sendEmail({ 
         to: managerEmail, 
