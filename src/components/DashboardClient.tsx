@@ -1044,7 +1044,7 @@ export default function DashboardClient({ user }: { user: any }) {
       </header>
 
       {/* Main Content */}
-      <div style={{ flex: 1, overflow: "auto", padding: "32px", background: "#f1f5f9" }}>
+      <main style={{ flex: 1, overflow: "auto", padding: "32px", background: "#f1f5f9" }}>
         
         {/* Metric Cards / Motivational Quote */}
         {activeView === 'TASKS' ? (
@@ -1089,7 +1089,7 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
         )}
 
-        <main style={{ flex: 1, padding: "32px", overflow: "auto" }}>
+
 
         {activeView === 'TASKS' ? (
           <>
@@ -1653,7 +1653,6 @@ export default function DashboardClient({ user }: { user: any }) {
              </div>
           </div>
         )}
-      </div>
 
       {showForm && (
         <TaskForm 
@@ -2351,7 +2350,6 @@ export default function DashboardClient({ user }: { user: any }) {
         .btn-primary:hover { background-color: #1d4ed8 !important; }
         .btn-logout:hover { color: #0f172a !important; }
       `}} />
-    </div>
   );
 }
 
