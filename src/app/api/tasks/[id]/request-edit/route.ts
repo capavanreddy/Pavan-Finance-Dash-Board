@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Send alert email to Admin
     const adminEmail = "pavanreddy@intellicar.in";
-    const userName = session.user.name || session.user.email;
+    const userName = session.user?.name || session.user?.email || "User";
     const dashboardUrl = "https://intellicar-finance-team-task-manage-one.vercel.app/";
 
     const emailHtml = `
