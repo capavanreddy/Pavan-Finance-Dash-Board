@@ -1556,10 +1556,10 @@ export default function DashboardClient({ user }: { user: any }) {
                                 setLOCaptureForm({
                                   ...loCaptureForm,
                                   taskId: task.id,
-                                  entity: task.entityName,
+                                  entity: task.entityName || "",
                                   dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
-                                  identifiedBy: task.reviewerName,
-                                  committedBy: task.ownerName,
+                                  identifiedBy: task.reviewerName || "",
+                                  committedBy: task.ownerName || "",
                                   learningOpportunity: "",
                                   resolutionProvided: "",
                                   modeOfCommunication: "Official Internal Mail",
