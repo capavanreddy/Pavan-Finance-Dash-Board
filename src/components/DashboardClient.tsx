@@ -1316,6 +1316,10 @@ export default function DashboardClient({ user }: { user: any }) {
                     const isCurrentUserOwner = task.ownerName === currentUserName;
                     const isCurrentUserReviewer = task.reviewerName === currentUserName;
 
+                    const todayDate = new Date();
+                    todayDate.setHours(0, 0, 0, 0);
+                    const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < todayDate;
+
                     const isOwnerLocked = task.taskStatus === "Completed" && !isAdmin;
                     const isReviewerLocked = (task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin;
                     
