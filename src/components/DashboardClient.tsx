@@ -972,10 +972,10 @@ export default function DashboardClient({ user }: { user: any }) {
   return (
     <div style={{ height: "100vh", display: "flex", background: "#f8fafc", color: "#0f172a", overflow: "hidden" }}>
       {/* Sidebar Navigation (Keka Style) */}
-      <nav style={{ width: "100px", background: "#0f172a", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "24px", flexShrink: 0, boxShadow: "4px 0 10px rgba(0,0,0,0.1)", zIndex: 10 }}>
+      <nav style={{ width: "100px", background: "#0f172a", display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, boxShadow: "4px 0 10px rgba(0,0,0,0.1)", zIndex: 10 }}>
         {/* Logo at Top of Sidebar */}
-        <div style={{ marginBottom: "40px", textAlign: "center" }}>
-          <img src="/logo.png" alt="Logo" style={{ height: "35px", width: "auto" }} />
+        <div style={{ width: "100%", height: "80px", background: "white", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "32px", borderBottom: "1px solid #e2e8f0" }}>
+          <img src="/logo.png" alt="Logo" style={{ height: "30px", width: "auto" }} />
         </div>
 
         {/* Sidebar Items */}
