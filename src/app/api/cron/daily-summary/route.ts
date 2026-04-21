@@ -15,12 +15,16 @@ function isOverdue(dueDate: Date | null, referenceDate: Date) {
   return target < ref;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const FULL_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 // Format date as DD-MMM-YYYY
 function formatDate(dateStr: Date | string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
   const day = String(d.getDate()).padStart(2, '0');
-  const month = d.toLocaleString('en-GB', { month: 'short' });
+  const month = MONTHS[d.getMonth()];
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 }
@@ -29,8 +33,9 @@ function formatDate(dateStr: Date | string | null) {
 function formatDateTime(dateStr: Date | string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
   const day = String(d.getDate()).padStart(2, '0');
-  const month = d.toLocaleString('en-GB', { month: 'short' });
+  const month = MONTHS[d.getMonth()];
   const year = d.getFullYear();
   const hours = String(d.getHours()).padStart(2, '0');
   const minutes = String(d.getMinutes()).padStart(2, '0');
@@ -117,19 +122,19 @@ async function generateLOExcelBuffer(los: any[], subtitle: string) {
     const row = worksheet.addRow([
       index + 1,
       formatDateTime(lo.createdAt),
-      lo.entity,
+      lo.entity || "",
       formatDate(lo.dateOfIdentification),
-      lo.learningOpportunity,
-      lo.identifiedBy,
-      lo.committedBy,
-      lo.resolutionProvided,
-      lo.modeOfCommunication,
+      lo.learningOpportunity || "",
+      lo.identifiedBy || "",
+      lo.committedBy || "",
+      lo.resolutionProvided || "",
+      lo.modeOfCommunication || "",
       lo.emailSub || "Not Applicable",
       lo.comments || "NA"
     ]);
     row.alignment = { vertical: 'middle', wrapText: true };
-    row.font = { name: 'Calibri', size: 10 };
     row.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 10 };
         cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -287,7 +292,7 @@ export async function GET(req: Request) {
       const stats = getLOStats(allLOs);
       const managerEmail = "pavanreddy@intellicar.in";
       
-      const currentMonthName = referenceDate.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+      const currentMonthName = `${FULL_MONTHS[referenceDate.getMonth()]} ${referenceDate.getFullYear()}`;
       const currentMonthSubtitle = `Current Month Report - ${currentMonthName}`;
       const consolidatedSubtitle = `Consolidated Report (All Entries)`;
       
@@ -296,7 +301,9 @@ export async function GET(req: Request) {
 
       const entityCounts: Record<string, number> = {};
       stats.mtdItems.forEach(lo => {
-        entityCounts[lo.entity] = (entityCounts[lo.entity] || 0) + 1;
+        if (lo.entity) {
+          entityCounts[lo.entity] = (entityCounts[lo.entity] || 0) + 1;
+        }
       });
 
       let loHtml = `
@@ -348,18 +355,18 @@ export async function GET(req: Request) {
         attachments: [
           {
             filename: `Current_Month_LO_Report_${formatDate(referenceDate)}.xlsx`,
-            content: currentMonthBuffer,
+            content: currentMonthBuffer as any,
             contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
           },
           {
             filename: `Consolidated_LO_Report_${formatDate(referenceDate)}.xlsx`,
-            content: consolidatedBuffer,
+            content: consolidatedBuffer as any,
             contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
           }
         ]
       });
 
-      return NextResponse.json({ message: "LO Report sent with dual attachments and perfected styling." });
+      return NextResponse.json({ message: "LO Report sent successfully." });
     }
 
     const allTasks = await prisma.task.findMany({

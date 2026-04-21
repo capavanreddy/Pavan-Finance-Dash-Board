@@ -565,10 +565,14 @@ export default function DashboardClient({ user }: { user: any }) {
     titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const dateStr = `${now.getDate()}-${MONTHS[now.getMonth()]}-${now.getFullYear()}`;
+    
     // Row 2: Subtitle (Light Blue background, Italicized Blue text)
     worksheet.mergeCells('A2:K2');
     const subCell = worksheet.getCell('A2');
-    subCell.value = `Consolidated Report (All Entries) - As of ${formatDate(new Date())}`;
+    subCell.value = `Consolidated Report (All Entries) - As of ${dateStr}`;
     subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF3B5998' } };
     subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
     subCell.alignment = { vertical: 'middle', horizontal: 'center' };
