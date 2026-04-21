@@ -135,6 +135,22 @@ export default function DashboardClient({ user }: { user: any }) {
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
+  const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
+  const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showTaskDownloadDropdown || showLODownloadDropdown) {
+        // Simple logic: if the user clicks anywhere, we just close them. 
+        // A more robust way would check refs, but this is usually sufficient for simple dashboards.
+        setShowTaskDownloadDropdown(false);
+        setShowLODownloadDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showTaskDownloadDropdown, showLODownloadDropdown]);
 
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
@@ -1282,13 +1298,54 @@ export default function DashboardClient({ user }: { user: any }) {
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
-                <button onClick={exportToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "8px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
-                  <FileSpreadsheet size={18} color="#166534" /> Excel
+              <div style={{ display: "flex", gap: "8px", marginLeft: "auto", position: "relative" }}>
+                <button 
+                  onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
+                  style={{ 
+                    display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", 
+                    padding: "8px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", 
+                    cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
+                  }} 
+                  onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
+                >
+                  <Download size={18} color="#2563eb" /> Download Report
                 </button>
-                <button onClick={exportToPDF} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "8px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#ef4444"}>
-                  <FileText size={18} color="#991b1b" /> PDF
-                </button>
+                
+                {showTaskDownloadDropdown && (
+                  <div style={{ 
+                    position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                    background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", 
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                    minWidth: "160px", overflow: "hidden" 
+                  }}>
+                    <button 
+                      onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
+                      style={{ 
+                        width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                        padding: "12px 16px", border: "none", background: "white", 
+                        color: "#475569", cursor: "pointer", fontSize: "0.875rem", 
+                        textAlign: "left", transition: "background 0.2s" 
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseOut={e => e.currentTarget.style.background = "white"}
+                    >
+                      <FileSpreadsheet size={16} color="#166534" /> Excel Format
+                    </button>
+                    <button 
+                      onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
+                      style={{ 
+                        width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                        padding: "12px 16px", border: "none", background: "white", 
+                        color: "#475569", cursor: "pointer", fontSize: "0.875rem", 
+                        textAlign: "left", transition: "background 0.2s" 
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseOut={e => e.currentTarget.style.background = "white"}
+                    >
+                      <FileText size={16} color="#991b1b" /> PDF Document
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1648,12 +1705,56 @@ export default function DashboardClient({ user }: { user: any }) {
                     <option value="ALL">All Entities</option>
                     {uniqueLOEntities.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
-                  <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
-                    <FileSpreadsheet size={16} color="#059669" /> Excel
-                  </button>
-                  <button onClick={exportLOsToPDF} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#ef4444"}>
-                    <FileText size={16} color="#991b1b" /> PDF
-                  </button>
+                  <div style={{ position: "relative" }}>
+                    <button 
+                      onClick={() => setShowLODownloadDropdown(!showLODownloadDropdown)}
+                      style={{ 
+                        display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", 
+                        padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", 
+                        cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, 
+                        boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" 
+                      }} 
+                      onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
+                    >
+                      <Download size={16} color="#2563eb" /> Download
+                    </button>
+                    
+                    {showLODownloadDropdown && (
+                      <div style={{ 
+                        position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                        background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", 
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                        minWidth: "160px", overflow: "hidden" 
+                      }}>
+                        <button 
+                          onClick={() => { exportLOsToExcel(); setShowLODownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "10px 16px", border: "none", background: "white", 
+                            color: "#475569", cursor: "pointer", fontSize: "0.8125rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileSpreadsheet size={14} color="#059669" /> Excel Format
+                        </button>
+                        <button 
+                          onClick={() => { exportLOsToPDF(); setShowLODownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "10px 16px", border: "none", background: "white", 
+                            color: "#475569", cursor: "pointer", fontSize: "0.8125rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileText size={14} color="#991b1b" /> PDF Document
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
              </div>
              <div style={{ overflowX: "auto" }}>
