@@ -30,6 +30,8 @@ type Task = {
   editRequested?: boolean;
   editRequestBy?: string | null;
   editRequestReason?: string | null;
+  deleteRequested?: boolean;
+  deleteRequestReason?: string | null;
 };
 
 type LearningOpportunity = {
@@ -47,6 +49,8 @@ type LearningOpportunity = {
   editRequested?: boolean;
   editApproved?: boolean;
   editRequestReason?: string | null;
+  deleteRequested?: boolean;
+  deleteRequestReason?: string | null;
   createdByEmail?: string | null;
 };
 
