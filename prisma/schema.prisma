@@ -42,6 +42,8 @@ model Task {
   editRequested       Boolean   @default(false)
   editRequestBy       String?   // "OWNER" or "REVIEWER"
   editRequestReason   String?
+  deleteRequested     Boolean   @default(false)
+  deleteRequestReason String?
 }
 
 model LearningOpportunity {
@@ -60,6 +62,8 @@ model LearningOpportunity {
   editRequested       Boolean   @default(false)
   editApproved        Boolean   @default(false)
   editRequestReason   String?
+  deleteRequested     Boolean   @default(false)
+  deleteRequestReason String?
   createdByEmail      String?
 }
 

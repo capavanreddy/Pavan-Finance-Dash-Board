@@ -130,7 +130,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const [loSearchQuery, setLoSearchQuery] = useState("");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
-  const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK' | 'LO'>('TASK');
+  const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
 
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
@@ -508,6 +508,25 @@ export default function DashboardClient({ user }: { user: any }) {
       }
     } catch (error) {
       console.error("Failed to process edit", error);
+    }
+  };
+
+  const handleApproveDelete = async (taskId: number, action: 'APPROVE' | 'REJECT') => {
+    if (!window.confirm(`Are you sure you want to ${action.toLowerCase()} this deletion request?`)) return;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/approve-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      if (res.ok) {
+        alert(`Deletion request ${action.toLowerCase()}d successfully.`);
+        fetchTasks();
+      } else {
+        alert("Failed to process deletion request.");
+      }
+    } catch (error) {
+      console.error("Failed to process deletion", error);
     }
   };
 
@@ -1293,11 +1312,15 @@ export default function DashboardClient({ user }: { user: any }) {
                   <tr><td colSpan={14} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < today;
+                    const currentUserName = EMAIL_TO_NAME[user?.email || ""];
+                    const isCurrentUserOwner = task.ownerName === currentUserName;
+                    const isCurrentUserReviewer = task.reviewerName === currentUserName;
+
                     const isOwnerLocked = task.taskStatus === "Completed" && !isAdmin;
                     const isReviewerLocked = (task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin;
+                    
+                    const canEditReviewFields = isAdmin || isCurrentUserReviewer;
+                    const canEditOwnerFields = isAdmin || isCurrentUserOwner;
                     
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
@@ -1310,9 +1333,9 @@ export default function DashboardClient({ user }: { user: any }) {
                       
                       {/* Editable Completion Date */}
                       <td 
-                        style={{ ...tdStyle, cursor: isOwnerLocked ? "not-allowed" : "pointer", minWidth: "140px" }}
+                        style={{ ...tdStyle, cursor: isOwnerLocked || !canEditOwnerFields ? "not-allowed" : "pointer", minWidth: "140px" }}
                         onClick={() => { 
-                          if (isOwnerLocked) return;
+                          if (isOwnerLocked || !canEditOwnerFields) return;
                           setEditingCell({ id: task.id, field: "completionDate" }); 
                           setEditValue(task.completionDate ? task.completionDate.split("T")[0] : ""); 
                         }}
@@ -1330,7 +1353,7 @@ export default function DashboardClient({ user }: { user: any }) {
                         ) : (
                           <span style={{ color: task.completionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
                             {formatDate(task.completionDate)}
-                            {isOwnerLocked && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
+                            {(isOwnerLocked || !canEditOwnerFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditOwnerFields ? "Only Owner can edit" : "Task Completed"}>🔒</span>}
                           </span>
                         )}
                       </td>
@@ -1351,15 +1374,14 @@ export default function DashboardClient({ user }: { user: any }) {
                           type="review" 
                           taskId={task.id} 
                           onUpdate={handleUpdate} 
-                          disabled={isReviewerLocked}
+                          disabled={isReviewerLocked || !canEditReviewFields}
                         />
                       </td>
 
-                      {/* Editable Review Completion Date */}
                       <td 
-                        style={{ ...tdStyle, cursor: task.reviewerName === "Not Applicable" || isReviewerLocked ? "not-allowed" : "pointer", minWidth: "140px" }}
+                        style={{ ...tdStyle, cursor: task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields ? "not-allowed" : "pointer", minWidth: "140px" }}
                         onClick={() => { 
-                          if (task.reviewerName === "Not Applicable" || isReviewerLocked) return;
+                          if (task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields) return;
                           setEditingCell({ id: task.id, field: "reviewCompletionDate" }); 
                           setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : ""); 
                         }}
@@ -1379,7 +1401,7 @@ export default function DashboardClient({ user }: { user: any }) {
                         ) : (
                           <span style={{ color: task.reviewCompletionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
                             {formatDate(task.reviewCompletionDate)}
-                            {isReviewerLocked && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
+                            {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
                           </span>
                         )}
                       </td>
@@ -1407,11 +1429,10 @@ export default function DashboardClient({ user }: { user: any }) {
                         )}
                       </td>
 
-                      {/* Editable Reviewer Comments */}
                       <td 
-                        style={{ ...tdStyle, cursor: isReviewerLocked ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                        style={{ ...tdStyle, cursor: isReviewerLocked || !canEditReviewFields ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
                         onClick={() => { 
-                          if (isReviewerLocked) return;
+                          if (isReviewerLocked || !canEditReviewFields) return;
                           setEditingCell({ id: task.id, field: "reviewerComments" }); 
                           setEditValue(task.reviewerComments || ""); 
                         }}
@@ -1426,7 +1447,10 @@ export default function DashboardClient({ user }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>{task.reviewerComments || "Click to add..."}</span>
+                          <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
+                            {task.reviewerComments || "Click to add..."}
+                            {(isReviewerLocked || !canEditReviewFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
+                          </span>
                         )}
                       </td>
 
@@ -2152,20 +2176,36 @@ export default function DashboardClient({ user }: { user: any }) {
 
                 {activeOptionsTab === 'EDIT_REQUESTS' && (
                   <div>
-                    <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
                       <button 
-                        onClick={() => setEditRequestSubTab('TASK')}
+                        onClick={() => setEditRequestSubTab('TASK_EDIT')}
                         style={{ 
                           padding: "8px 16px", borderRadius: "8px", border: "none", 
-                          background: editRequestSubTab === 'TASK' ? "#2563eb" : "#f1f5f9",
-                          color: editRequestSubTab === 'TASK' ? "white" : "#64748b",
+                          background: editRequestSubTab === 'TASK_EDIT' ? "#2563eb" : "#f1f5f9",
+                          color: editRequestSubTab === 'TASK_EDIT' ? "white" : "#64748b",
                           fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
                         }}
                       >
-                        <LayoutDashboard size={16} /> Edit Task Request
+                        <LayoutDashboard size={16} /> Edit Task
                         {tasks.filter(t => t.editRequested).length > 0 && (
-                          <span style={{ background: editRequestSubTab === 'TASK' ? "white" : "#ef4444", color: editRequestSubTab === 'TASK' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                          <span style={{ background: editRequestSubTab === 'TASK_EDIT' ? "white" : "#ef4444", color: editRequestSubTab === 'TASK_EDIT' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
                             {tasks.filter(t => t.editRequested).length}
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => setEditRequestSubTab('TASK_DELETE')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'TASK_DELETE' ? "#ef4444" : "#f1f5f9",
+                          color: editRequestSubTab === 'TASK_DELETE' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <Trash2 size={16} /> Delete Task
+                        {tasks.filter(t => t.deleteRequested).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'TASK_DELETE' ? "white" : "#ef4444", color: editRequestSubTab === 'TASK_DELETE' ? "#ef4444" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {tasks.filter(t => t.deleteRequested).length}
                           </span>
                         )}
                       </button>
@@ -2178,7 +2218,7 @@ export default function DashboardClient({ user }: { user: any }) {
                           fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
                         }}
                       >
-                        <BookOpen size={16} /> Edit LO Request
+                        <BookOpen size={16} /> Edit LO
                         {los.filter(l => l.editRequested).length > 0 && (
                           <span style={{ background: editRequestSubTab === 'LO' ? "white" : "#ef4444", color: editRequestSubTab === 'LO' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
                             {los.filter(l => l.editRequested).length}
@@ -2187,7 +2227,7 @@ export default function DashboardClient({ user }: { user: any }) {
                       </button>
                     </div>
 
-                    {editRequestSubTab === 'TASK' ? (
+                    {editRequestSubTab === 'TASK_EDIT' ? (
                       <div>
                         <h3 style={{ margin: "0 0 16px 0", color: "#0f172a" }}>Pending Task Edit Requests</h3>
                         <p style={{ color: "#64748b", marginBottom: "24px", fontSize: "0.875rem" }}>Review and manage requests from users to unlock and edit completed tasks.</p>
@@ -2199,7 +2239,7 @@ export default function DashboardClient({ user }: { user: any }) {
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                             {tasks.filter(t => t.editRequested).map(task => (
-                              <div key={`task-${task.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                              <div key={`task-edit-${task.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                                   <div>
                                     <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: "#0f172a" }}>Task #{task.id}: {task.taskName}</h4>
@@ -2224,6 +2264,49 @@ export default function DashboardClient({ user }: { user: any }) {
                                 </div>
                                 <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #cbd5e1" }}>
                                   <strong>Reason:</strong> {task.editRequestReason}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : editRequestSubTab === 'TASK_DELETE' ? (
+                      <div>
+                        <h3 style={{ margin: "0 0 16px 0", color: "#0f172a" }}>Pending Task Deletion Requests</h3>
+                        <p style={{ color: "#64748b", marginBottom: "24px", fontSize: "0.875rem" }}>Review and manage requests from users to permanently delete tasks.</p>
+                        
+                        {tasks.filter(t => t.deleteRequested).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: "#64748b", margin: 0 }}>No pending task deletion requests.</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {tasks.filter(t => t.deleteRequested).map(task => (
+                              <div key={`task-del-${task.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                  <div>
+                                    <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: "#0f172a" }}>Task #{task.id}: {task.taskName}</h4>
+                                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
+                                      Requested by: <strong style={{ color: "#0f172a" }}>{task.ownerName}</strong>
+                                    </p>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleApproveDelete(task.id, 'APPROVE')}
+                                      style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Approve Delete
+                                    </button>
+                                    <button 
+                                      onClick={() => handleApproveDelete(task.id, 'REJECT')}
+                                      style={{ background: "#64748b", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </div>
+                                <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #ef4444" }}>
+                                  <strong>Reason:</strong> {task.deleteRequestReason}
                                 </div>
                               </div>
                             ))}

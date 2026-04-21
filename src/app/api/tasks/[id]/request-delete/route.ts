@@ -47,6 +47,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       </div>
     `;
 
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        deleteRequested: true,
+        deleteRequestReason: comment
+      }
+    });
+
     await sendEmail({
       to: adminEmail,
       subject: `Task Deletion Request: #${task.id} - ${task.taskName}`,
