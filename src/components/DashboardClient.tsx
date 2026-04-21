@@ -980,7 +980,7 @@ export default function DashboardClient({ user }: { user: any }) {
       }}>
         {/* Brand Area */}
         <div style={{ display: "flex", alignItems: "center" }}>
-          <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>Finance Hub</h1>
+          <img src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
         </div>
 
         {/* Global Actions Area */}
