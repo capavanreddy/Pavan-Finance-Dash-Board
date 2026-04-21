@@ -148,6 +148,108 @@ async function generateLOExcelBuffer(los: any[], subtitle: string) {
   return Buffer.from(buffer);
 }
 
+// Task Excel Generator with perfected styling
+async function generateTaskExcelBuffer(tasks: any[], subtitle: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Tasks");
+
+  // Define column widths
+  worksheet.columns = [
+    { width: 8 },  // SI No
+    { width: 20 }, // Timestamp
+    { width: 45 }, // Task Name
+    { width: 25 }, // Entity Name
+    { width: 20 }, // Task Type
+    { width: 20 }, // Department
+    { width: 20 }, // Request From
+    { width: 25 }, // Owner Name
+    { width: 20 }, // Due Date
+    { width: 20 }, // Completion Date
+    { width: 18 }, // Task Status
+    { width: 25 }, // Reviewer Name
+    { width: 25 }, // Review Status
+    { width: 20 }, // Review Completion Date
+    { width: 40 }, // Owner Comments
+    { width: 40 }, // Reviewer Comments
+    { width: 30 }  // Mail Link
+  ];
+
+  // Row 1: Main Title (Dark Blue background, White text)
+  worksheet.mergeCells('A1:Q1');
+  const titleCell = worksheet.getCell('A1');
+  titleCell.value = 'ITPL - Finance Task Management Report';
+  titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
+  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  // Row 2: Subtitle (Light Blue background, Italicized Blue text)
+  worksheet.mergeCells('A2:Q2');
+  const subCell = worksheet.getCell('A2');
+  subCell.value = subtitle;
+  subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF3B5998' } };
+  subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; 
+  subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  // Row 3: Column Headers (Dark Blue background, White text)
+  const headerRow = worksheet.getRow(3);
+  const headers = [
+    'SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 
+    'Department', 'Requested By', 'Owner', 'Due Date', 
+    'Completion Date', 'Status', 'Reviewer', 'Review Status', 
+    'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link'
+  ];
+  
+  headers.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
+  });
+
+  // Add Data rows
+  tasks.forEach((t, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      formatDateTime(t.createdAt),
+      t.taskName || "",
+      t.entityName || "",
+      t.taskType || "",
+      t.departmentName || "",
+      t.requestFrom || "",
+      t.ownerName || "",
+      formatDate(t.dueDate),
+      formatDate(t.completionDate),
+      t.taskStatus || "",
+      t.reviewerName || "Not Applicable",
+      t.reviewStatus || "",
+      formatDate(t.reviewCompletionDate),
+      t.ownerComments || "",
+      t.reviewerComments || "",
+      t.mailLink || ""
+    ]);
+    row.alignment = { vertical: 'middle', wrapText: true };
+    row.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 10 };
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
 // Reusable HTML Table Generator
 function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
   let html = `<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 100%; overflow-x: auto; margin-bottom: 40px;">`;
@@ -346,11 +448,90 @@ export async function GET(req: Request) {
     const pendingReviewTasks = allTasks.filter(t => t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner");
 
     if (type === "all" || type === "users") {
-      // Logic for user reminders (already working)
+      const owners = Array.from(new Set(pendingOwnerTasks.map(t => t.ownerName)));
+      for (const owner of owners) {
+        const ownerEmail = getEmailFromName(owner);
+        if (!ownerEmail) continue;
+
+        const ownerTasks = pendingOwnerTasks.filter(t => t.ownerName === owner);
+        const taskListHtml = generateGridHtml(ownerTasks, `Pending Tasks for ${owner}`, referenceDate);
+
+        await sendEmail({
+          to: ownerEmail,
+          subject: `Reminder: You have ${ownerTasks.length} pending tasks - ${formatDate(referenceDate)}`,
+          html: `
+            <div style="font-family: sans-serif; color: #334155;">
+              <h2 style="color: #2563eb;">Pending Task Reminder</h2>
+              <p>Hi ${owner},</p>
+              <p>This is a reminder that you have <strong>${ownerTasks.length}</strong> tasks pending your action.</p>
+              ${taskListHtml}
+              <p>Please update the status on the dashboard once completed.</p>
+              <p style="font-size: 12px; color: #64748b; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                This is an automated reminder from Intellicar Finance Task Manager.
+              </p>
+            </div>
+          `
+        });
+      }
+      
+      await prisma.systemSettings.update({
+        where: { id: "singleton" },
+        data: { lastReminderSentAt: new Date() }
+      });
     }
 
     if (type === "all" || type === "manager") {
-      // Logic for manager report (already working)
+      const managerEmail = "pavanreddy@intellicar.in";
+      const startOfMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+      const mtdTasks = allTasks.filter(t => new Date(t.createdAt) >= startOfMonth);
+      
+      const currentMonthName = `${FULL_MONTHS[referenceDate.getMonth()]} ${referenceDate.getFullYear()}`;
+      const currentMonthSubtitle = `Current Month Tasks - ${currentMonthName}`;
+      const consolidatedSubtitle = `Consolidated Task Report (All Entries)`;
+      
+      const currentMonthBuffer = await generateTaskExcelBuffer(mtdTasks, currentMonthSubtitle);
+      const consolidatedBuffer = await generateTaskExcelBuffer(allTasks, consolidatedSubtitle);
+
+      const statsHtml = `
+        <div style="font-family: sans-serif; color: #334155;">
+          <h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Daily Task Summary Report</h2>
+          <div style="display: flex; gap: 20px; margin: 24px 0;">
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+              <div style="color: #2563eb; font-size: 12px; font-weight: bold;">Total Pending</div>
+              <div style="font-size: 24px; font-weight: bold;">${pendingOwnerTasks.length}</div>
+            </div>
+            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+              <div style="color: #ef4444; font-size: 12px; font-weight: bold;">Pending Review</div>
+              <div style="font-size: 24px; font-weight: bold;">${pendingReviewTasks.length}</div>
+            </div>
+          </div>
+          ${generateGridHtml(pendingOwnerTasks.slice(0, 10), "Top Pending Tasks (Preview)", referenceDate)}
+          <p>Full reports are attached as Excel files.</p>
+        </div>
+      `;
+
+      await sendEmail({
+        to: managerEmail,
+        subject: `Daily Finance Task Report - ${formatDate(referenceDate)}`,
+        html: statsHtml,
+        attachments: [
+          {
+            filename: `Current_Month_Tasks_${formatDate(referenceDate)}.xlsx`,
+            content: currentMonthBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          },
+          {
+            filename: `Consolidated_Tasks_Report_${formatDate(referenceDate)}.xlsx`,
+            content: consolidatedBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          }
+        ]
+      });
+
+      await prisma.systemSettings.update({
+        where: { id: "singleton" },
+        data: { lastManagerReportSentAt: new Date() }
+      });
     }
 
     return NextResponse.json({ message: `Emails sent.` });

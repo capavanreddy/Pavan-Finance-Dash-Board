@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -119,6 +119,17 @@ export default function DashboardClient({ user }: { user: any }) {
   const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS'>('ALL');
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Sorting and Filtering State
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
+  const [taskEntityFilter, setTaskEntityFilter] = useState("ALL");
+  const [taskOwnerFilter, setTaskOwnerFilter] = useState("ALL");
+  const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
+  const [taskSortConfig, setTaskSortConfig] = useState<{ key: keyof Task; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
+
+  const [loSearchQuery, setLoSearchQuery] = useState("");
+  const [loEntityFilter, setLoEntityFilter] = useState("ALL");
+  const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
 
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
@@ -495,7 +506,7 @@ export default function DashboardClient({ user }: { user: any }) {
   };
 
   const filteredTasksToDisplay = tasks.filter(t => {
-    // 1. Status Filter
+    // 1. Status Filter (Metric Cards)
     let statusMatch = true;
     if (activeFilter === 'PENDING_ACTION') statusMatch = t.taskStatus !== "Completed";
     if (activeFilter === 'PENDING_REVIEW') statusMatch = t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner";
@@ -519,12 +530,114 @@ export default function DashboardClient({ user }: { user: any }) {
       }
     }
 
-    return statusMatch && dateMatch;
+    // 3. Search Query
+    let searchMatch = true;
+    if (taskSearchQuery) {
+      const q = taskSearchQuery.toLowerCase();
+      searchMatch = 
+        t.taskName.toLowerCase().includes(q) || 
+        t.entityName.toLowerCase().includes(q) || 
+        t.ownerName.toLowerCase().includes(q) ||
+        (t.reviewerName || "").toLowerCase().includes(q);
+    }
+
+    // 4. Dropdown Filters
+    let dropdownMatch = true;
+    if (taskEntityFilter !== "ALL" && t.entityName !== taskEntityFilter) dropdownMatch = false;
+    if (taskOwnerFilter !== "ALL" && t.ownerName !== taskOwnerFilter) dropdownMatch = false;
+    if (taskStatusFilter !== "ALL" && t.taskStatus !== taskStatusFilter) dropdownMatch = false;
+
+    return statusMatch && dateMatch && searchMatch && dropdownMatch;
   });
 
+  // Sorting logic for Tasks
+  const sortedTasks = [...filteredTasksToDisplay].sort((a, b) => {
+    if (!taskSortConfig) return 0;
+    const { key, direction } = taskSortConfig;
+    let valA = a[key];
+    let valB = b[key];
+
+    if (valA === null) valA = "";
+    if (valB === null) valB = "";
+
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Unique values for task filters
+  const uniqueTaskEntities = Array.from(new Set(tasks.map(t => t.entityName))).sort();
+  const uniqueTaskOwners = Array.from(new Set(tasks.map(t => t.ownerName))).sort();
+  const uniqueTaskStatuses = Array.from(new Set(tasks.map(t => t.taskStatus))).sort();
+
+  // Learning Opportunity Filtering and Sorting
+  const filteredLOsToDisplay = los.filter(lo => {
+    // 1. Metric Filter (My Reports / My Learnings)
+    let typeMatch = true;
+    if (loActiveFilter === 'REPORTS') {
+      const myName = EMAIL_TO_NAME[user?.email || ''] || user?.name;
+      typeMatch = lo.identifiedBy === myName;
+    } else if (loActiveFilter === 'LEARNINGS') {
+      const myName = EMAIL_TO_NAME[user?.email || ''] || user?.name;
+      typeMatch = lo.committedBy === myName;
+    }
+
+    // 2. Search Query
+    let searchMatch = true;
+    if (loSearchQuery) {
+      const q = loSearchQuery.toLowerCase();
+      searchMatch = 
+        lo.learningOpportunity.toLowerCase().includes(q) || 
+        lo.entity.toLowerCase().includes(q) || 
+        lo.identifiedBy.toLowerCase().includes(q) ||
+        lo.committedBy.toLowerCase().includes(q) ||
+        (lo.comments || "").toLowerCase().includes(q);
+    }
+
+    // 3. Entity Filter
+    let entityMatch = true;
+    if (loEntityFilter !== "ALL" && lo.entity !== loEntityFilter) entityMatch = false;
+
+    return typeMatch && searchMatch && entityMatch;
+  });
+
+  const sortedLOs = [...filteredLOsToDisplay].sort((a, b) => {
+    if (!loSortConfig) return 0;
+    const { key, direction } = loSortConfig;
+    let valA = a[key];
+    let valB = b[key];
+
+    if (valA === null) valA = "";
+    if (valB === null) valB = "";
+
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const uniqueLOEntities = Array.from(new Set(los.map(l => l.entity))).sort();
+
+  const handleTaskSort = (key: keyof Task) => {
+    setTaskSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const handleLOSort = (key: keyof LearningOpportunity) => {
+    setLoSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
   // Pagination Logic
-  const totalPages = Math.ceil(filteredTasksToDisplay.length / itemsPerPage);
-  const paginatedTasks = filteredTasksToDisplay.slice(
+  const totalPages = Math.ceil(sortedTasks.length / itemsPerPage);
+  const paginatedTasks = sortedTasks.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -532,74 +645,101 @@ export default function DashboardClient({ user }: { user: any }) {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, startDate, endDate, itemsPerPage]);
+  }, [activeFilter, startDate, endDate, itemsPerPage, taskSearchQuery, taskEntityFilter, taskOwnerFilter, taskStatusFilter]);
 
   // Export Handlers
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Tasks");
 
-    // Add Title
-    worksheet.mergeCells('A1:M2');
+    // Row 1: Main Title (Dark Blue background, White text)
+    worksheet.mergeCells('A1:Q1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'INTELLICAR TELEMATICS - FINANCE TASK MANAGEMENT';
-    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } }; // Blue color
+    titleCell.value = 'ITPL - Finance Task Management';
+    titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const dateStr = `${now.getDate()}-${MONTHS[now.getMonth()]}-${now.getFullYear()}`;
+    
+    // Row 2: Subtitle (Light Blue background, Italicized Blue text)
+    worksheet.mergeCells('A2:Q2');
+    const subCell = worksheet.getCell('A2');
+    subCell.value = `Task Report - As of ${dateStr}`;
+    subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF3B5998' } };
+    subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; 
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
     // Define Columns and Widths
     worksheet.columns = [
-      { key: 'id', width: 8 },
-      { key: 'createdAt', width: 20 },
-      { key: 'taskName', width: 45 },
-      { key: 'entity', width: 25 },
-      { key: 'owner', width: 25 },
-      { key: 'dueDate', width: 15 },
-      { key: 'completionDate', width: 18 },
-      { key: 'taskStatus', width: 18 },
-      { key: 'reviewer', width: 25 },
-      { key: 'reviewStatus', width: 25 },
-      { key: 'reviewDate', width: 18 },
-      { key: 'ownerComments', width: 50 },
-      { key: 'reviewerComments', width: 50 }
+      { width: 8 },  // SI No
+      { width: 20 }, // Timestamp
+      { width: 45 }, // Task Name
+      { width: 25 }, // Entity
+      { width: 20 }, // Type
+      { width: 20 }, // Department
+      { width: 20 }, // Requested By
+      { width: 25 }, // Owner
+      { width: 18 }, // Due Date
+      { width: 18 }, // Completion Date
+      { width: 18 }, // Status
+      { width: 25 }, // Reviewer
+      { width: 25 }, // Review Status
+      { width: 18 }, // Review Date
+      { width: 40 }, // Owner Comments
+      { width: 40 }, // Reviewer Comments
+      { width: 30 }  // Mail Link
     ];
 
-    // Style Headers (Row 3)
+    // Row 3: Column Headers (Dark Blue background, White text)
     const headerRow = worksheet.getRow(3);
-    headerRow.values = [
-      'ID', 'Created At', 'Task Name', 'Entity', 'Owner', 'Due Date', 'Completion Date', 
-      'Task Status', 'Reviewer', 'Review Status', 'Review Date', 'Owner Comments', 'Reviewer Comments'
+    const headers = [
+      'SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 
+      'Department', 'Requested By', 'Owner', 'Due Date', 
+      'Completion Date', 'Status', 'Reviewer', 'Review Status', 
+      'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link'
     ];
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } }; // Slate 600
-    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
     
-    // Add AutoFilter
-    worksheet.autoFilter = 'A3:M3';
-
-    // Add Data
-    filteredTasksToDisplay.forEach(t => {
-      const row = worksheet.addRow({
-        id: t.id,
-        createdAt: formatDateTime(t.createdAt),
-        taskName: t.taskName,
-        entity: t.entityName,
-        owner: t.ownerName,
-        dueDate: formatDate(t.dueDate),
-        completionDate: formatDate(t.completionDate),
-        taskStatus: t.taskStatus,
-        reviewer: t.reviewerName,
-        reviewStatus: t.reviewStatus,
-        reviewDate: formatDate(t.reviewCompletionDate),
-        ownerComments: t.ownerComments || "",
-        reviewerComments: t.reviewerComments || ""
-      });
-      row.alignment = { vertical: 'middle', wrapText: true };
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+      };
     });
 
-    // Add Borders to all active cells
-    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      row.eachCell({ includeEmpty: false }, (cell) => {
+    // Add Data
+    sortedTasks.forEach((t, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        formatDateTime(t.createdAt),
+        t.taskName,
+        t.entityName,
+        t.taskType,
+        t.departmentName,
+        t.requestFrom,
+        t.ownerName,
+        formatDate(t.dueDate),
+        formatDate(t.completionDate),
+        t.taskStatus,
+        t.reviewerName,
+        t.reviewStatus,
+        formatDate(t.reviewCompletionDate),
+        t.ownerComments || "",
+        t.reviewerComments || "",
+        t.mailLink || ""
+      ]);
+      row.alignment = { vertical: 'middle', wrapText: true };
+      row.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 10 };
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -677,7 +817,7 @@ export default function DashboardClient({ user }: { user: any }) {
     });
 
     // Add Data rows
-    los.forEach((lo, index) => {
+    sortedLOs.forEach((lo, index) => {
       const row = worksheet.addRow([
         index + 1,
         formatDateTime(lo.createdAt),
@@ -716,7 +856,7 @@ export default function DashboardClient({ user }: { user: any }) {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
     const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Task Status", "Reviewer", "Rev. Status"];
-    const tableRows = filteredTasksToDisplay.map(t => [
+    const tableRows = sortedTasks.map(t => [
       t.id,
       t.taskName,
       t.entityName,
@@ -899,26 +1039,62 @@ export default function DashboardClient({ user }: { user: any }) {
             )}
           </div>
 
-          {/* Export Buttons */}
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button 
-              onClick={exportToExcel}
-              style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#16a34a", padding: "8px 16px", borderRadius: "12px", border: "1px solid #bbf7d0", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", transition: "all 0.2s" }}
-              onMouseOver={e => e.currentTarget.style.background = "#f0fdf4"}
-              onMouseOut={e => e.currentTarget.style.background = "white"}
-            >
-              <FileSpreadsheet size={16} /> Export Excel
-            </button>
-            <button 
-              onClick={exportToPDF}
-              style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#dc2626", padding: "8px 16px", borderRadius: "12px", border: "1px solid #fecaca", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", transition: "all 0.2s" }}
-              onMouseOver={e => e.currentTarget.style.background = "#fef2f2"}
-              onMouseOut={e => e.currentTarget.style.background = "white"}
-            >
-              <FileText size={16} /> Export PDF
-            </button>
+          {/* Filter Bar */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: "white", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", marginBottom: "16px", alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
+              <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={18} />
+              <input 
+                type="text" 
+                placeholder="Search tasks, entities, owners..." 
+                value={taskSearchQuery}
+                onChange={e => setTaskSearchQuery(e.target.value)}
+                style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc" }} 
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <select 
+                value={taskEntityFilter} 
+                onChange={e => setTaskEntityFilter(e.target.value)}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
+              >
+                <option value="ALL">All Entities</option>
+                {uniqueTaskEntities.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+
+              <select 
+                value={taskOwnerFilter} 
+                onChange={e => setTaskOwnerFilter(e.target.value)}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
+              >
+                <option value="ALL">All Owners</option>
+                {uniqueTaskOwners.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+
+              <select 
+                value={taskStatusFilter} 
+                onChange={e => setTaskStatusFilter(e.target.value)}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
+              >
+                <option value="ALL">All Statuses</option>
+                {uniqueTaskStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rows:</span>
+                <select 
+                  value={itemsPerPage} 
+                  onChange={e => setItemsPerPage(Number(e.target.value))}
+                  style={{ border: "none", background: "transparent", fontWeight: 700, color: "#2563eb", outline: "none", cursor: "pointer" }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
 
         {/* Data Table */}
         <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", overflow: "hidden" }}>
@@ -926,14 +1102,46 @@ export default function DashboardClient({ user }: { user: any }) {
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>ID</th>
-                  <th style={thStyle}>Created At</th>
-                  <th style={thStyle}>Task Name</th>
-                  <th style={thStyle}>Entity</th>
-                  <th style={thStyle}>Owner</th>
-                  <th style={thStyle}>Due Date</th>
-                  <th style={thStyle}>Completion Date</th>
-                  <th style={thStyle}>Task Status</th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('id')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      ID {taskSortConfig?.key === 'id' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('createdAt')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Created At {taskSortConfig?.key === 'createdAt' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('entityName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Entity {taskSortConfig?.key === 'entityName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Owner {taskSortConfig?.key === 'ownerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('dueDate')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Due Date {taskSortConfig?.key === 'dueDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('completionDate')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Completion Date {taskSortConfig?.key === 'completionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={thStyle}>Reviewer</th>
                   <th style={thStyle}>Review Status</th>
                   <th style={thStyle}>Review Date</th>
@@ -1215,9 +1423,27 @@ export default function DashboardClient({ user }: { user: any }) {
                     </button>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
-                    <FileSpreadsheet size={18} color="#059669" /> Export Excel
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ position: "relative", minWidth: "250px" }}>
+                    <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={16} />
+                    <input 
+                      type="text" 
+                      placeholder="Search LOs, entities, names..." 
+                      value={loSearchQuery}
+                      onChange={e => setLoSearchQuery(e.target.value)}
+                      style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
+                    />
+                  </div>
+                  <select 
+                    value={loEntityFilter} 
+                    onChange={e => setLoEntityFilter(e.target.value)}
+                    style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569" }}
+                  >
+                    <option value="ALL">All Entities</option>
+                    {uniqueLOEntities.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                  <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                    <FileSpreadsheet size={16} color="#059669" /> Export Excel
                   </button>
                 </div>
              </div>
@@ -1226,11 +1452,27 @@ export default function DashboardClient({ user }: { user: any }) {
                   <thead>
                     <tr>
                       <th style={thStyle}>SI No</th>
-                      <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Entity</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('entity')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Entity {loSortConfig?.key === 'entity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       <th style={thStyle}>Mistake / LO</th>
-                      <th style={thStyle}>Identified By</th>
-                      <th style={thStyle}>Committed By</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('identifiedBy')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('committedBy')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       <th style={thStyle}>Resolution</th>
                       <th style={thStyle}>Communication Mode</th>
                       <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
@@ -1242,13 +1484,7 @@ export default function DashboardClient({ user }: { user: any }) {
                     ) : los.length === 0 ? (
                       <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No Learning Opportunities recorded.</td></tr>
                     ) : (
-                      los.filter(lo => {
-                        if (loActiveFilter === 'ALL') return true;
-                        const myName = EMAIL_TO_NAME[user?.email || ''] || user?.name;
-                        if (loActiveFilter === 'REPORTS') return lo.identifiedBy === myName;
-                        if (loActiveFilter === 'LEARNINGS') return lo.committedBy === myName;
-                        return true;
-                      }).map((lo, idx) => (
+                      sortedLOs.map((lo, idx) => (
                         <tr key={lo.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s" }} className="table-row">
                           <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>{idx + 1}</span></td>
                           <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDate(lo.dateOfIdentification)}</td>
