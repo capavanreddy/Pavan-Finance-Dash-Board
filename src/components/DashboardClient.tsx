@@ -137,6 +137,18 @@ export default function DashboardClient({ user }: { user: any }) {
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
   const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
   const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
+  const [showLOCaptureModal, setShowLOCaptureModal] = useState(false);
+  const [loCaptureForm, setLOCaptureForm] = useState({
+    taskId: 0,
+    entity: "",
+    dateOfIdentification: "",
+    identifiedBy: "",
+    committedBy: "",
+    learningOpportunity: "",
+    resolutionProvided: "",
+    modeOfCommunication: "Official Internal Mail",
+    comments: ""
+  });
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -582,6 +594,32 @@ export default function DashboardClient({ user }: { user: any }) {
       }
     } catch (error) {
       console.error("Failed to process edit for LO", error);
+    }
+  };
+
+  const handleSubmitLOCapture = async () => {
+    if (!loCaptureForm.learningOpportunity || !loCaptureForm.resolutionProvided) {
+      alert("Please fill in the Learning Opportunity and Resolution fields.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/lo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loCaptureForm),
+      });
+
+      if (res.ok) {
+        alert("Learning Opportunity captured successfully!");
+        setShowLOCaptureModal(false);
+        fetchLOs(); // Refresh LO list
+      } else {
+        alert("Failed to capture Learning Opportunity.");
+      }
+    } catch (error) {
+      console.error("Failed to submit LO capture", error);
+      alert("An error occurred while saving the LO.");
     }
   };
 
@@ -1399,6 +1437,7 @@ export default function DashboardClient({ user }: { user: any }) {
                   <th style={thStyle}>Reviewer</th>
                   <th style={thStyle}>Review Status</th>
                   <th style={thStyle}>Review Date</th>
+                  <th style={thStyle}>Capture LO?</th>
                   <th style={thStyle}>Owner Comments</th>
                   <th style={thStyle}>Reviewer Comments</th>
                   <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
@@ -1506,6 +1545,39 @@ export default function DashboardClient({ user }: { user: any }) {
                             {formatDate(task.reviewCompletionDate)}
                             {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
                           </span>
+                        )}
+                      </td>
+
+                      <td style={tdStyle}>
+                        {(isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required') ? (
+                          <select 
+                            onChange={(e) => {
+                              if (e.target.value === 'YES') {
+                                setLOCaptureForm({
+                                  ...loCaptureForm,
+                                  taskId: task.id,
+                                  entity: task.entityName,
+                                  dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
+                                  identifiedBy: task.reviewerName,
+                                  committedBy: task.ownerName,
+                                  learningOpportunity: "",
+                                  resolutionProvided: "",
+                                  modeOfCommunication: "Official Internal Mail",
+                                  comments: ""
+                                });
+                                setShowLOCaptureModal(true);
+                              }
+                            }}
+                            style={{ 
+                              padding: "4px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", 
+                              fontSize: "0.75rem", fontWeight: 600, background: "#f8fafc", color: "#475569", cursor: "pointer" 
+                            }}
+                          >
+                            <option value="NO">No</option>
+                            <option value="YES">Yes</option>
+                          </select>
+                        ) : (
+                          <span style={{ color: "#cbd5e1" }}>--</span>
                         )}
                       </td>
                       
@@ -1891,6 +1963,92 @@ export default function DashboardClient({ user }: { user: any }) {
             alert("LO entry updated successfully!");
           }} 
         />
+      )}
+      {showLOCaptureModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "600px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px", background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Capture Learning Opportunity</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.9 }}>Document mistakes and structured growth from review.</p>
+              </div>
+              <button onClick={() => setShowLOCaptureModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
+            </div>
+            
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Entity</label>
+                  <input type="text" readOnly value={loCaptureForm.entity} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Date of Identification</label>
+                  <input type="text" readOnly value={formatDate(loCaptureForm.dateOfIdentification)} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Identified By</label>
+                  <input type="text" readOnly value={loCaptureForm.identifiedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Committed By</label>
+                  <input type="text" readOnly value={loCaptureForm.committedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mistake / Learning Opportunity</label>
+                <textarea 
+                  rows={3} 
+                  placeholder="Describe the learning opportunity..."
+                  value={loCaptureForm.learningOpportunity}
+                  onChange={e => setLOCaptureForm({...loCaptureForm, learningOpportunity: e.target.value})}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Resolution Provided</label>
+                <textarea 
+                  rows={3} 
+                  placeholder="Describe the resolution/correction..."
+                  value={loCaptureForm.resolutionProvided}
+                  onChange={e => setLOCaptureForm({...loCaptureForm, resolutionProvided: e.target.value})}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mode of Communication</label>
+                <select 
+                  value={loCaptureForm.modeOfCommunication}
+                  onChange={e => setLOCaptureForm({...loCaptureForm, modeOfCommunication: e.target.value})}
+                  style={inputStyle}
+                >
+                  <option value="Official Internal Mail">Official Internal Mail</option>
+                  <option value="Unofficial / Personal Mail">Unofficial / Personal Mail</option>
+                  <option value="In Person / Verbal">In Person / Verbal</option>
+                  <option value="Teams Call">Teams Call</option>
+                  <option value="WhatsApp / Group Message">WhatsApp / Group Message</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                <button 
+                  onClick={() => setShowLOCaptureModal(false)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSubmitLOCapture}
+                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.2)" }}
+                >
+                  Submit LO to Tracker
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {showOptionsModal && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
