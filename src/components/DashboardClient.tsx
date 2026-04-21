@@ -557,8 +557,8 @@ export default function DashboardClient({ user }: { user: any }) {
     let valA = a[key];
     let valB = b[key];
 
-    if (valA === null) valA = "";
-    if (valB === null) valB = "";
+    if (valA === null || valA === undefined) valA = "";
+    if (valB === null || valB === undefined) valB = "";
 
     if (valA < valB) return direction === 'asc' ? -1 : 1;
     if (valA > valB) return direction === 'asc' ? 1 : -1;
@@ -607,8 +607,8 @@ export default function DashboardClient({ user }: { user: any }) {
     let valA = a[key];
     let valB = b[key];
 
-    if (valA === null) valA = "";
-    if (valB === null) valB = "";
+    if (valA === null || valA === undefined) valA = "";
+    if (valB === null || valB === undefined) valB = "";
 
     if (valA < valB) return direction === 'asc' ? -1 : 1;
     if (valA > valB) return direction === 'asc' ? 1 : -1;
