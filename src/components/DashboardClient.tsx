@@ -992,16 +992,9 @@ export default function DashboardClient({ user }: { user: any }) {
           
           <div style={{ height: "30px", width: "1px", background: "#f1f5f9" }}></div>
 
+
           <button onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.875rem" }}>
             <Sliders size={16} /> Options
-          </button>
-
-          <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
-            <Lightbulb size={16} /> Update LO
-          </button>
-
-          <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}>
-            <Plus size={16} /> New Task
           </button>
           
           <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>
@@ -1075,7 +1068,15 @@ export default function DashboardClient({ user }: { user: any }) {
               </p>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-               {/* Quick stats could go here */}
+              {activeView === 'TASKS' ? (
+                <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                  <Plus size={18} /> New Task
+                </button>
+              ) : (
+                <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#ffffff", color: "#0f172a", padding: "10px 20px", borderRadius: "12px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
+                  <Lightbulb size={18} color="#f59e0b" /> Update LO
+                </button>
+              )}
             </div>
           </div>
 
