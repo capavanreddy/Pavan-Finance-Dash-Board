@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
     const session = await getServerSession(authOptions);
@@ -43,7 +43,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           <p style="margin: 0; color: #7f1d1d; white-space: pre-wrap;">${comment || "No comment provided."}</p>
         </div>
 
-        <p style="margin-top: 24px; font-size: 13px; color: #64748b;">You can delete this task directly from the Master Admin Dashboard.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://intellicar-finance-team-task-manage-one.vercel.app/" style="background: #ef4444; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Login to Admin Dashboard</a>
+        </div>
+
+        <p style="margin-top: 24px; font-size: 13px; color: #64748b; text-align: center;">You can review and approve this request in the Admin Options panel.</p>
       </div>
     `;
 

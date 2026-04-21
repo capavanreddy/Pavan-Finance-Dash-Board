@@ -98,8 +98,7 @@ export async function POST(req: NextRequest) {
 
     const ownerEmail = getEmailFromName(ownerName);
     if (ownerEmail) {
-      const baseUrl = req.nextUrl.origin;
-      const dashboardUrl = `${baseUrl}/`;
+      const dashboardUrl = "https://intellicar-finance-team-task-manage-one.vercel.app/";
       
       const emailHtml = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
