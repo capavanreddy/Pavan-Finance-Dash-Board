@@ -1143,7 +1143,6 @@ export default function DashboardClient({ user }: { user: any }) {
                               )}
                             </div>
                           </td>
-</td>
                         </tr>
                       ))
                     )}
