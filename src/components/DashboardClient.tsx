@@ -970,34 +970,74 @@ export default function DashboardClient({ user }: { user: any }) {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc", color: "#0f172a" }}>
-      {/* Header */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", padding: "16px 32px", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <img src="/logo.png" alt="Intellicar Logo" style={{ height: "45px", width: "auto" }} />
-          <div>
-            <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600, color: "#0f172a", letterSpacing: "-0.025em" }}>Intellicar Telematics</h1>
-            <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>Finance Task Management</p>
-          </div>
+    <div style={{ height: "100vh", display: "flex", background: "#f8fafc", color: "#0f172a", overflow: "hidden" }}>
+      {/* Sidebar Navigation (Keka Style) */}
+      <nav style={{ width: "100px", background: "#0f172a", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "24px", flexShrink: 0, boxShadow: "4px 0 10px rgba(0,0,0,0.1)", zIndex: 10 }}>
+        {/* Logo at Top of Sidebar */}
+        <div style={{ marginBottom: "40px", textAlign: "center" }}>
+          <img src="/logo.png" alt="Logo" style={{ height: "35px", width: "auto" }} />
         </div>
-        <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#0f172a" }}>{user.name || "Master Admin"}</div>
-            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{user.email}</div>
+
+        {/* Sidebar Items */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
+          <button 
+            onClick={() => setActiveView('TASKS')}
+            style={{ 
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+              background: "transparent", border: "none", color: activeView === 'TASKS' ? "white" : "#94a3b8", 
+              cursor: "pointer", padding: "12px 0", transition: "all 0.2s", width: "100%",
+              borderLeft: activeView === 'TASKS' ? "4px solid #2563eb" : "4px solid transparent"
+            }}
+          >
+            <Home size={24} color={activeView === 'TASKS' ? "white" : "#94a3b8"} />
+            <span style={{ fontSize: "0.7rem", fontWeight: 500 }}>Tasks</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveView('LOS')}
+            style={{ 
+              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+              background: "transparent", border: "none", color: activeView === 'LOS' ? "white" : "#94a3b8", 
+              cursor: "pointer", padding: "12px 0", transition: "all 0.2s", width: "100%",
+              borderLeft: activeView === 'LOS' ? "4px solid #2563eb" : "4px solid transparent"
+            }}
+          >
+            <Lightbulb size={24} color={activeView === 'LOS' ? "white" : "#94a3b8"} />
+            <span style={{ fontSize: "0.7rem", fontWeight: 500, textAlign: "center", padding: "0 4px" }}>Learning</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Container (Header + Content) */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Header */}
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", padding: "16px 32px", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", height: "80px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div>
+              <h1 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600, color: "#0f172a", letterSpacing: "-0.025em" }}>
+                {activeView === 'TASKS' ? "Tasks Dashboard" : "Learning Opportunities"}
+              </h1>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b" }}>Intellicar Telematics • Finance Team</p>
+            </div>
           </div>
-          
-          <button onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} style={{ padding: "10px 20px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
-            <Sliders size={18} /> {isAdmin ? "Options" : "Settings"}
-          </button>
+          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{user.name || "Master Admin"}</div>
+              <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{user.email}</div>
+            </div>
+            
+            <button onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.875rem" }}>
+              <Sliders size={16} /> Options
+            </button>
 
-          <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", color: "#475569", padding: "10px 20px", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "#f8fafc"}>
-            <Lightbulb size={16} /> LO Update
-          </button>
+            <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
+              <Lightbulb size={16} /> Update LO
+            </button>
 
-          <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem", boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", transition: "all 0.2s" }} className="btn-primary">
-            <Plus size={16} /> New Task
-          </button>
-          <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", transition: "color 0.2s" }} className="btn-logout">
+            <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
+              <Plus size={16} /> New Task
+            </button>
+            <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
             <LogOut size={18} /> <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>Sign Out</span>
           </a>
         </div>
@@ -1049,37 +1089,7 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
         )}
 
-        {/* View Toggle */}
-        <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-          <button 
-            onClick={() => setActiveView('TASKS')}
-            style={{ 
-              padding: "8px 24px", borderRadius: "12px", fontSize: "0.875rem", fontWeight: 600, 
-              cursor: "pointer", transition: "all 0.2s",
-              background: activeView === 'TASKS' ? "#2563eb" : "white",
-              color: activeView === 'TASKS' ? "white" : "#475569",
-              border: "1px solid",
-              borderColor: activeView === 'TASKS' ? "#2563eb" : "#e2e8f0",
-              boxShadow: activeView === 'TASKS' ? "0 4px 6px -1px rgb(37 99 235 / 0.4)" : "none"
-            }}
-          >
-            Tasks Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveView('LOS')}
-            style={{ 
-              padding: "8px 24px", borderRadius: "12px", fontSize: "0.875rem", fontWeight: 600, 
-              cursor: "pointer", transition: "all 0.2s",
-              background: activeView === 'LOS' ? "#2563eb" : "white",
-              color: activeView === 'LOS' ? "white" : "#475569",
-              border: "1px solid",
-              borderColor: activeView === 'LOS' ? "#2563eb" : "#e2e8f0",
-              boxShadow: activeView === 'LOS' ? "0 4px 6px -1px rgb(37 99 235 / 0.4)" : "none"
-            }}
-          >
-            Learning Opportunities
-          </button>
-        </div>
+        <main style={{ flex: 1, padding: "32px", overflow: "auto" }}>
 
         {activeView === 'TASKS' ? (
           <>
@@ -2331,6 +2341,10 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
         </div>
       )}
+
+          </main>
+        </div>
+      </div>
 
       <style dangerouslySetInnerHTML={{__html: `
         .table-row:hover { background-color: #f8fafc; }
