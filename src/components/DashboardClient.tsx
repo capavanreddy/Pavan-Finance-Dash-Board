@@ -552,15 +552,22 @@ export default function DashboardClient({ user }: { user: any }) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Learning Opportunities");
 
-    // Add Title
-    worksheet.mergeCells('A1:J2');
+    // Row 1: Main Title
+    worksheet.mergeCells('A1:K1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'ITPL - FINANCE LEARNING OPPORTUNITY REPORT';
-    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+    titleCell.value = 'ITPL - Finance Learning Opportunity Report';
+    titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-    // Define Columns
+    // Row 2: Subtitle
+    worksheet.mergeCells('A2:K2');
+    const subCell = worksheet.getCell('A2');
+    subCell.value = `Consolidated Report - As of ${formatDate(new Date())}`;
+    subCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF3B5998' } };
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Define Columns for Row 3
     worksheet.columns = [
       { header: 'SI No', key: 'id', width: 8 },
       { header: 'Timestamp', key: 'createdAt', width: 20 },
@@ -575,13 +582,21 @@ export default function DashboardClient({ user }: { user: any }) {
       { header: 'Comments', key: 'comments', width: 40 }
     ];
 
-    // Style Headers
+    // Style Header Row (Row 3)
     const headerRow = worksheet.getRow(3);
     headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } };
-    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
 
-    // Add Data
+    // Add Data rows
     los.forEach((lo, index) => {
       const row = worksheet.addRow({
         id: index + 1,
@@ -593,15 +608,11 @@ export default function DashboardClient({ user }: { user: any }) {
         committedBy: lo.committedBy,
         resolutionProvided: lo.resolutionProvided,
         modeOfCommunication: lo.modeOfCommunication,
-        emailSub: lo.emailSub || "N/A",
-        comments: lo.comments || "N/A"
+        emailSub: lo.emailSub || "Not Applicable",
+        comments: lo.comments || "NA"
       });
       row.alignment = { vertical: 'middle', wrapText: true };
-    });
-
-    // Borders
-    worksheet.eachRow({ includeEmpty: false }, (row) => {
-      row.eachCell({ includeEmpty: false }, (cell) => {
+      row.eachCell((cell) => {
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },

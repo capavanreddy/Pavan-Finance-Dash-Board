@@ -55,17 +55,26 @@ function getLOStats(los: any[]) {
 }
 
 // Excel Generator Helper
-async function generateLOExcelBuffer(los: any[]) {
+async function generateLOExcelBuffer(los: any[], subtitle: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Learning Opportunities");
 
-  worksheet.mergeCells('A1:J2');
+  // Row 1: Main Title
+  worksheet.mergeCells('A1:K1');
   const titleCell = worksheet.getCell('A1');
-  titleCell.value = 'ITPL - FINANCE LEARNING OPPORTUNITY REPORT';
-  titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+  titleCell.value = 'ITPL - Finance Learning Opportunity Report';
+  titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
+  // Row 2: Subtitle
+  worksheet.mergeCells('A2:K2');
+  const subCell = worksheet.getCell('A2');
+  subCell.value = subtitle;
+  subCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF3B5998' } };
+  subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  // Define Columns for Row 3
   worksheet.columns = [
     { header: 'SI No', key: 'id', width: 8 },
     { header: 'Timestamp', key: 'createdAt', width: 20 },
@@ -80,11 +89,21 @@ async function generateLOExcelBuffer(los: any[]) {
     { header: 'Comments', key: 'comments', width: 40 }
   ];
 
+  // Style Header Row (Row 3)
   const headerRow = worksheet.getRow(3);
   headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } };
-  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
+  });
 
+  // Add Data rows
   los.forEach((lo, index) => {
     const row = worksheet.addRow({
       id: index + 1,
@@ -96,20 +115,17 @@ async function generateLOExcelBuffer(los: any[]) {
       committedBy: lo.committedBy,
       resolutionProvided: lo.resolutionProvided,
       modeOfCommunication: lo.modeOfCommunication,
-      emailSub: lo.emailSub || "N/A",
-      comments: lo.comments || "N/A"
+      emailSub: lo.emailSub || "Not Applicable",
+      comments: lo.comments || "NA"
     });
     row.alignment = { vertical: 'middle', wrapText: true };
-  });
-
-  worksheet.eachRow({ includeEmpty: false }, (row) => {
-    row.eachCell({ includeEmpty: false }, (cell) => {
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
-      };
+    row.eachCell((cell) => {
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
     });
   });
 
@@ -259,77 +275,55 @@ export async function GET(req: Request) {
         orderBy: { createdAt: "desc" }
       });
       const stats = getLOStats(allLOs);
+      const managerEmail = "pavanreddy@intellicar.in";
       
-      // Calculate Entity-wise Breakdown for MTD
+      // Generate two separate Excel buffers
+      const currentMonthSubtitle = `Current Month Report - ${referenceDate.toLocaleString('en-GB', { month: 'long', year: 'numeric' })}`;
+      const consolidatedSubtitle = `Consolidated Report - All Time (As of ${formatDate(referenceDate)})`;
+      
+      const currentMonthBuffer = await generateLOExcelBuffer(stats.mtdItems, currentMonthSubtitle);
+      const consolidatedBuffer = await generateLOExcelBuffer(allLOs, consolidatedSubtitle);
+
       const entityCounts: Record<string, number> = {};
       stats.mtdItems.forEach(lo => {
         entityCounts[lo.entity] = (entityCounts[lo.entity] || 0) + 1;
       });
 
-      const managerEmail = "pavanreddy@intellicar.in";
-      const excelBuffer = await generateLOExcelBuffer(allLOs);
-
       let loHtml = `
         <div style="background-color: #f4f7f9; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #334155;">
           <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            
-            <!-- Header -->
             <div style="background-color: #3b5998; padding: 30px; text-align: center; color: #ffffff;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Weekly Finance LO Report</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">
-                Report Period: ${formatDate(stats.startOfMonth)} to ${formatDate(referenceDate)}
-              </p>
+              <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">Report Period: ${formatDate(stats.startOfMonth)} to ${formatDate(referenceDate)}</p>
             </div>
-
-            <!-- Body -->
             <div style="padding: 40px;">
               <p style="font-size: 16px; margin-bottom: 20px;">Hi Team,</p>
-              <p style="font-size: 14px; line-height: 1.6; margin-bottom: 30px;">
-                Please find below the Learning Opportunity summary for the period <b>${formatDate(stats.startOfMonth)} to ${formatDate(referenceDate)}</b>. Detailed reports are attached.
-              </p>
-
-              <!-- Stats Boxes -->
+              <p style="font-size: 14px; line-height: 1.6; margin-bottom: 30px;">Please find below the Learning Opportunity summary. Detailed reports (Current Month & Consolidated) are attached.</p>
               <div style="display: table; width: 100%; border-spacing: 15px 0; margin-left: -15px; margin-right: -15px; margin-bottom: 40px;">
                 <div style="display: table-cell; width: 33.33%; background-color: #eff6ff; padding: 20px; text-align: center; border-radius: 8px; border: 1px solid #dbeafe;">
-                  <div style="font-size: 12px; color: #2563eb; text-transform: uppercase; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px;">This Week</div>
+                  <div style="font-size: 12px; color: #2563eb; text-transform: uppercase; font-weight: bold; margin-bottom: 10px;">This Week</div>
                   <div style="font-size: 36px; font-weight: 700; color: #1e3a8a;">${stats.weekly}</div>
                 </div>
                 <div style="display: table-cell; width: 33.33%; background-color: #ecfdf5; padding: 20px; text-align: center; border-radius: 8px; border: 1px solid #d1fae5;">
-                  <div style="font-size: 12px; color: #059669; text-transform: uppercase; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px;">Month To Date</div>
+                  <div style="font-size: 12px; color: #059669; text-transform: uppercase; font-weight: bold; margin-bottom: 10px;">Month To Date</div>
                   <div style="font-size: 36px; font-weight: 700; color: #064e3b;">${stats.mtd}</div>
                 </div>
                 <div style="display: table-cell; width: 33.33%; background-color: #f5f3ff; padding: 20px; text-align: center; border-radius: 8px; border: 1px solid #ede9fe;">
-                  <div style="font-size: 12px; color: #7c3aed; text-transform: uppercase; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px;">All Time</div>
+                  <div style="font-size: 12px; color: #7c3aed; text-transform: uppercase; font-weight: bold; margin-bottom: 10px;">All Time</div>
                   <div style="font-size: 36px; font-weight: 700; color: #4c1d95;">${stats.allTime}</div>
                 </div>
               </div>
-
-              <!-- Entity Table -->
               <h3 style="font-size: 14px; color: #2563eb; margin-bottom: 15px;">Entity-wise Breakdown (MTD)</h3>
               <table cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-                <thead>
-                  <tr style="background-color: #3b5998; color: #ffffff;">
-                    <th style="padding: 12px 15px; text-align: left; font-size: 13px;">Entity</th>
-                    <th style="padding: 12px 15px; text-align: right; font-size: 13px;">Count</th>
-                  </tr>
-                </thead>
+                <thead><tr style="background-color: #3b5998; color: #ffffff;"><th style="padding: 12px 15px; text-align: left; font-size: 13px;">Entity</th><th style="padding: 12px 15px; text-align: right; font-size: 13px;">Count</th></tr></thead>
                 <tbody>
                   ${Object.entries(entityCounts).length > 0 ? Object.entries(entityCounts).map(([entity, count]) => `
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                      <td style="padding: 12px 15px; font-size: 13px;">${entity}</td>
-                      <td style="padding: 12px 15px; text-align: right; font-size: 13px; font-weight: 600;">${count}</td>
-                    </tr>
-                  `).join('') : `
-                    <tr>
-                      <td colspan="2" style="padding: 20px; text-align: center; color: #64748b;">No data available for this period.</td>
-                    </tr>
-                  `}
+                    <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px 15px; font-size: 13px;">${entity}</td><td style="padding: 12px 15px; text-align: right; font-size: 13px; font-weight: 600;">${count}</td></tr>
+                  `).join('') : `<tr><td colspan="2" style="padding: 20px; text-align: center;">No data available.</td></tr>`}
                 </tbody>
               </table>
-
-              <!-- Footer -->
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
-                <p>Detailed reports attached. Current_Month_LO_Report.xlsx & Consolidated_LO_Report.xlsx</p>
+                <p>Detailed reports attached: <b>Current_Month_LO_Report.xlsx</b> & <b>Consolidated_LO_Report.xlsx</b></p>
                 <p style="margin-top: 5px;">This is an automated weekly report. Regards, Finance Team.</p>
               </div>
             </div>
@@ -344,13 +338,18 @@ export async function GET(req: Request) {
         attachments: [
           {
             filename: `Current_Month_LO_Report_${formatDate(referenceDate)}.xlsx`,
-            content: excelBuffer,
+            content: currentMonthBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          },
+          {
+            filename: `Consolidated_LO_Report_${formatDate(referenceDate)}.xlsx`,
+            content: consolidatedBuffer,
             contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
           }
         ]
       });
 
-      return NextResponse.json({ message: "LO Report sent successfully." });
+      return NextResponse.json({ message: "LO Report sent with dual attachments." });
     }
 
     const allTasks = await prisma.task.findMany({
