@@ -2341,15 +2341,14 @@ export default function DashboardClient({ user }: { user: any }) {
         </div>
       )}
 
-          </main>
-        </div>
-      </div>
-
       <style dangerouslySetInnerHTML={{__html: `
         .table-row:hover { background-color: #f8fafc; }
         .btn-primary:hover { background-color: #1d4ed8 !important; }
         .btn-logout:hover { color: #0f172a !important; }
       `}} />
+    </main>
+  </div>
+</div>
   );
 }
 
