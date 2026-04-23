@@ -2452,9 +2452,14 @@ export default function DashboardClient({ user }: { user: any }) {
                                 style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem", outline: "none" }}
                               />
                               <button 
+                                type="button"
                                 onClick={() => {
-                                  if (newManagerEmailInput && newManagerEmailInput.includes('@')) {
-                                    setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + newManagerEmailInput.trim()});
+                                  const val = newManagerEmailInput.trim();
+                                  if (val && val.includes('@')) {
+                                    setSettings(prev => {
+                                      const current = prev.managerEmail || "";
+                                      return {...prev, managerEmail: current.trim() ? `${current},${val}` : val};
+                                    });
                                     setNewManagerEmailInput("");
                                   }
                                 }}
@@ -2506,9 +2511,14 @@ export default function DashboardClient({ user }: { user: any }) {
                                 style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem", outline: "none" }}
                               />
                               <button 
+                                type="button"
                                 onClick={() => {
-                                  if (newLOEmailInput && newLOEmailInput.includes('@')) {
-                                    setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + newLOEmailInput.trim()});
+                                  const val = newLOEmailInput.trim();
+                                  if (val && val.includes('@')) {
+                                    setSettings(prev => {
+                                      const current = prev.loReportEmail || "";
+                                      return {...prev, loReportEmail: current.trim() ? `${current},${val}` : val};
+                                    });
                                     setNewLOEmailInput("");
                                   }
                                 }}
