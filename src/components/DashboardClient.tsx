@@ -1409,7 +1409,7 @@ export default function DashboardClient({ user }: { user: any }) {
 
         {activeView === 'TASKS' ? (
           activeSubView === 'MAIN' ? (
-          <>
+          <div>
         {/* Action Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
           
@@ -1902,7 +1902,7 @@ export default function DashboardClient({ user }: { user: any }) {
               </div>
             </div>
           )}
-        </>
+        </div>
         ) : (
           /* Placeholder for Other Departments */
           <div style={{ padding: "80px 20px", textAlign: "center", background: "white", borderRadius: "24px", border: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
