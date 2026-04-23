@@ -179,6 +179,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const [externalRequests, setExternalRequests] = useState<ExternalRequest[]>([]);
   const [extReqLoading, setExtReqLoading] = useState(false);
   const [showExtReqForm, setShowExtReqForm] = useState(false);
+  const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED'>('ALL');
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
@@ -207,16 +208,18 @@ export default function DashboardClient({ user }: { user: any }) {
       const target = event.target as HTMLElement;
       // If clicking a download button or inside a dropdown, don't close immediately here
       // or better: only close if target is NOT part of the dropdown logic
-      if (showTaskDownloadDropdown || showLODownloadDropdown) {
-        if (!target.closest('.download-container')) {
-          setShowTaskDownloadDropdown(false);
-          setShowLODownloadDropdown(false);
-        }
-      }
-    };
+      };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showTaskDownloadDropdown, showLODownloadDropdown]);
+
+  // Smart Permission Helpers
+  const matrixAllocators = JSON.parse(settings.allocationMatrix || '{}');
+  const userAllocatedDepts = Object.entries(matrixAllocators)
+    .filter(([_, email]) => email === user?.email)
+    .map(([dept, _]) => dept);
+  
+  const canAllocateAnything = isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0;
 
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
@@ -2121,7 +2124,62 @@ export default function DashboardClient({ user }: { user: any }) {
               <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: "#64748b" }}>Manage and track inter-departmental requests.</p>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
+                    {/* All Tab - Always visible for now or you can hide for users */}
+                    <button 
+                      onClick={() => setExtReqFilter('ALL')}
+                      style={{ 
+                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                        border: "1px solid", cursor: "pointer",
+                        background: extReqFilter === 'ALL' ? "#4f46e5" : "white",
+                        borderColor: extReqFilter === 'ALL' ? "#4f46e5" : "#e2e8f0",
+                        color: extReqFilter === 'ALL' ? "white" : "#64748b"
+                      }}
+                    >
+                      All
+                    </button>
+
+                    {/* Pending Allocation - ONLY for Admins/Allocators */}
+                    {canAllocateAnything && (
+                      <button 
+                        onClick={() => setExtReqFilter('ALLOCATION')}
+                        style={{ 
+                          padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                          border: "1px solid", cursor: "pointer",
+                          background: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "white",
+                          borderColor: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "#e2e8f0",
+                          color: extReqFilter === 'ALLOCATION' ? "white" : "#64748b"
+                        }}
+                      >
+                        Pending Allocation (Finance)
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => setExtReqFilter('PROCESS')}
+                      style={{ 
+                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                        border: "1px solid", cursor: "pointer",
+                        background: extReqFilter === 'PROCESS' ? "#3b82f6" : "white",
+                        borderColor: extReqFilter === 'PROCESS' ? "#3b82f6" : "#e2e8f0",
+                        color: extReqFilter === 'PROCESS' ? "white" : "#64748b"
+                      }}
+                    >
+                      Under Process
+                    </button>
+                    <button 
+                      onClick={() => setExtReqFilter('PROCESSED')}
+                      style={{ 
+                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                        border: "1px solid", cursor: "pointer",
+                        background: extReqFilter === 'PROCESSED' ? "#10b981" : "white",
+                        borderColor: extReqFilter === 'PROCESSED' ? "#10b981" : "#e2e8f0",
+                        color: extReqFilter === 'PROCESSED' ? "white" : "#64748b"
+                      }}
+                    >
+                      Processed
+                    </button>
+                  </div>
                 </div>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
@@ -2147,12 +2205,47 @@ export default function DashboardClient({ user }: { user: any }) {
                   <tbody>
                     {extReqLoading ? (
                       <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
-                    ) : externalRequests.length === 0 ? (
+                    ) : externalRequests.filter(r => {
+                      // GLOBAL VISIBILITY RULE
+                      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
+                      const isRelevantToUser = r.requestFromEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+                      
+                      if (!isPrimaryAdmin && !isRelevantToUser) return false;
+
+                      // TAB FILTERS
+                      if (extReqFilter === 'ALLOCATION') {
+                        // If Admin/Global, show all pending. If Matrix Allocator, show only their depts.
+                        if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
+                        return r.status !== 'Processed' && r.status !== 'Under Process';
+                      }
+                      if (extReqFilter === 'PROCESS') {
+                        if (!canAllocateAnything) return r.status !== 'Processed';
+                        return r.status === 'Under Process';
+                      }
+                      if (extReqFilter === 'PROCESSED') return r.status === 'Processed';
+                      return true;
+                    }).length === 0 ? (
                       <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
-                      externalRequests.map((req, idx) => {
+                      externalRequests.filter(r => {
+                        const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
+                        const isRelevantToUser = r.requestFromEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+                        
+                        if (!isPrimaryAdmin && !isRelevantToUser) return false;
+
+                        if (extReqFilter === 'ALLOCATION') {
+                          if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
+                          return r.status !== 'Processed' && r.status !== 'Under Process';
+                        }
+                        if (extReqFilter === 'PROCESS') {
+                          if (!canAllocateAnything) return r.status !== 'Processed';
+                          return r.status === 'Under Process';
+                        }
+                        if (extReqFilter === 'PROCESSED') return r.status === 'Processed';
+                        return true;
+                      }).map((req, idx) => {
                         const matrix = JSON.parse(settings.allocationMatrix || '{}');
-                        const isAuthorizedAllocator = matrix[req.requestType] === user?.email || isAdmin;
+                        const isAuthorizedAllocator = matrix[req.requestType] === user?.email || isAdmin || (user as any).isAllocator;
                         
                         return (
                           <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -3227,6 +3320,7 @@ export default function DashboardClient({ user }: { user: any }) {
                                <th style={{ padding: "12px 8px" }}>Email</th>
                                <th style={{ padding: "12px 8px" }}>Department</th>
                                <th style={{ padding: "12px 8px" }}>Role</th>
+                               <th style={{ padding: "12px 8px", textAlign: "center" }}>Allocator</th>
                                <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                             </tr>
                           </thead>
@@ -3256,6 +3350,25 @@ export default function DashboardClient({ user }: { user: any }) {
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
                                   </select>
+                                </td>
+                                <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={(u as any).isAllocator || false}
+                                    onChange={async (e) => {
+                                      try {
+                                        const res = await fetch("/api/users", {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ userId: u.id, isAllocator: e.target.checked })
+                                        });
+                                        if (res.ok) fetchUsersList();
+                                      } catch (err) {
+                                        console.error("Failed to update allocator status", err);
+                                      }
+                                    }}
+                                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                  />
                                 </td>
                                 <td style={{ padding: "12px 8px", textAlign: "right" }}>
                                   <button 
