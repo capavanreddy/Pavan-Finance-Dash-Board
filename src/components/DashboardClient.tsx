@@ -530,11 +530,42 @@ export default function DashboardClient({ user }: { user: any }) {
         alert("Failed to bulk add users.");
       }
     } catch (error) {
-      console.error("Failed to bulk add users", error);
+      console.error("Bulk add failed", error);
     } finally {
       setUsersLoading(false);
     }
   };
+
+  const handleApproveUser = async (id: string) => {
+    if (!window.confirm("Approve this user for access?")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}/approve`, { method: "POST" });
+      if (res.ok) {
+        alert("User approved successfully!");
+        fetchUsersList();
+      } else {
+        alert("Failed to approve user.");
+      }
+    } catch (error) {
+      console.error("Approval failed", error);
+    }
+  };
+
+  const handleRejectUser = async (id: string) => {
+    if (!window.confirm("Reject and delete this access request?")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}/reject`, { method: "POST" });
+      if (res.ok) {
+        alert("Request rejected.");
+        fetchUsersList();
+      } else {
+        alert("Failed to reject request.");
+      }
+    } catch (error) {
+      console.error("Rejection failed", error);
+    }
+  };
+
   const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
       const res = await fetch("/api/users", {
@@ -3087,58 +3118,133 @@ export default function DashboardClient({ user }: { user: any }) {
 
                 {activeOptionsTab === 'USERS' && (
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                      <h3 style={{ margin: 0 }}>User Management</h3>
+                    <h3 style={{ margin: "0 0 24px 0" }}>User Management</h3>
+                    
+                    {/* Pending Access Requests Section */}
+                    <div style={{ marginBottom: "40px", padding: "24px", background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ padding: "8px", background: "#fef3c7", borderRadius: "10px" }}>
+                            <UserCheck size={20} color="#d97706" />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Pending Access Requests</h4>
+                        </div>
+                        <span style={{ background: "#fef3c7", color: "#92400e", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700 }}>
+                          {usersList.filter(u => !(u as any).isApproved).length} WAITING
+                        </span>
+                      </div>
+
+                      {usersLoading ? (
+                        <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Loading requests...</p>
+                      ) : usersList.filter(u => !(u as any).isApproved).length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px", border: "1px dashed #e2e8f0", borderRadius: "12px", color: "#94a3b8" }}>
+                           No pending access requests at the moment.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Name</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Email</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Requested Dept</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {usersList.filter(u => !(u as any).isApproved).map(u => (
+                                <tr key={u.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                                  <td style={{ padding: "16px", fontWeight: 500 }}>{u.name}</td>
+                                  <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
+                                  <td style={{ padding: "16px" }}>
+                                    <span style={{ padding: "4px 10px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
+                                      {u.department}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "16px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                      <button 
+                                        onClick={() => handleApproveUser(u.id)}
+                                        style={{ padding: "6px 12px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button 
+                                        onClick={() => handleRejectUser(u.id)}
+                                        style={{ padding: "6px 12px", background: "white", color: "#ef4444", borderRadius: "8px", border: "1px solid #fee2e2", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
+                          <Users size={20} color="#166534" />
+                        </div>
+                        <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
+                      </div>
                       <button 
                         onClick={handleBulkAddUsers}
-                        style={{ background: "#2563eb", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px" }}
+                        style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
                       >
-                        <Users size={16} /> Import All Employees
+                        <Users size={14} /> Import All Employees
                       </button>
                     </div>
+
                     {usersLoading ? (
                       <p>Loading users...</p>
                     ) : (
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
-                             <th style={{ padding: "12px 8px" }}>Name</th>
-                             <th style={{ padding: "12px 8px" }}>Email</th>
-                             <th style={{ padding: "12px 8px" }}>Department</th>
-                             <th style={{ padding: "12px 8px" }}>Role</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {usersList.map(u => (
-                            <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                              <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
-                              <td style={{ padding: "12px 8px" }}>{u.email}</td>
-                               <td style={{ padding: "12px 8px" }}>
-                                <select 
-                                  value={u.department || ""}
-                                  onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
-                                  style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
-                                >
-                                  <option value="">Select Dept</option>
-                                  {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
-                                    <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td style={{ padding: "12px 8px" }}>
-                                <select 
-                                  value={u.role}
-                                  onChange={(e) => handleUpdateRole(u.id, e.target.value)}
-                                  style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                                >
-                                  <option value="USER">USER</option>
-                                  <option value="ADMIN">ADMIN</option>
-                                </select>
-                              </td>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                               <th style={{ padding: "12px 8px" }}>Name</th>
+                               <th style={{ padding: "12px 8px" }}>Email</th>
+                               <th style={{ padding: "12px 8px" }}>Department</th>
+                               <th style={{ padding: "12px 8px" }}>Role</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {usersList.filter(u => (u as any).isApproved !== false).map(u => (
+                              <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
+                                <td style={{ padding: "12px 8px" }}>{u.email}</td>
+                                 <td style={{ padding: "12px 8px" }}>
+                                  <select 
+                                    value={u.department || ""}
+                                    onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                  >
+                                    <option value="">Select Dept</option>
+                                    {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                                      <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td style={{ padding: "12px 8px" }}>
+                                  <select 
+                                    value={u.role}
+                                    onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                                  >
+                                    <option value="USER">USER</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                  </select>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </div>
                 )}

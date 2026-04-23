@@ -23,6 +23,10 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.password) {
           throw new Error("User not found");
         }
+
+        if (!(user as any).isApproved) {
+          throw new Error("Your account is pending admin approval.");
+        }
         
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
         

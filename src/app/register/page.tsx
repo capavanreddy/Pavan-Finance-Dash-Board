@@ -2,27 +2,37 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 
 export default function Register() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Default departments as defined in SystemSettings
+  const departments = ["Finance", "HR", "IT", "Operations", "Sales", "Marketing", "Admin", "Logistics", "Procurement"];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+    if (!department) {
+      setError("Please select your department.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, department }),
       });
 
       if (!res.ok) {
@@ -30,7 +40,7 @@ export default function Register() {
         throw new Error(data.message || "Failed to submit request");
       }
 
-      alert("Access request submitted successfully! You can now log in.");
+      alert("Your access request has been submitted successfully! Please wait for admin approval before logging in.");
       router.push("/login");
     } catch (err: any) {
       setError(err.message);
@@ -41,7 +51,7 @@ export default function Register() {
 
   return (
     <div className="register-container" style={{ minHeight: "100vh", display: "flex", background: "white", fontFamily: "'Inter', sans-serif" }}>
-      {/* Left Side: Hero Section (Same as Login for consistency) */}
+      {/* Left Side: Hero Section */}
       <div className="hero-side" style={{ 
         flex: 1.2, 
         position: 'relative'
@@ -63,7 +73,6 @@ export default function Register() {
           padding: '80px', 
           color: 'white' 
         }}>
-          {/* Logo in top-left corner */}
           <div style={{ position: 'absolute', top: '40px', left: '40px' }}>
             <img src="/logo.png" alt="Intellicar Logo" style={{ height: "48px", width: "auto" }} />
           </div>
@@ -94,7 +103,7 @@ export default function Register() {
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Request Access</h1>
-            <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Fill in your details to create your workspace account.</p>
+            <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Fill in your details and select your department.</p>
           </div>
           
           {error && (
@@ -103,35 +112,26 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
             <div>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Full Name</label>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Full Name</label>
               <div style={{ position: 'relative' }}>
-                <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <UserIcon size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input 
                   type="text" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
                   required
-                  style={{ 
-                    width: "100%", padding: "12px 12px 12px 44px", borderRadius: "12px", border: "1px solid #e2e8f0", 
-                    fontSize: '1rem', outline: 'none', transition: 'all 0.2s', background: 'white'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#2563eb';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Email Address</label>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Email Address</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input 
@@ -140,24 +140,36 @@ export default function Register() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@intellicar.in"
                   required
-                  style={{ 
-                    width: "100%", padding: "12px 12px 12px 44px", borderRadius: "12px", border: "1px solid #e2e8f0", 
-                    fontSize: '1rem', outline: 'none', transition: 'all 0.2s', background: 'white'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#2563eb';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Password</label>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Department</label>
+              <div style={{ position: 'relative' }}>
+                <Building2 size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <select 
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  required
+                  style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
+                   <ArrowRight size={14} style={{ transform: 'rotate(90deg)' }} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input 
@@ -166,18 +178,9 @@ export default function Register() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  style={{ 
-                    width: "100%", padding: "12px 44px 12px 44px", borderRadius: "12px", border: "1px solid #e2e8f0", 
-                    fontSize: '1rem', outline: 'none', transition: 'all 0.2s', background: 'white'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#2563eb';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                  style={{ ...inputStyle, paddingRight: '44px' }}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
                 <button 
                   type="button" 
@@ -199,8 +202,6 @@ export default function Register() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)', transition: 'all 0.2s'
               }}
-              onMouseOver={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseOut={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               {loading ? "Submitting..." : <>Request Access <ArrowRight size={18} /></>}
             </button>
@@ -224,3 +225,18 @@ export default function Register() {
     </div>
   );
 }
+
+const inputStyle = {
+  width: "100%", padding: "12px 12px 12px 44px", borderRadius: "12px", border: "1px solid #e2e8f0", 
+  fontSize: '1rem', outline: 'none', transition: 'all 0.2s', background: 'white'
+};
+
+const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = '#2563eb';
+  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.1)';
+};
+
+const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = '#e2e8f0';
+  e.currentTarget.style.boxShadow = 'none';
+};
