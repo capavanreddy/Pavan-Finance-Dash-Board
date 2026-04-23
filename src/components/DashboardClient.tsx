@@ -1452,20 +1452,20 @@ export default function DashboardClient({ user }: { user: any }) {
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
                 <span style={{ color: "#cbd5e1" }}>/</span>
                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
-                  {activeMainView === 'ADMIN_MATRIX' ? "Permissions" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development")}
+                  {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
                 </span>
               </div>
               <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
-                {activeMainView === 'ADMIN_MATRIX' ? "Matrix Module" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Requests from Other Department") : "Learning Opportunities")}
+                {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Requests from Other Department") : "Learning Opportunities"}
               </h2>
               <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
-                {activeMainView === 'ADMIN_MATRIX' ? "Configure cross-departmental access and task allocation rights." : (activeView === 'TASKS' ? 
+                {activeView === 'TASKS' ? 
                   (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
-                  : "Turning challenges into structured growth opportunities.")}
+                  : "Turning challenges into structured growth opportunities."}
               </p>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              ) : (activeView === 'TASKS' && activeSubView === 'MAIN') ? (
+              {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
                 <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                   <Plus size={18} /> New Task
                 </button>
