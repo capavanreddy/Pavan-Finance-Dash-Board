@@ -86,6 +86,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       updates.reviewerComments = data.reviewerComments;
     }
 
+    if (data.requestStatus !== undefined) {
+      updates.requestStatus = data.requestStatus;
+    }
+
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
       data: updates

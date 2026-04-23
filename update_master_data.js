@@ -18,8 +18,12 @@ async function main() {
     "CSM & Sales", "Finance", "HR and Admin", "External People"
   ].join(',');
 
-  const communicationModes = [
-    "Email", "Verbal Discussion", "Hangouts", "Whatsapp-IC Group"
+  const requestTypes = [
+    "Accounts Receivable", "Accounts Payable", "General & Administration", "Payroll"
+  ].join(',');
+
+  const requestStatuses = [
+    "Under Process", "Pending for Review", "Processed"
   ].join(',');
 
   const settings = await prisma.systemSettings.findFirst();
@@ -30,13 +34,21 @@ async function main() {
       data: {
         masterTaskTypes: taskTypes,
         masterDepartments: departments,
-        masterCommunicationModes: communicationModes
+        masterRequestTypes: requestTypes,
+        masterRequestStatuses: requestStatuses,
+        moduleAccessMatrix: JSON.stringify({
+          'Tasks': ['Finance'],
+          'Requests': ['Finance', 'HR and Admin', 'Operations', 'SW - Engineering', 'Manufacturing and Supply Chain', 'Field Operations Technicians', 'HW - Engineering', 'CSM & Sales', 'External People'],
+          'Learning': ['Finance']
+        }),
+        allocationMatrix: JSON.stringify({})
       }
     });
     console.log("Master data updated successfully in database.");
   } else {
     await prisma.systemSettings.create({
       data: {
+        id: 'singleton',
         reminderFrequency: 'DAILY',
         reminderTimes: '09:00,18:00',
         managerReportFrequency: 'DAILY',
@@ -45,8 +57,16 @@ async function main() {
         loReportTimes: '10:00',
         masterTaskTypes: taskTypes,
         masterDepartments: departments,
-        masterCommunicationModes: communicationModes,
-        masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL'
+        masterRequestTypes: requestTypes,
+        masterRequestStatuses: requestStatuses,
+        masterCommunicationModes: "Email,Verbal Discussion,Hangouts,Whatsapp-IC Group",
+        masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
+        moduleAccessMatrix: JSON.stringify({
+          'Tasks': ['Finance'],
+          'Requests': ['Finance', 'HR and Admin', 'Operations', 'SW - Engineering', 'Manufacturing and Supply Chain', 'Field Operations Technicians', 'HW - Engineering', 'CSM & Sales', 'External People'],
+          'Learning': ['Finance']
+        }),
+        allocationMatrix: JSON.stringify({})
       }
     });
     console.log("System settings created with new master data.");

@@ -7,22 +7,24 @@ type TaskFormProps = {
   onClose: () => void;
   onSuccess: () => void;
   settings: any;
+  initialData?: any;
 };
 
-export default function TaskForm({ onClose, onSuccess, settings }: TaskFormProps) {
+export default function TaskForm({ onClose, onSuccess, settings, initialData }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    taskName: "",
-    entityName: "",
-    taskType: "",
-    departmentName: "",
-    requestFrom: "",
+    taskName: initialData?.taskName || "",
+    entityName: initialData?.entityName || "",
+    taskType: initialData?.taskType || "",
+    departmentName: initialData?.departmentName || "",
+    requestFrom: initialData?.requestFrom || "",
     ownerName: "",
     reviewerName: "",
     dueDate: "",
     mailLink: "",
+    linkedRequestId: initialData?.linkedRequestId || null
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

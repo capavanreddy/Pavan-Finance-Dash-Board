@@ -1,90 +1,37 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
-    
-    if (userRole !== "ADMIN" && session?.user?.email !== "pavanreddy@intellicar.in") {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
-
-    let settings = await prisma.systemSettings.findUnique({
-      where: { id: "singleton" }
-    });
-
-    if (!settings) {
-      settings = await prisma.systemSettings.create({
-        data: { id: "singleton" }
-      });
-    }
-
-    return NextResponse.json(settings, { status: 200 });
+    const settings = await prisma.systemSettings.findFirst();
+    return NextResponse.json(settings);
   } catch (error) {
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function PATCH(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
-    
-    if (userRole !== "ADMIN" && session?.user?.email !== "pavanreddy@intellicar.in") {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    const body = await request.json();
+    const settings = await prisma.systemSettings.findFirst();
+
+    if (!settings) {
+      const newSettings = await prisma.systemSettings.create({
+        data: body
+      });
+      return NextResponse.json(newSettings);
     }
 
-    const body = await req.json();
-    const { 
-      reminderFrequency, 
-      reminderTimes, 
-      managerReportFrequency, 
-      managerReportTimes,
-      loReportFrequency,
-      loReportTimes,
-      managerEmail,
-      loReportEmail,
-      masterDepartments,
-      masterEntities,
-      masterTaskTypes
-    } = body;
-
-    const settings = await prisma.systemSettings.upsert({
-      where: { id: "singleton" },
-      update: {
-        reminderFrequency,
-        reminderTimes,
-        managerReportFrequency,
-        managerReportTimes,
-        loReportFrequency,
-        loReportTimes,
-        managerEmail,
-        loReportEmail,
-        masterDepartments,
-        masterEntities,
-        masterTaskTypes
-      },
-      create: {
-        id: "singleton",
-        reminderFrequency,
-        reminderTimes,
-        managerReportFrequency,
-        managerReportTimes,
-        loReportFrequency,
-        loReportTimes,
-        managerEmail,
-        loReportEmail,
-        masterDepartments,
-        masterEntities,
-        masterTaskTypes
-      }
+    const updatedSettings = await prisma.systemSettings.update({
+      where: { id: settings.id },
+      data: body
     });
 
-    return NextResponse.json(settings, { status: 200 });
+    return NextResponse.json(updatedSettings);
   } catch (error) {
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    console.error('Error updating system settings:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

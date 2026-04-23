@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
       reviewerName,
       dueDate,
       mailLink,
+      linkedRequestId,
     } = data;
 
     if (!taskName || !entityName || !taskType || !departmentName || !requestFrom || !ownerName) {
@@ -79,6 +80,9 @@ export async function POST(req: NextRequest) {
     // Default business logic
     const resolvedReviewer = reviewerName || "Not Applicable";
     const reviewStatus = resolvedReviewer === "Not Applicable" ? "Review Not Required" : "Task Pending From Owner";
+    
+    // Set default request status
+    const requestStatus = linkedRequestId ? "Pending" : "Not Applicable";
 
     const newTask = await prisma.task.create({
       data: {
@@ -93,6 +97,8 @@ export async function POST(req: NextRequest) {
         mailLink: mailLink || null,
         taskStatus: "Pending",
         reviewStatus,
+        linkedRequestId: linkedRequestId || null,
+        requestStatus,
       }
     });
 

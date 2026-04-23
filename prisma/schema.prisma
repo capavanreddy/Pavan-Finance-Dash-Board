@@ -45,6 +45,10 @@ model Task {
   editRequestReason   String?
   deleteRequested     Boolean   @default(false)
   deleteRequestReason String?
+  
+  // Link to External Request
+  linkedRequestId     Int?
+  requestStatus       String?   @default("Pending")
 }
 
 model LearningOpportunity {
@@ -68,6 +72,21 @@ model LearningOpportunity {
   createdByEmail      String?
 }
 
+model ExternalRequest {
+  id                  Int       @id @default(autoincrement())
+  requestFrom         String
+  requesterEmail      String
+  requestDate         DateTime  @default(now())
+  natureOfRequest     String
+  departmentName      String
+  requestType         String
+  status              String    @default("Under Process")
+  assignedAllocatorEmail String?
+  convertedTaskId     Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
 model SystemSettings {
   id                    String   @id @default("singleton")
   reminderFrequency     String   @default("DAILY")
@@ -87,4 +106,10 @@ model SystemSettings {
   masterEntities        String   @default("Intellicar-BLR,Intellicar-DEL,Intellicar-MUM,ITPL-Bangalore")
   masterTaskTypes       String   @default("Daily,Weekly,Monthly,Quarterly,Yearly,Statutory,Internal")
   masterCommunicationModes String  @default("Email,Verbal Discussion,Hangouts,Whatsapp-IC Group")
+  masterRequestTypes    String   @default("Accounts Receivable,Accounts Payable,General & Administration,Payroll")
+  masterRequestStatuses String   @default("Under Process,Pending for Review,Processed")
+
+  // Matrices (JSON strings)
+  moduleAccessMatrix    String   @default("{}")
+  allocationMatrix      String   @default("{}")
 }

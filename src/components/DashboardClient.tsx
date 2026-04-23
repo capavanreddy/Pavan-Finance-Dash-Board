@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import ExternalRequestForm from "@/components/ExternalRequestForm";
 
 type Task = {
   id: number;
@@ -32,6 +33,22 @@ type Task = {
   editRequestReason?: string | null;
   deleteRequested?: boolean;
   deleteRequestReason?: string | null;
+  linkedRequestId?: number | null;
+  requestStatus?: string | null;
+};
+
+type ExternalRequest = {
+  id: number;
+  requestFrom: string;
+  requesterEmail: string;
+  requestDate: string;
+  natureOfRequest: string;
+  departmentName: string;
+  requestType: string;
+  status: string;
+  assignedAllocatorEmail: string | null;
+  convertedTaskId: number | null;
+  createdAt: string;
 };
 
 type LearningOpportunity = {
@@ -100,9 +117,11 @@ export default function DashboardClient({ user }: { user: any }) {
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA'>('ACCOUNT');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES'>('ACCOUNT');
+  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION'>('ACCESS');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(true);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
+  const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
   const [settings, setSettings] = useState({
     reminderFrequency: 'DAILY',
     reminderTimes: '09:00,18:00',
@@ -115,7 +134,11 @@ export default function DashboardClient({ user }: { user: any }) {
     masterDepartments: 'SW - Engineering,Manufacturing and Supply Chain,Field Operations Technicians,HW - Engineering,Operations,CSM & Sales,Finance,HR and Admin,External People',
     masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
     masterTaskTypes: 'Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assesments & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
-    masterCommunicationModes: 'Email,Verbal Discussion,Hangouts,Whatsapp-IC Group'
+    masterCommunicationModes: 'Email,Verbal Discussion,Hangouts,Whatsapp-IC Group',
+    masterRequestTypes: 'Accounts Receivable,Accounts Payable,General & Administration,Payroll',
+    masterRequestStatuses: 'Under Process,Pending for Review,Processed',
+    moduleAccessMatrix: '{}',
+    allocationMatrix: '{}'
   });
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
@@ -151,6 +174,11 @@ export default function DashboardClient({ user }: { user: any }) {
   const [taskSortConfig, setTaskSortConfig] = useState<{ key: keyof Task; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
 
   const [loSearchQuery, setLoSearchQuery] = useState("");
+
+  // External Requests State
+  const [externalRequests, setExternalRequests] = useState<ExternalRequest[]>([]);
+  const [extReqLoading, setExtReqLoading] = useState(false);
+  const [showExtReqForm, setShowExtReqForm] = useState(false);
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
@@ -266,9 +294,30 @@ export default function DashboardClient({ user }: { user: any }) {
     }
   };
 
+  const fetchExternalRequests = async () => {
+    setExtReqLoading(true);
+    try {
+      const params = new URLSearchParams({
+        email: user?.email || '',
+        department: user?.department || '',
+        role: isAdmin ? 'ADMIN' : 'USER'
+      });
+      const res = await fetch(`/api/external-requests?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setExternalRequests(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch external requests", error);
+    } finally {
+      setExtReqLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
     fetchLOs();
+    fetchExternalRequests();
     if (isAdmin) {
       fetchUsersList();
       fetchSettings();
@@ -291,19 +340,46 @@ export default function DashboardClient({ user }: { user: any }) {
     setIsSavingSettings(true);
     try {
       const res = await fetch("/api/admin/settings", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
       });
       if (res.ok) {
-        alert("Settings saved successfully!");
+        alert("Matrix settings saved successfully!");
       } else {
-        alert("Failed to save settings.");
+        alert("Failed to save matrix settings.");
       }
     } catch (error) {
       console.error("Failed to save settings", error);
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const [preFilledTask, setPreFilledTask] = useState<any>(null);
+
+  const handleConvertToTask = (req: ExternalRequest) => {
+    setPreFilledTask({
+      taskName: req.natureOfRequest,
+      departmentName: req.departmentName,
+      requestFrom: req.requestFrom,
+      linkedRequestId: req.id
+    });
+    setShowForm(true);
+  };
+
+  const handleUpdateExtRequestStatus = async (id: number, status: string) => {
+    try {
+      const res = await fetch(`/api/external-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchExternalRequests();
+      }
+    } catch (error) {
+      console.error("Failed to update request status", error);
     }
   };
 
@@ -1240,7 +1316,8 @@ export default function DashboardClient({ user }: { user: any }) {
 
 
           <button onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.875rem" }}>
-            <Sliders size={16} /> Options
+            {isAdmin ? <ShieldCheck size={16} /> : <Sliders size={16} />}
+            {isAdmin ? "Control Center" : "Account Settings"}
           </button>
           
           <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>
@@ -1257,69 +1334,122 @@ export default function DashboardClient({ user }: { user: any }) {
           flexShrink: 0, zIndex: 90, borderRight: "1px solid rgba(255,255,255,0.05)"
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", padding: "0 12px" }}>
-            <div style={{ width: "100%" }}>
-              <button 
-                onClick={() => {
-                  setActiveView('TASKS');
-                  setIsTasksMenuOpen(!isTasksMenuOpen);
-                }}
-                style={{ 
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                  background: activeView === 'TASKS' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                  border: "none", color: activeView === 'TASKS' ? "#60a5fa" : "#94a3b8", 
-                  cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                  width: "100%", borderRadius: "16px",
-                  boxShadow: activeView === 'TASKS' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none",
-                  position: "relative"
-                }}
-              >
-                <Home size={24} color={activeView === 'TASKS' ? "#60a5fa" : "#94a3b8"} />
-                <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Tasks</span>
-                <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
-              </button>
-              
-              {isTasksMenuOpen && (
-                <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", padding: "0 8px" }}>
-                  <button 
-                    onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); }}
-                    style={{ 
-                      padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                      background: activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                      color: activeView === 'TASKS' && activeSubView === 'MAIN' ? "#60a5fa" : "#94a3b8",
-                      cursor: "pointer", transition: "all 0.2s"
-                    }}
-                  >
-                    Task Dashboard
-                  </button>
-                  <button 
-                    onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); }}
-                    style={{ 
-                      padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                      background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                      color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#94a3b8",
-                      cursor: "pointer", transition: "all 0.2s"
-                    }}
-                  >
-                    Requests from Other Dept
-                  </button>
-                </div>
-              )}
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", padding: "0 12px" }}>
+            {/* Logic: Check if module is allowed for user's department */}
+            {(() => {
+              const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+              const canSeeTasks = isAdmin || matrix['Tasks']?.includes(user?.department);
+              const canSeeRequests = isAdmin || matrix['Requests']?.includes(user?.department);
+              const canSeeLearning = isAdmin || matrix['Learning']?.includes(user?.department);
 
-            <button 
-              onClick={() => setActiveView('LOS')}
-              style={{ 
-                display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                background: activeView === 'LOS' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                border: "none", color: activeView === 'LOS' ? "#60a5fa" : "#94a3b8", 
-                cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                width: "100%", borderRadius: "16px",
-                boxShadow: activeView === 'LOS' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-              }}
-            >
-              <Lightbulb size={24} color={activeView === 'LOS' ? "#60a5fa" : "#94a3b8"} />
-              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
-            </button>
+              return (
+                <>
+                  {canSeeTasks && (
+                    <div style={{ width: "100%" }}>
+                      <button 
+                        onClick={() => {
+                          setActiveView('TASKS');
+                          setIsTasksMenuOpen(!isTasksMenuOpen);
+                          setActiveMainView('DASHBOARD');
+                        }}
+                        style={{ 
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                          background: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                          border: "none", color: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                          cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                          width: "100%", borderRadius: "16px",
+                          boxShadow: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none",
+                          position: "relative"
+                        }}
+                      >
+                        <Home size={24} color={activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Tasks</span>
+                        <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
+                      </button>
+                      
+                      {isTasksMenuOpen && (
+                        <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", padding: "0 8px" }}>
+                          <button 
+                            onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); }}
+                            style={{ 
+                              padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                              background: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                              color: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                              cursor: "pointer", transition: "all 0.2s"
+                            }}
+                          >
+                            Task Dashboard
+                          </button>
+                          {canSeeRequests && (
+                            <button 
+                              onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
+                              style={{ 
+                                padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                                cursor: "pointer", transition: "all 0.2s"
+                              }}
+                            >
+                              Requests from Other Dept
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!canSeeTasks && canSeeRequests && (
+                    <button 
+                      onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
+                      style={{ 
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                        background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                        border: "none", color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                        width: "100%", borderRadius: "16px"
+                      }}
+                    >
+                      <Users size={24} color={activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#94a3b8"} />
+                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em", textAlign: "center" }}>Other Requests</span>
+                    </button>
+                  )}
+
+                  {canSeeLearning && (
+                    <button 
+                      onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
+                      style={{ 
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                        background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                        border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                        width: "100%", borderRadius: "16px",
+                        boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                      }}
+                    >
+                      <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      onClick={() => setActiveMainView('ADMIN_MATRIX')}
+                      style={{ 
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                        background: activeMainView === 'ADMIN_MATRIX' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                        border: "none", color: activeMainView === 'ADMIN_MATRIX' ? "#60a5fa" : "#94a3b8", 
+                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                        width: "100%", borderRadius: "16px",
+                        boxShadow: activeMainView === 'ADMIN_MATRIX' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                      }}
+                    >
+                      <ShieldCheck size={24} color={activeMainView === 'ADMIN_MATRIX' ? "#60a5fa" : "#94a3b8"} />
+                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Matrix Module</span>
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </nav>
 
@@ -1339,20 +1469,28 @@ export default function DashboardClient({ user }: { user: any }) {
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
                 <span style={{ color: "#cbd5e1" }}>/</span>
                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
-                  {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
+                  {activeMainView === 'ADMIN_MATRIX' ? "Permissions" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development")}
                 </span>
               </div>
               <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
-                {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Requests from Other Department") : "Learning Opportunities"}
+                {activeMainView === 'ADMIN_MATRIX' ? "Matrix Module" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Requests from Other Department") : "Learning Opportunities")}
               </h2>
               <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
-                {activeView === 'TASKS' ? 
+                {activeMainView === 'ADMIN_MATRIX' ? "Configure cross-departmental access and task allocation rights." : (activeView === 'TASKS' ? 
                   (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
-                  : "Turning challenges into structured growth opportunities."}
+                  : "Turning challenges into structured growth opportunities.")}
               </p>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              {activeView === 'TASKS' ? (
+              {activeMainView === 'ADMIN_MATRIX' ? (
+                <button 
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: isSavingSettings ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(16, 185, 129, 0.3)" }}
+                >
+                  <ShieldCheck size={18} /> {isSavingSettings ? "Saving..." : "Save Matrix Changes"}
+                </button>
+              ) : activeView === 'TASKS' ? (
                 <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                   <Plus size={18} /> New Task
                 </button>
@@ -1636,6 +1774,7 @@ export default function DashboardClient({ user }: { user: any }) {
                   </th>
                   <th style={thStyle}>Reviewer</th>
                   <th style={thStyle}>Review Status</th>
+                  <th style={thStyle}>Request Status</th>
                   <th style={thStyle}>Review Date</th>
                   <th style={thStyle}>Capture LO?</th>
                   <th style={thStyle}>Owner Comments</th>
@@ -1719,6 +1858,44 @@ export default function DashboardClient({ user }: { user: any }) {
                           onUpdate={handleUpdate} 
                           disabled={isReviewerLocked || !canEditReviewFields}
                         />
+                      </td>
+
+                      <td style={tdStyle}>
+                        {task.linkedRequestId ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ 
+                              padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
+                              background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
+                              color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
+                              textAlign: "center"
+                            }}>
+                              {task.requestStatus || "Pending"}
+                            </span>
+                            {task.requestStatus !== 'Processed' && 
+                             (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required') && 
+                             isCurrentUserOwner && (
+                              <button 
+                                onClick={async () => {
+                                  // Update Task
+                                  await handleUpdate(task.id, "requestStatus", "Processed");
+                                  // Update External Request
+                                  if (task.linkedRequestId) {
+                                    await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
+                                  }
+                                  alert("Marked as Processed and Requester notified!");
+                                }}
+                                style={{ 
+                                  padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
+                                  color: "white", border: "none", borderRadius: "4px", cursor: "pointer" 
+                                }}
+                              >
+                                Mark Processed
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
+                        )}
                       </td>
 
                       <td 
@@ -1913,25 +2090,217 @@ export default function DashboardClient({ user }: { user: any }) {
           </div>
         )}
 
-        {/* Other Dept View */}
-        {activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
-          <div className="other-dept-view">
-          {/* Placeholder for Other Departments */}
-          <div style={{ padding: "80px 20px", textAlign: "center", background: "white", borderRadius: "24px", border: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ background: "#eff6ff", padding: "20px", borderRadius: "50%", marginBottom: "20px" }}>
-              <Users size={48} color="#3b82f6" />
+        {/* Admin Matrix View */}
+        {activeMainView === 'ADMIN_MATRIX' && (
+          <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+            <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button 
+                  onClick={() => setActiveMatrixTab('ACCESS')}
+                  style={{ 
+                    padding: "8px 20px", borderRadius: "12px", fontSize: "0.875rem", fontWeight: 600, 
+                    border: "1px solid", cursor: "pointer", transition: "all 0.2s",
+                    background: activeMatrixTab === 'ACCESS' ? "#4f46e5" : "white",
+                    borderColor: activeMatrixTab === 'ACCESS' ? "#4f46e5" : "#e2e8f0",
+                    color: activeMatrixTab === 'ACCESS' ? "white" : "#64748b"
+                  }}
+                >
+                  Matrix A: Module Access
+                </button>
+                <button 
+                  onClick={() => setActiveMatrixTab('ALLOCATION')}
+                  style={{ 
+                    padding: "8px 20px", borderRadius: "12px", fontSize: "0.875rem", fontWeight: 600, 
+                    border: "1px solid", cursor: "pointer", transition: "all 0.2s",
+                    background: activeMatrixTab === 'ALLOCATION' ? "#4f46e5" : "white",
+                    borderColor: activeMatrixTab === 'ALLOCATION' ? "#4f46e5" : "#e2e8f0",
+                    color: activeMatrixTab === 'ALLOCATION' ? "white" : "#64748b"
+                  }}
+                >
+                  Matrix B: Request Allocation
+                </button>
+              </div>
             </div>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", margin: "0 0 12px 0" }}>Cross-Departmental Collaboration</h3>
-            <p style={{ maxWidth: "500px", color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-              This module is being prepared to handle task requests from departments outside of Finance. 
-              Incoming requests will appear here for your review and action.
-            </p>
-            <div style={{ marginTop: "32px", display: "flex", gap: "12px" }}>
-              <span style={{ padding: "6px 12px", background: "#f1f5f9", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>Coming Soon</span>
-              <span style={{ padding: "6px 12px", background: "#f1f5f9", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>Multi-Dept Sync</span>
+
+            <div style={{ padding: "32px" }}>
+              {activeMatrixTab === 'ACCESS' && (
+                <div>
+                  <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", color: "#0f172a" }}>Module Access Matrix (Departments)</h4>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "16px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase" }}>Department</th>
+                          {['Tasks', 'Requests', 'Learning'].map(module => (
+                            <th key={module} style={{ padding: "16px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase" }}>{module}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {settings.masterDepartments.split(',').filter(d => d.trim()).map((dept) => {
+                          const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                          return (
+                            <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "16px", fontWeight: 600, color: "#1e293b" }}>{dept}</td>
+                              {['Tasks', 'Requests', 'Learning'].map(module => (
+                                <td key={module} style={{ padding: "16px", textAlign: "center" }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={matrix[module]?.includes(dept)} 
+                                    onChange={(e) => {
+                                      const current = matrix[module] || [];
+                                      const updated = e.target.checked 
+                                        ? [...current, dept] 
+                                        : current.filter((d: string) => d !== dept);
+                                      setSettings({
+                                        ...settings, 
+                                        moduleAccessMatrix: JSON.stringify({ ...matrix, [module]: updated })
+                                      });
+                                    }}
+                                    style={{ width: "20px", height: "20px", cursor: "pointer" }}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {activeMatrixTab === 'ALLOCATION' && (
+                <div>
+                  <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", color: "#0f172a" }}>Request Allocation Matrix (Finance Team)</h4>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "16px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase" }}>Request Type</th>
+                          <th style={{ padding: "16px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase" }}>Authorized Allocator</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {settings.masterRequestTypes.split(',').filter(t => t.trim()).map((type) => {
+                          const matrix = JSON.parse(settings.allocationMatrix || '{}');
+                          return (
+                            <tr key={type} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "16px", fontWeight: 600, color: "#1e293b" }}>{type}</td>
+                              <td style={{ padding: "16px" }}>
+                                <select 
+                                  value={matrix[type] || ""}
+                                  onChange={(e) => {
+                                    setSettings({
+                                      ...settings,
+                                      allocationMatrix: JSON.stringify({ ...matrix, [type]: e.target.value })
+                                    });
+                                  }}
+                                  style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0" }}
+                                >
+                                  <option value="">No Allocator Assigned</option>
+                                  {Object.entries(EMAIL_TO_NAME).map(([email, name]) => (
+                                    <option key={email} value={email}>{name} ({email})</option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Other Dept View (Requests Module) */}
+        {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
+          <div className="other-dept-view">
+            <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Collaboration Hub</h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: "#64748b" }}>Manage and track cross-departmental requests.</p>
+                </div>
+                <button 
+                  onClick={() => setShowExtReqForm(true)}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
+                >
+                  <Plus size={18} /> Submit New Request
+                </button>
+              </div>
+
+              <div style={{ padding: "32px", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc" }}>
+                      <th style={thStyle}>Sl No.</th>
+                      <th style={thStyle}>Request From</th>
+                      <th style={thStyle}>Date</th>
+                      <th style={thStyle}>Request Type</th>
+                      <th style={thStyle}>Nature of Request</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {extReqLoading ? (
+                      <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
+                    ) : externalRequests.length === 0 ? (
+                      <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
+                    ) : (
+                      externalRequests.map((req, idx) => {
+                        const matrix = JSON.parse(settings.allocationMatrix || '{}');
+                        const isAuthorizedAllocator = matrix[req.requestType] === user?.email || isAdmin;
+                        
+                        return (
+                          <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={tdStyle}>{idx + 1}</td>
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: 600, color: "#0f172a" }}>{req.requestFrom}</div>
+                              <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{req.departmentName}</div>
+                            </td>
+                            <td style={tdStyle}>{new Date(req.createdAt).toLocaleDateString()}</td>
+                            <td style={tdStyle}>
+                              <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
+                                {req.requestType}
+                              </span>
+                            </td>
+                            <td style={{ ...tdStyle, maxWidth: "300px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700,
+                                background: req.status === 'Processed' ? "#dcfce7" : req.status === 'Under Process' ? "#eff6ff" : "#fef3c7",
+                                color: req.status === 'Processed' ? "#15803d" : req.status === 'Under Process' ? "#1d4ed8" : "#b45309"
+                              }}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td style={tdStyle}>
+                              {req.status !== 'Processed' && isAuthorizedAllocator && (
+                                <button 
+                                  onClick={() => handleConvertToTask(req)}
+                                  style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+                                >
+                                  Convert to Task
+                                </button>
+                              )}
+                              {req.convertedTaskId && (
+                                <span style={{ fontSize: "0.7rem", color: "#64748b", fontStyle: "italic" }}>Task ID: {req.convertedTaskId}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* LO View */}
@@ -2182,9 +2551,14 @@ export default function DashboardClient({ user }: { user: any }) {
       {showForm && (
         <TaskForm 
           settings={settings}
-          onClose={() => setShowForm(false)} 
+          initialData={preFilledTask}
+          onClose={() => {
+            setShowForm(false);
+            setPreFilledTask(null);
+          }} 
           onSuccess={() => {
             setShowForm(false);
+            setPreFilledTask(null);
             fetchTasks();
           }} 
         />
@@ -2210,6 +2584,18 @@ export default function DashboardClient({ user }: { user: any }) {
             fetchLOs();
             alert("LO entry updated successfully!");
           }} 
+        />
+      )}
+      {showExtReqForm && (
+        <ExternalRequestForm 
+          settings={settings}
+          user={user}
+          onClose={() => setShowExtReqForm(false)}
+          onSuccess={() => {
+            setShowExtReqForm(false);
+            fetchExternalRequests();
+            alert("Your request has been submitted to Finance team.");
+          }}
         />
       )}
       {showLOCaptureModal && (
@@ -2300,9 +2686,12 @@ export default function DashboardClient({ user }: { user: any }) {
       {showOptionsModal && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
           <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "800px", height: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
-            <div style={{ padding: "24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>Admin Options</h2>
-              <button onClick={() => setShowOptionsModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem" }}>×</button>
+            <div style={{ padding: "24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {isAdmin ? <ShieldCheck size={24} color="#4f46e5" /> : <Sliders size={24} color="#4f46e5" />}
+                <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>{isAdmin ? "Control Center" : "Account Settings"}</h2>
+              </div>
+              <button onClick={() => setShowOptionsModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
             </div>
             
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
