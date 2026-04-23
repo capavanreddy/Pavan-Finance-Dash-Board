@@ -1389,7 +1389,7 @@ export default function DashboardClient({ user }: { user: any }) {
                                 cursor: "pointer", transition: "all 0.2s"
                               }}
                             >
-                              Requests from Other Dept
+                              Inter Dept Request
                             </button>
                           )}
                         </div>
@@ -1409,7 +1409,7 @@ export default function DashboardClient({ user }: { user: any }) {
                       }}
                     >
                       <Users size={24} color={activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em", textAlign: "center" }}>Other Requests</span>
+                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em", textAlign: "center" }}>Inter Dept Request</span>
                     </button>
                   )}
 
@@ -1456,7 +1456,7 @@ export default function DashboardClient({ user }: { user: any }) {
                 </span>
               </div>
               <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
-                {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Requests from Other Department") : "Learning Opportunities"}
+                {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
               </h2>
               <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
                 {activeView === 'TASKS' ? 
@@ -2073,8 +2073,8 @@ export default function DashboardClient({ user }: { user: any }) {
             <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
               <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Collaboration Hub</h3>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: "#64748b" }}>Manage and track cross-departmental requests.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: "#64748b" }}>Manage and track inter-departmental requests.</p>
                 </div>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
