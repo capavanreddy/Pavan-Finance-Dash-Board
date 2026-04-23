@@ -26,7 +26,7 @@ export default function Login() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password. Please try again.");
+        setError(res.error);
         setLoading(false);
       } else {
         router.push("/");
