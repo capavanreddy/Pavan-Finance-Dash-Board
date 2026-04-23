@@ -1872,6 +1872,7 @@ export default function DashboardClient({ user }: { user: any }) {
               </tbody>
             </table>
           </div>
+        </div>
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
