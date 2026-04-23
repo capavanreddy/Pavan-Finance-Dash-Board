@@ -73,9 +73,6 @@ export default function Register() {
           padding: '80px', 
           color: 'white' 
         }}>
-          <div style={{ position: 'absolute', top: '40px', left: '40px' }}>
-            <img src="/logo.png" alt="Intellicar Logo" style={{ height: "48px", width: "auto" }} />
-          </div>
 
           <h2 style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '24px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
             Join the Finance <br /><span style={{ color: '#60a5fa' }}>Hub.</span>
