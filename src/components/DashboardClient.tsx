@@ -566,6 +566,22 @@ export default function DashboardClient({ user }: { user: any }) {
     }
   };
 
+  const handleRemoveUser = async (id: string) => {
+    if (!window.confirm("Are you sure you want to PERMANENTLY remove this employee? This action cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("Employee removed successfully.");
+        fetchUsersList();
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to remove employee.");
+      }
+    } catch (error) {
+      console.error("Removal failed", error);
+    }
+  };
+
   const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
       const res = await fetch("/api/users", {
@@ -3130,13 +3146,13 @@ export default function DashboardClient({ user }: { user: any }) {
                           <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Pending Access Requests</h4>
                         </div>
                         <span style={{ background: "#fef3c7", color: "#92400e", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700 }}>
-                          {usersList.filter(u => !(u as any).isApproved).length} WAITING
+                          {usersList.filter(u => (u as any).isApproved === false).length} WAITING
                         </span>
                       </div>
 
                       {usersLoading ? (
                         <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Loading requests...</p>
-                      ) : usersList.filter(u => !(u as any).isApproved).length === 0 ? (
+                      ) : usersList.filter(u => (u as any).isApproved === false).length === 0 ? (
                         <div style={{ textAlign: "center", padding: "32px", border: "1px dashed #e2e8f0", borderRadius: "12px", color: "#94a3b8" }}>
                            No pending access requests at the moment.
                         </div>
@@ -3152,7 +3168,7 @@ export default function DashboardClient({ user }: { user: any }) {
                               </tr>
                             </thead>
                             <tbody>
-                              {usersList.filter(u => !(u as any).isApproved).map(u => (
+                              {usersList.filter(u => (u as any).isApproved === false).map(u => (
                                 <tr key={u.id} style={{ borderBottom: "1px solid #f8fafc" }}>
                                   <td style={{ padding: "16px", fontWeight: 500 }}>{u.name}</td>
                                   <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
@@ -3211,6 +3227,7 @@ export default function DashboardClient({ user }: { user: any }) {
                                <th style={{ padding: "12px 8px" }}>Email</th>
                                <th style={{ padding: "12px 8px" }}>Department</th>
                                <th style={{ padding: "12px 8px" }}>Role</th>
+                               <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -3239,6 +3256,17 @@ export default function DashboardClient({ user }: { user: any }) {
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
                                   </select>
+                                </td>
+                                <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                                  <button 
+                                    onClick={() => handleRemoveUser(u.id)}
+                                    style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+                                    title="Remove User"
+                                    onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                    onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
                                 </td>
                               </tr>
                             ))}
