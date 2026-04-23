@@ -2462,6 +2462,7 @@ export default function DashboardClient({ user }: { user: any }) {
                               >
                                 Add
                               </button>
+                            </div>
                           </div>
                         </div>
 
@@ -2515,6 +2516,7 @@ export default function DashboardClient({ user }: { user: any }) {
                               >
                                 Add
                               </button>
+                            </div>
                           </div>
                         </div>
                       </div>
