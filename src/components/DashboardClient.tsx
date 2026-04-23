@@ -181,6 +181,8 @@ export default function DashboardClient({ user }: { user: any }) {
   const [extReqLoading, setExtReqLoading] = useState(false);
   const [showExtReqForm, setShowExtReqForm] = useState(false);
   const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED'>('ALL');
+  const [extReqSearch, setExtReqSearch] = useState("");
+  const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
@@ -2191,6 +2193,42 @@ export default function DashboardClient({ user }: { user: any }) {
                 </button>
               </div>
 
+              {/* Enhanced Filter Bar */}
+              <div style={{ padding: "16px 32px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
+                  <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by name, email or request nature..." 
+                    value={extReqSearch}
+                    onChange={e => setExtReqSearch(e.target.value)}
+                    style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
+                  />
+                </div>
+                <select 
+                  value={extReqStatusFilter}
+                  onChange={e => setExtReqStatusFilter(e.target.value)}
+                  style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569", minWidth: "150px" }}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="New">Pending Allocation</option>
+                  <option value="Under Process">Under Process</option>
+                  <option value="Processed">Processed</option>
+                </select>
+                {canAllocateAnything && (
+                  <select 
+                    onChange={e => {
+                      if (e.target.value === 'ACTION') setExtReqFilter('ALLOCATION');
+                      else setExtReqFilter('ALL');
+                    }}
+                    style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569", minWidth: "150px" }}
+                  >
+                    <option value="ALL">All Actions</option>
+                    <option value="ACTION">Needs My Allocation</option>
+                  </select>
+                )}
+              </div>
+
               <div style={{ padding: "32px", overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -2214,9 +2252,21 @@ export default function DashboardClient({ user }: { user: any }) {
                       
                       if (!isPrimaryAdmin && !isRelevantToUser) return false;
 
+                      // SEARCH FILTER
+                      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
+
+                      // STATUS DROPDOWN FILTER
+                      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
+                        // Handle the 'New' case specifically if your status can be empty
+                        if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {
+                          // Allow
+                        } else {
+                          return false;
+                        }
+                      }
+
                       // TAB FILTERS
                       if (extReqFilter === 'ALLOCATION') {
-                        // If Admin/Global, show all pending. If Matrix Allocator, show only their depts.
                         if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
                         return r.status !== 'Processed' && r.status !== 'Under Process';
                       }
@@ -2232,8 +2282,11 @@ export default function DashboardClient({ user }: { user: any }) {
                       externalRequests.filter(r => {
                         const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
                         const isRelevantToUser = r.requestFromEmail === user?.email || userAllocatedDepts.includes(r.requestType);
-                        
                         if (!isPrimaryAdmin && !isRelevantToUser) return false;
+                        if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
+                        if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
+                           if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
+                        }
 
                         if (extReqFilter === 'ALLOCATION') {
                           if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
