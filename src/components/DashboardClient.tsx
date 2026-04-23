@@ -269,7 +269,6 @@ export default function DashboardClient({ user }: { user: any }) {
     setEndDate(toIsoDate(end));
   };
 
-  const isAdmin = user?.email === "pavanreddy@intellicar.in" || user?.role === "ADMIN";
 
   const fetchTasks = async () => {
     try {
