@@ -1407,9 +1407,8 @@ export default function DashboardClient({ user }: { user: any }) {
 
 
 
-        {activeView === 'TASKS' ? (
-          activeSubView === 'MAIN' ? (
-          <div>
+        {activeView === 'TASKS' && activeSubView === 'MAIN' && (
+          <div className="main-tasks-view">
         {/* Action Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
           
@@ -1902,8 +1901,10 @@ export default function DashboardClient({ user }: { user: any }) {
               </div>
             </div>
           )}
-        </div>
-        ) : (
+          </div>
+        )}
+
+        {activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
           /* Placeholder for Other Departments */
           <div style={{ padding: "80px 20px", textAlign: "center", background: "white", borderRadius: "24px", border: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <div style={{ background: "#eff6ff", padding: "20px", borderRadius: "50%", marginBottom: "20px" }}>
@@ -1919,8 +1920,10 @@ export default function DashboardClient({ user }: { user: any }) {
               <span style={{ padding: "6px 12px", background: "#f1f5f9", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>Multi-Dept Sync</span>
             </div>
           </div>
-        )
-        ) : (
+          </div>
+        )}
+
+        {activeView === 'LOS' && (
           /* LO View */
           <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
              <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
