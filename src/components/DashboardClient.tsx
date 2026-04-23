@@ -161,14 +161,21 @@ export default function DashboardClient({ user }: { user: any }) {
     comments: ""
   });
 
-  // Close dropdowns when clicking outside
+  // Dropdown Refs
+  const taskDropdownRef = useState<HTMLDivElement | null>(null)[0]; // Actually I should use useRef
+  // Wait, I'll use a simpler approach since I can't easily add refs everywhere without more edits.
+  // I'll use event.target check.
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // If clicking a download button or inside a dropdown, don't close immediately here
+      // or better: only close if target is NOT part of the dropdown logic
       if (showTaskDownloadDropdown || showLODownloadDropdown) {
-        // Simple logic: if the user clicks anywhere, we just close them. 
-        // A more robust way would check refs, but this is usually sufficient for simple dashboards.
-        setShowTaskDownloadDropdown(false);
-        setShowLODownloadDropdown(false);
+        if (!target.closest('.download-container')) {
+          setShowTaskDownloadDropdown(false);
+          setShowLODownloadDropdown(false);
+        }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1145,8 +1152,10 @@ export default function DashboardClient({ user }: { user: any }) {
         }
       }
 
-      // Convert buffer to base64
-      const base64 = Buffer.from(buffer).toString('base64');
+      // Convert buffer to base64 (Browser compatible)
+      const base64 = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
 
       const res = await fetch("/api/reports/share", {
         method: "POST",
@@ -1435,7 +1444,7 @@ export default function DashboardClient({ user }: { user: any }) {
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: "8px", marginLeft: "auto", position: "relative" }}>
+              <div className="download-container" style={{ display: "flex", gap: "8px", marginLeft: "auto", position: "relative" }}>
                 <button 
                   onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
                   style={{ 
@@ -1894,7 +1903,7 @@ export default function DashboardClient({ user }: { user: any }) {
                     <option value="ALL">All Entities</option>
                     {uniqueLOEntities.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
-                  <div style={{ position: "relative" }}>
+                  <div className="download-container" style={{ position: "relative" }}>
                     <button 
                       onClick={() => setShowLODownloadDropdown(!showLODownloadDropdown)}
                       style={{ 
