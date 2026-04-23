@@ -139,6 +139,8 @@ export default function DashboardClient({ user }: { user: any }) {
   const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS'>('ALL');
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [newManagerEmailInput, setNewManagerEmailInput] = useState("");
+  const [newLOEmailInput, setNewLOEmailInput] = useState("");
 
   // Sorting and Filtering State
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
@@ -2409,7 +2411,7 @@ export default function DashboardClient({ user }: { user: any }) {
                     <div style={{ marginBottom: "32px", padding: "20px", background: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd" }}>
                       <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#0369a1", fontWeight: 700 }}>Report Recipients</h4>
                       
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                         {/* Task Report Managers */}
                         <div>
                           <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600, color: "#475569" }}>Primary Emails</label>
@@ -2434,16 +2436,16 @@ export default function DashboardClient({ user }: { user: any }) {
                             </div>
                             <div style={{ display: "flex", gap: "8px" }}>
                               <input 
-                                id="add-primary-email"
                                 type="email" 
                                 placeholder="Add email..."
+                                value={newManagerEmailInput}
+                                onChange={(e) => setNewManagerEmailInput(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
                                     e.preventDefault();
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && val.includes('@')) {
-                                      setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + val});
-                                      e.currentTarget.value = "";
+                                    if (newManagerEmailInput && newManagerEmailInput.includes('@')) {
+                                      setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + newManagerEmailInput.trim()});
+                                      setNewManagerEmailInput("");
                                     }
                                   }
                                 }}
@@ -2451,20 +2453,16 @@ export default function DashboardClient({ user }: { user: any }) {
                               />
                               <button 
                                 onClick={() => {
-                                  const input = document.getElementById('add-primary-email') as HTMLInputElement;
-                                  const val = input.value.trim();
-                                  if (val && val.includes('@')) {
-                                    setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + val});
-                                    input.value = "";
+                                  if (newManagerEmailInput && newManagerEmailInput.includes('@')) {
+                                    setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + newManagerEmailInput.trim()});
+                                    setNewManagerEmailInput("");
                                   }
                                 }}
-                                style={{ background: "#2563eb", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                                style={{ background: "#2563eb", color: "white", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
                               >
                                 Add
                               </button>
-                            </div>
                           </div>
-                          <p style={{ margin: "8px 0 0 0", fontSize: "0.75rem", color: "#64748b" }}>Add multiple emails to receive reports.</p>
                         </div>
 
                         {/* LO Report Admins */}
@@ -2491,16 +2489,16 @@ export default function DashboardClient({ user }: { user: any }) {
                             </div>
                             <div style={{ display: "flex", gap: "8px" }}>
                               <input 
-                                id="add-lo-email"
                                 type="email" 
                                 placeholder="Add email..."
+                                value={newLOEmailInput}
+                                onChange={(e) => setNewLOEmailInput(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
                                     e.preventDefault();
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && val.includes('@')) {
-                                      setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + val});
-                                      e.currentTarget.value = "";
+                                    if (newLOEmailInput && newLOEmailInput.includes('@')) {
+                                      setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + newLOEmailInput.trim()});
+                                      setNewLOEmailInput("");
                                     }
                                   }
                                 }}
@@ -2508,20 +2506,16 @@ export default function DashboardClient({ user }: { user: any }) {
                               />
                               <button 
                                 onClick={() => {
-                                  const input = document.getElementById('add-lo-email') as HTMLInputElement;
-                                  const val = input.value.trim();
-                                  if (val && val.includes('@')) {
-                                    setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + val});
-                                    input.value = "";
+                                  if (newLOEmailInput && newLOEmailInput.includes('@')) {
+                                    setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + newLOEmailInput.trim()});
+                                    setNewLOEmailInput("");
                                   }
                                 }}
-                                style={{ background: "#7c3aed", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                                style={{ background: "#7c3aed", color: "white", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
                               >
                                 Add
                               </button>
-                            </div>
                           </div>
-                          <p style={{ margin: "8px 0 0 0", fontSize: "0.75rem", color: "#64748b" }}>Add multiple emails to receive LO reports.</p>
                         </div>
                       </div>
                     </div>
