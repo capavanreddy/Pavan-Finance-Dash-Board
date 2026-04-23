@@ -746,6 +746,7 @@ export default function DashboardClient({ user }: { user: any }) {
       const q = taskSearchQuery.toLowerCase();
       searchMatch = 
         t.taskName.toLowerCase().includes(q) || 
+        t.taskType.toLowerCase().includes(q) || 
         t.entityName.toLowerCase().includes(q) || 
         t.ownerName.toLowerCase().includes(q) ||
         (t.reviewerName || "").toLowerCase().includes(q);
@@ -1463,7 +1464,7 @@ export default function DashboardClient({ user }: { user: any }) {
               <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={18} />
               <input 
                 type="text" 
-                placeholder="Search tasks, entities, owners..." 
+                placeholder="Search tasks, types, entities, owners..." 
                 value={taskSearchQuery}
                 onChange={e => setTaskSearchQuery(e.target.value)}
                 style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc" }} 
@@ -1607,6 +1608,11 @@ export default function DashboardClient({ user }: { user: any }) {
                       Entity {taskSortConfig?.key === 'entityName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskType')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Type {taskSortConfig?.key === 'taskType' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Owner {taskSortConfig?.key === 'ownerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -1638,9 +1644,9 @@ export default function DashboardClient({ user }: { user: any }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={14} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={16} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
                 ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={14} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
+                  <tr><td colSpan={16} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
                     const currentUserName = EMAIL_TO_NAME[user?.email || ""];
@@ -1661,8 +1667,9 @@ export default function DashboardClient({ user }: { user: any }) {
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
                       <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
-                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "400px", maxWidth: "750px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>{task.entityName}</td>
+                      <td style={tdStyle}><span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>{task.taskType}</span></td>
                       <td style={tdStyle}>{task.ownerName}</td>
                       <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                       
