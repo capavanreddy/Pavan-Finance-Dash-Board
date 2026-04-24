@@ -208,6 +208,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingReq, setRejectingReq] = useState<ExternalRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [hoveredRejectId, setHoveredRejectId] = useState<number | null>(null);
 
   // Dropdown Refs
   const taskDropdownRef = useState<HTMLDivElement | null>(null)[0]; // Actually I should use useRef
@@ -2320,36 +2321,31 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <div>
                   <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
                   <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-                    {/* All Tab - Always visible for now or you can hide for users */}
+                    {/* All Tab */}
                     <button 
                       onClick={() => setExtReqFilter('ALL')}
                       style={{ 
                         padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
                         border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'ALL' ? "#4f46e5" : "white",
-                        borderColor: extReqFilter === 'ALL' ? "#4f46e5" : "#e2e8f0",
+                        background: extReqFilter === 'ALL' ? "#475569" : "white",
+                        borderColor: extReqFilter === 'ALL' ? "#475569" : "#e2e8f0",
                         color: extReqFilter === 'ALL' ? "white" : "#64748b"
                       }}
                     >
                       All
                     </button>
-
-                    {/* Pending Allocation - ONLY for Admins/Allocators */}
-                    {canAllocateAnything && (
-                      <button 
-                        onClick={() => setExtReqFilter('ALLOCATION')}
-                        style={{ 
-                          padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                          border: "1px solid", cursor: "pointer",
-                          background: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "white",
-                          borderColor: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "#e2e8f0",
-                          color: extReqFilter === 'ALLOCATION' ? "white" : "#64748b"
-                        }}
-                      >
-                        Pending Allocation (Finance)
-                      </button>
-                    )}
-
+                    <button 
+                      onClick={() => setExtReqFilter('ALLOCATION')}
+                      style={{ 
+                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                        border: "1px solid", cursor: "pointer",
+                        background: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "white",
+                        borderColor: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "#e2e8f0",
+                        color: extReqFilter === 'ALLOCATION' ? "white" : "#64748b"
+                      }}
+                    >
+                      Pending
+                    </button>
                     <button 
                       onClick={() => setExtReqFilter('PROCESS')}
                       style={{ 
@@ -2374,7 +2370,20 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     >
                       Processed
                     </button>
+                    <button 
+                      onClick={() => setExtReqFilter('REJECTED')}
+                      style={{ 
+                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
+                        border: "1px solid", cursor: "pointer",
+                        background: extReqFilter === 'REJECTED' ? "#ef4444" : "white",
+                        borderColor: extReqFilter === 'REJECTED' ? "#ef4444" : "#e2e8f0",
+                        color: extReqFilter === 'REJECTED' ? "white" : "#64748b"
+                      }}
+                    >
+                      Rejected
+                    </button>
                   </div>
+    </div>
                 </div>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
@@ -2491,16 +2500,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
                       if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
 
-                      if (extReqFilter === 'ALLOCATION') {
-                        if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
-                        return r.status !== 'Processed' && r.status !== 'Under Process';
-                      }
-                      if (extReqFilter === 'PROCESS') {
-                        if (!canAllocateAnything) return r.status !== 'Processed';
-                        return r.status === 'Under Process';
-                      }
-                      if (extReqFilter === 'PROCESSED') return r.status === 'Processed';
-                      return true;
+                        if (extReqFilter === 'ALLOCATION') {
+                          return r.status === 'Pending' || !r.status || r.status === 'New';
+                        }
+                        if (extReqFilter === 'PROCESS') {
+                          return r.status === 'Under Process';
+                        }
+                        if (extReqFilter === 'PROCESSED') {
+                          return r.status === 'Processed';
+                        }
+                        if (extReqFilter === 'REJECTED') {
+                          return r.status === 'Rejected';
+                        }
+                        return true;
                     }).length === 0 ? (
                       <tr><td colSpan={canAllocateAnything ? 7 : 6} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
@@ -2513,14 +2525,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
 
                         if (extReqFilter === 'ALLOCATION') {
-                          if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
-                          return r.status !== 'Processed' && r.status !== 'Under Process';
+                          return r.status === 'Pending' || !r.status || r.status === 'New';
                         }
                         if (extReqFilter === 'PROCESS') {
-                          if (!canAllocateAnything) return r.status !== 'Processed';
                           return r.status === 'Under Process';
                         }
-                        if (extReqFilter === 'PROCESSED') return r.status === 'Processed';
+                        if (extReqFilter === 'PROCESSED') {
+                          return r.status === 'Processed';
+                        }
+                        if (extReqFilter === 'REJECTED') {
+                          return r.status === 'Rejected';
+                        }
                         return true;
                       }).map((req, idx) => {
                         const matrix = JSON.parse(settings.allocationMatrix || '{}');
@@ -2541,13 +2556,56 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             </td>
                             <td style={{ ...tdStyle, maxWidth: "300px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
                             <td style={tdStyle}>
-                              <span style={{ 
-                                padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700,
-                                background: req.status === 'Processed' ? "#dcfce7" : req.status === 'Under Process' ? "#eff6ff" : req.status === 'Rejected' ? "#fef2f2" : "#fef3c7",
-                                color: req.status === 'Processed' ? "#15803d" : req.status === 'Under Process' ? "#1d4ed8" : req.status === 'Rejected' ? "#ef4444" : "#b45309"
-                              }}>
-                                {req.status}
-                              </span>
+                                {(!req.status || req.status === 'Pending' || req.status === 'New') && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5" }}>
+                                    Pending
+                                  </span>
+                                )}
+                                {req.status === 'Under Process' && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#eff6ff", fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", border: "1px solid #dbeafe" }}>
+                                    Under Process
+                                  </span>
+                                )}
+                                {req.status === 'Processed' && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#f0fdf4", fontSize: "0.75rem", fontWeight: 700, color: "#166534", border: "1px solid #dcfce7" }}>
+                                    Processed
+                                  </span>
+                                )}
+                                {req.status === 'Rejected' && (
+                                  <div 
+                                    style={{ position: "relative" }}
+                                    onMouseEnter={() => setHoveredRejectId(req.id)}
+                                    onMouseLeave={() => setHoveredRejectId(null)}
+                                  >
+                                    <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fef2f2", fontSize: "0.75rem", fontWeight: 700, color: "#991b1b", border: "1px solid #fee2e2", cursor: "help" }}>
+                                      Rejected
+                                    </span>
+                                    {hoveredRejectId === req.id && (
+                                      <div style={{
+                                        position: "absolute",
+                                        bottom: "100%",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        marginBottom: "8px",
+                                        padding: "10px 14px",
+                                        background: "#1e293b",
+                                        color: "white",
+                                        fontSize: "0.75rem",
+                                        borderRadius: "10px",
+                                        whiteSpace: "normal",
+                                        width: "220px",
+                                        zIndex: 100,
+                                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
+                                        border: "1px solid rgba(255,255,255,0.1)",
+                                        lineHeight: "1.4"
+                                      }}>
+                                        <div style={{ fontWeight: 700, marginBottom: "4px", color: "#f87171", fontSize: "0.65rem", textTransform: "uppercase" }}>Rejection Reason</div>
+                                        { (req as any).rejectReason || "No reason specified" }
+                                        <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", border: "6px solid transparent", borderTopColor: "#1e293b" }}></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                             </td>
                             {canAllocateAnything && (
                               <td style={tdStyle}>
