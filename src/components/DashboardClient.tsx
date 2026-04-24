@@ -1416,7 +1416,7 @@ export default function DashboardClient({ user }: { user: any }) {
           const dataUrl = reader.result as string;
           resolve(dataUrl.split(',')[1]);
         };
-        reader.readAsDataURL(new Blob([buffer]));
+        reader.readAsDataURL(new Blob([buffer as any]));
       });
 
       const res = await fetch("/api/reports/share", {
