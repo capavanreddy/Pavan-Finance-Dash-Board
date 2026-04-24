@@ -21,6 +21,8 @@ export async function GET(req: Request) {
         email: true,
         role: true,
         department: true,
+        isApproved: true,
+        isAllocator: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
@@ -44,15 +46,17 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { userId, role, department } = body;
+    const { userId, role, department, isAllocator, isApproved } = body;
 
-    if (!userId || (!role && !department)) {
-      return NextResponse.json({ message: "User ID and at least one field to update are required" }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ message: "User ID is required" }, { status: 400 });
     }
 
     const updateData: any = {};
     if (role) updateData.role = role;
-    if (department) updateData.department = department;
+    if (department !== undefined) updateData.department = department;
+    if (isAllocator !== undefined) updateData.isAllocator = isAllocator;
+    if (isApproved !== undefined) updateData.isApproved = isApproved;
 
     const user = await prisma.user.update({
       where: { id: userId },

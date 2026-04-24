@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         natureOfRequest,
         departmentName,
         requestType,
-        status: 'Under Process'
+        status: 'Pending'
       }
     });
 
