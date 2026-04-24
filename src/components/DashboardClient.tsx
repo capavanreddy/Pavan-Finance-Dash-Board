@@ -188,6 +188,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
   const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
   const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
+  const [showExtReqDownloadDropdown, setShowExtReqDownloadDropdown] = useState(false);
   const [showLOCaptureModal, setShowLOCaptureModal] = useState(false);
   const [loCaptureForm, setLOCaptureForm] = useState({
     taskId: 0,
@@ -2329,32 +2330,51 @@ export default function DashboardClient({ user }: { user: any }) {
                   </select>
                 )}
 
-                <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                <div style={{ marginLeft: "auto", position: "relative" }}>
                   <button 
-                    onClick={exportExtRequestsToExcel}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#166534", border: "1px solid #bbf7d0", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
+                    onClick={() => setShowExtReqDownloadDropdown(!showExtReqDownloadDropdown)}
+                    style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#2563eb", border: "1px solid #2563eb", padding: "10px 20px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
                   >
-                    <FileSpreadsheet size={16} /> Excel
+                    <Download size={18} /> Download Report <ChevronDown size={16} />
                   </button>
-                  <button 
-                    onClick={exportExtRequestsToPDF}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#991b1b", border: "1px solid #fecaca", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    <FileText size={16} /> PDF
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setShareData({
-                        ...shareData,
-                        type: 'request',
-                        subject: `Inter-Departmental Requests Report - ${new Date().toLocaleDateString()}`
-                      });
-                      setShowShareModal(true);
-                    }}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#1e40af", border: "1px solid #bfdbfe", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    <Send size={16} /> Share
-                  </button>
+
+                  {showExtReqDownloadDropdown && (
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", border: "1px solid #e2e8f0", zIndex: 100, minWidth: "200px", overflow: "hidden" }}>
+                      <button 
+                        onClick={() => { exportExtRequestsToExcel(); setShowExtReqDownloadDropdown(false); }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#166534", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#f0fdf4"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        <FileSpreadsheet size={16} /> Excel Format
+                      </button>
+                      <button 
+                        onClick={() => { exportExtRequestsToPDF(); setShowExtReqDownloadDropdown(false); }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#991b1b", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#fef2f2"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        <FileText size={16} /> PDF Document
+                      </button>
+                      <div style={{ borderTop: "1px solid #f1f5f9" }}></div>
+                      <button 
+                        onClick={() => {
+                          setShareData({
+                            ...shareData,
+                            type: 'request',
+                            subject: `Inter-Departmental Requests Report - ${new Date().toLocaleDateString()}`
+                          });
+                          setShowShareModal(true);
+                          setShowExtReqDownloadDropdown(false);
+                        }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#1e40af", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#eff6ff"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        <Mail size={16} /> Share via Email
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2455,7 +2475,7 @@ export default function DashboardClient({ user }: { user: any }) {
                               </span>
                             </td>
                             <td style={tdStyle}>
-                              {req.status !== 'Processed' && isAuthorizedAllocator && (
+                              {req.status !== 'Processed' && req.status !== 'Under Process' && !req.convertedTaskId && isAuthorizedAllocator && (
                                 <button 
                                   onClick={() => handleConvertToTask(req)}
                                   style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
