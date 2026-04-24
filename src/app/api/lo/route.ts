@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "@/lib/session";
 
 const EMAIL_TO_NAME: Record<string, string> = {
   "pavanreddy@intellicar.in": "Pavan",
@@ -17,7 +16,7 @@ const EMAIL_TO_NAME: Record<string, string> = {
 };
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session || !session.user?.email) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   const isAdmin = session.user.email === "pavanreddy@intellicar.in" || (session.user as any)?.role === "ADMIN";
@@ -41,7 +40,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session || !session.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

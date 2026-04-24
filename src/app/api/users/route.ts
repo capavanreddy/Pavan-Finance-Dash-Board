@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "@/lib/session";
 
 // GET all users
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     
     // Allow if ADMIN or if email matches superadmin
@@ -38,7 +37,7 @@ export async function GET(req: Request) {
 // PUT (update user role)
 export async function PUT(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     
     if (userRole !== "ADMIN" && session?.user?.email !== "pavanreddy@intellicar.in") {

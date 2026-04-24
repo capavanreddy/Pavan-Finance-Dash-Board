@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, getEmailFromName } from "@/lib/email";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "@/lib/session";
 import * as ExcelJS from "exceljs";
 
 // Helper to check if a task is overdue
@@ -303,7 +302,7 @@ export async function GET(req: NextRequest) {
   const referenceDate = clientDateStr ? new Date(clientDateStr) : new Date();
 
   const authHeader = req.headers.get("authorization");
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   
   const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
   const isManualToken = authHeader === "Bearer intellicar-cron-123";

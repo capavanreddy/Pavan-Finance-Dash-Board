@@ -1,12 +1,9 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 export default function Login() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,15 +16,15 @@ export default function Login() {
     setError("");
 
     try {
-      // Use direct login API that manually creates the session
-      const response = await fetch("/api/test-login", {
+      // Call custom login API
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
       
       const data = await response.json();
-      console.log("[v0] Direct login response:", data);
       
       if (!response.ok) {
         setError(data.error || "Login failed");
@@ -35,11 +32,9 @@ export default function Login() {
         return;
       }
       
-      // Refresh the page to pick up the new session cookie
-      router.push("/");
-      router.refresh();
+      // Force full page reload to pick up the new session cookie
+      window.location.href = "/";
     } catch (err) {
-      console.log("[v0] Login error:", err);
       setError("An unexpected error occurred. Please try again later.");
       setLoading(false);
     }
