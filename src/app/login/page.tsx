@@ -27,7 +27,6 @@ export default function Login() {
       });
       
       const data = await response.json();
-      console.log("[Login] Response:", data);
       
       if (!response.ok) {
         setError(data.error || "Login failed");
@@ -35,15 +34,14 @@ export default function Login() {
         return;
       }
       
-      // Add a small delay to ensure cookie is set before redirecting
-      console.log("[Login] Redirecting to dashboard...");
-      setTimeout(() => {
-        router.push("/");
-        // Also call router.refresh() to revalidate session
-        router.refresh();
-      }, 100);
+      // Store token in cookie manually (for v0 preview environment where server-set cookies may not work)
+      if (data.token) {
+        document.cookie = `session-token=${data.token}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
+      }
+      
+      // Full page redirect to ensure cookie is sent with next request
+      window.location.href = "/";
     } catch (err) {
-      console.error("[Login] Error:", err);
       setError("An unexpected error occurred. Please try again later.");
       setLoading(false);
     }

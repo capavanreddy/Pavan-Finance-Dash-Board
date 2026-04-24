@@ -5,8 +5,6 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
     
-    console.log("[Login API] Attempting login for:", email);
-    
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -18,21 +16,19 @@ export async function POST(req: NextRequest) {
     const result = await authenticate(email, password);
     
     if (!result.success || !result.user) {
-      console.log("[Login API] Auth failed:", result.error);
       return NextResponse.json(
         { error: result.error || "Authentication failed" },
         { status: 401 }
       );
     }
     
-    console.log("[Login API] Auth success for:", result.user.email);
-    
     // Create JWT token
     const token = await createToken(result.user);
     
-    // Create response
+    // Create response with token in body (for environments where cookies don't work)
     const response = NextResponse.json({
       success: true,
+      token, // Include token in response for client-side storage
       user: {
         id: result.user.id,
         email: result.user.email,
@@ -49,8 +45,6 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
-    
-    console.log("[Login API] Session cookie set with token length:", token.length);
     
     return response;
   } catch (error: any) {
