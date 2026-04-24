@@ -102,6 +102,17 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Link back to External Request if applicable
+    if (linkedRequestId) {
+      await prisma.externalRequest.update({
+        where: { id: Number(linkedRequestId) },
+        data: { 
+          status: "Under Process",
+          convertedTaskId: newTask.id
+        }
+      });
+    }
+
     const ownerEmail = getEmailFromName(ownerName);
     if (ownerEmail) {
       const dashboardUrl = "https://intellicar-finance-team-task-manage-one.vercel.app/";
@@ -139,6 +150,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Task created", task: newTask }, { status: 201 });
   } catch (error: any) {
+    console.error("Task creation error:", error);
     return NextResponse.json({ message: "Failed to create task", error: error.message }, { status: 500 });
   }
 }

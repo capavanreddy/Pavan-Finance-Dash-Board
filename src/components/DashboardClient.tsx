@@ -1220,6 +1220,86 @@ export default function DashboardClient({ user }: { user: any }) {
     doc.save(`Intellicar_Tasks_Export_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
+  const exportExtRequestsToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Inter-Dept Requests");
+    
+    worksheet.columns = [
+      { header: 'Sl No.', key: 'sl', width: 10 },
+      { header: 'Request From', key: 'requestFrom', width: 25 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Request Type', key: 'type', width: 20 },
+      { header: 'Nature of Request', key: 'nature', width: 40 },
+      { header: 'Status', key: 'status', width: 15 }
+    ];
+
+    const filteredReqs = externalRequests.filter(r => {
+      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
+      const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+      if (!isPrimaryAdmin && !isRelevantToUser) return false;
+      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
+      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
+         if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
+      }
+      return true;
+    });
+
+    filteredReqs.forEach((r, idx) => {
+      worksheet.addRow({
+        sl: idx + 1,
+        requestFrom: r.requestFrom,
+        email: r.requesterEmail,
+        date: new Date(r.createdAt).toLocaleDateString(),
+        type: r.requestType,
+        nature: r.natureOfRequest,
+        status: r.status || "New"
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `InterDept_Requests_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportExtRequestsToPDF = () => {
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(16);
+    doc.text("Intellicar Finance - Inter-Departmental Requests", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+    const filteredReqs = externalRequests.filter(r => {
+      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
+      const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+      if (!isPrimaryAdmin && !isRelevantToUser) return false;
+      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
+      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
+         if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
+      }
+      return true;
+    });
+
+    const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
+    const tableRows = filteredReqs.map((r, idx) => [
+      idx + 1,
+      r.requestFrom,
+      new Date(r.createdAt).toLocaleDateString(),
+      r.requestType,
+      r.natureOfRequest,
+      r.status || "New"
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 28,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] }
+    });
+
+    doc.save(`InterDept_Requests_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   const exportLOsToPDF = () => {
     const doc = new jsPDF('landscape');
     
@@ -1305,6 +1385,27 @@ export default function DashboardClient({ user }: { user: any }) {
           buffer = doc.output('arraybuffer');
           contentType = 'application/pdf';
           attachmentName = `LO_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+        }
+      } else if (shareData.type === 'request') {
+        if (shareData.format === 'excel') {
+          const workbook = new ExcelJS.Workbook();
+          const worksheet = workbook.addWorksheet("Requests");
+          worksheet.addRow(['Shared Inter-Dept Requests Report']);
+          externalRequests.forEach((r, i) => worksheet.addRow([i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status]));
+          buffer = await workbook.xlsx.writeBuffer();
+          contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          attachmentName = `Requests_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        } else {
+          const doc = new jsPDF('landscape');
+          doc.text("Shared Inter-Dept Requests Report", 14, 15);
+          autoTable(doc, {
+            head: [["ID", "From", "Type", "Nature", "Status"]],
+            body: externalRequests.map(r => [r.id, r.requestFrom, r.requestType, r.natureOfRequest, r.status]),
+            startY: 20
+          });
+          buffer = doc.output('arraybuffer');
+          contentType = 'application/pdf';
+          attachmentName = `Requests_Report_${new Date().toISOString().split('T')[0]}.pdf`;
         }
       }
 
@@ -2227,6 +2328,34 @@ export default function DashboardClient({ user }: { user: any }) {
                     <option value="ACTION">Needs My Allocation</option>
                   </select>
                 )}
+
+                <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                  <button 
+                    onClick={exportExtRequestsToExcel}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#166534", border: "1px solid #bbf7d0", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <FileSpreadsheet size={16} /> Excel
+                  </button>
+                  <button 
+                    onClick={exportExtRequestsToPDF}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#991b1b", border: "1px solid #fecaca", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <FileText size={16} /> PDF
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShareData({
+                        ...shareData,
+                        type: 'request',
+                        subject: `Inter-Departmental Requests Report - ${new Date().toLocaleDateString()}`
+                      });
+                      setShowShareModal(true);
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", color: "#1e40af", border: "1px solid #bfdbfe", padding: "8px 14px", borderRadius: "10px", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    <Send size={16} /> Share
+                  </button>
+                </div>
               </div>
 
               <div style={{ padding: "32px", overflowX: "auto" }}>
@@ -2606,6 +2735,7 @@ export default function DashboardClient({ user }: { user: any }) {
             setShowForm(false);
             setPreFilledTask(null);
             fetchTasks();
+            fetchExternalRequests();
           }} 
         />
       )}
