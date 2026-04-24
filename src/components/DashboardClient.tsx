@@ -1566,9 +1566,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             {isAdmin ? "Control Center" : "Account Settings"}
           </button>
           
-          <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>
+          <button 
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST", credentials: "include" });
+              document.cookie = "session-token=; path=/; max-age=0";
+              window.location.href = "/login";
+            }} 
+            style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
+          >
             <LogOut size={18} />
-          </a>
+          </button>
         </div>
       </header>
 
