@@ -135,7 +135,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     loReportEmail: '',
     masterDepartments: 'SW - Engineering,Manufacturing and Supply Chain,Field Operations Technicians,HW - Engineering,Operations,CSM & Sales,Finance,HR and Admin,External People',
     masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
-    masterTaskTypes: 'Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assesments & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
+    masterTaskTypes: 'Accounts Receivable,Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assements & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
     masterCommunicationModes: 'Email,Verbal Discussion,Hangouts,Whatsapp-IC Group',
     masterRequestTypes: 'Accounts Receivable,Accounts Payable,General & Administration,Payroll',
     masterRequestStatuses: 'Under Process,Pending for Review,Processed',
@@ -1566,9 +1566,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             {isAdmin ? "Control Center" : "Account Settings"}
           </button>
           
-          <a href="/api/auth/signout" style={{ color: "#64748b", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>
+          <button 
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST", credentials: "include" });
+              document.cookie = "session-token=; path=/; max-age=0";
+              window.location.href = "/login";
+            }} 
+            style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
+          >
             <LogOut size={18} />
-          </a>
+          </button>
         </div>
       </header>
 
@@ -2480,18 +2487,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc" }}>
-                      <th style={thStyle}>Sl No.</th>
+                      <th style={{ ...thStyle, width: "50px" }}>Sl No.</th>
                       <th style={thStyle}>Request From</th>
                       <th style={thStyle}>Date</th>
                       <th style={thStyle}>Request Type</th>
                       <th style={thStyle}>Nature of Request</th>
                       <th style={thStyle}>Request Status</th>
                       {canAllocateAnything && <th style={thStyle}>Action</th>}
+                      <th style={thStyle}>Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {extReqLoading ? (
-                      <tr><td colSpan={canAllocateAnything ? 7 : 6} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
                     ) : externalRequests.filter(r => {
                       const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
                       const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
@@ -2513,7 +2521,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         }
                         return true;
                     }).length === 0 ? (
-                      <tr><td colSpan={canAllocateAnything ? 7 : 6} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
                       externalRequests.filter(r => {
                         const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
@@ -2654,6 +2662,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 </div>
                               </td>
                             )}
+                            <td style={{ ...tdStyle, maxWidth: "280px", whiteSpace: "normal", color: "#64748b", fontSize: "0.8rem" }}>
+                              {req.status === 'Rejected' ? (
+                                <span style={{ color: "#ef4444", fontWeight: 500 }}>
+                                  {(req as any).rejectReason || "No reason specified"}
+                                </span>
+                              ) : req.status === 'Processed' ? (
+                                <span style={{ color: "#10b981", fontWeight: 500 }}>N/A</span>
+                              ) : (
+                                <span style={{ color: "#cbd5e1" }}>-</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })
@@ -4033,7 +4052,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
                           <Tag size={18} color="#10b981" />
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Task Names / Types</h4>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Task Type</h4>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -4111,6 +4130,50 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           </div>
                         </div>
                       </div>
+
+                      {/* Request Types */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <FileText size={18} color="#8b5cf6" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Request Types</h4>
+                        </div>
+                        <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 12px 0" }}>Used in Inter Department Request form.</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterRequestTypes || "").split(',').filter(t => t.trim()).map((type, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {type.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterRequestTypes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterRequestTypes: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add request type..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterRequestTypes: (settings.masterRequestTypes || "") + (settings.masterRequestTypes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 )}

@@ -50,9 +50,10 @@ export default function Login() {
   return (
     <div className="login-container" style={{ minHeight: "100vh", display: "flex", background: "white", fontFamily: "'Inter', sans-serif" }}>
       {/* Left Side: Hero Section */}
-      <div className="hero-side" style={{ 
+      <div style={{ 
         flex: 1.2, 
-        position: 'relative'
+        position: 'relative',
+        display: 'flex'
       }}>
         <div style={{ 
           position: 'absolute', 
@@ -73,8 +74,9 @@ export default function Login() {
         }}>
           {/* Logo in top-left corner */}
 
-          <h2 style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '24px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-            Empowering Finance <br /><span style={{ color: '#60a5fa' }}>Excellence.</span>
+          <h2 style={{ fontSize: '3.2rem', fontWeight: 800, marginBottom: '24px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+            Empowering<br />
+            Financial Clarity & <span style={{ color: '#60a5fa' }}>Excellence.</span>
           </h2>
           <p style={{ fontSize: '1.25rem', opacity: 0.9, maxWidth: '480px', lineHeight: 1.6, color: '#e2e8f0' }}>
             Manage tasks, analyze performance, and optimize financial workflows with ease.
@@ -98,7 +100,9 @@ export default function Login() {
           </div>
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Welcome Back</h1>
+            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+              Connect With <span style={{ color: '#2563eb' }}>FinPulse</span>
+            </h1>
             <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Please enter your credentials to access the hub.</p>
           </div>
           
@@ -200,9 +204,6 @@ export default function Login() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { margin: 0; }
-        @media (max-width: 1023px) {
-          .hero-side { display: none !important; }
-        }
       `}</style>
     </div>
   );
