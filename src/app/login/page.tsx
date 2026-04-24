@@ -99,7 +99,9 @@ export default function Login() {
           </div>
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Welcome Back</h1>
+            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+              Connect With <span style={{ color: '#2563eb' }}>FinPulse</span>
+            </h1>
             <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Please enter your credentials to access the hub.</p>
           </div>
           
