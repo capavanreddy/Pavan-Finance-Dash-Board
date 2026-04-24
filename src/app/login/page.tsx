@@ -19,23 +19,27 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
+      // Use direct login API that manually creates the session
+      const response = await fetch("/api/test-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-
-      if (res?.error) {
-        setError(res.error);
+      
+      const data = await response.json();
+      console.log("[v0] Direct login response:", data);
+      
+      if (!response.ok) {
+        setError(data.error || "Login failed");
         setLoading(false);
-      } else if (res?.ok) {
-        router.push("/");
-        router.refresh();
-      } else {
-        setError("Login failed. Please try again.");
-        setLoading(false);
+        return;
       }
+      
+      // Refresh the page to pick up the new session cookie
+      router.push("/");
+      router.refresh();
     } catch (err) {
+      console.log("[v0] Login error:", err);
       setError("An unexpected error occurred. Please try again later.");
       setLoading(false);
     }

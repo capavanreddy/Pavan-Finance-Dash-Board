@@ -12,7 +12,9 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log("[v0] AUTHORIZE CALLED - email:", credentials?.email);
         if (!credentials?.email || !credentials?.password) {
+          console.log("[v0] Missing credentials");
           throw new Error("Invalid credentials");
         }
         
