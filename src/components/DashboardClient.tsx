@@ -2425,33 +2425,19 @@ export default function DashboardClient({ user }: { user: any }) {
                       <th style={thStyle}>Request Type</th>
                       <th style={thStyle}>Nature of Request</th>
                       <th style={thStyle}>Request Status</th>
-                      <th style={thStyle}>Action</th>
+                      {canAllocateAnything && <th style={thStyle}>Action</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {extReqLoading ? (
-                      <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 7 : 6} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
                     ) : externalRequests.filter(r => {
-                      // GLOBAL VISIBILITY RULE
                       const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
                       const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
-                      
                       if (!isPrimaryAdmin && !isRelevantToUser) return false;
-
-                      // SEARCH FILTER
                       if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
+                      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
 
-                      // STATUS DROPDOWN FILTER
-                      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
-                        // Handle the 'New' case specifically if your status can be empty
-                        if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {
-                          // Allow
-                        } else {
-                          return false;
-                        }
-                      }
-
-                      // TAB FILTERS
                       if (extReqFilter === 'ALLOCATION') {
                         if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
                         return r.status !== 'Processed' && r.status !== 'Under Process';
@@ -2463,16 +2449,14 @@ export default function DashboardClient({ user }: { user: any }) {
                       if (extReqFilter === 'PROCESSED') return r.status === 'Processed';
                       return true;
                     }).length === 0 ? (
-                      <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 7 : 6} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
                       externalRequests.filter(r => {
                         const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
                         const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
                         if (!isPrimaryAdmin && !isRelevantToUser) return false;
                         if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
-                        if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
-                           if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
-                        }
+                        if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
 
                         if (extReqFilter === 'ALLOCATION') {
                           if (!isPrimaryAdmin) return r.status !== 'Processed' && r.status !== 'Under Process' && userAllocatedDepts.includes(r.requestType);
@@ -2505,58 +2489,60 @@ export default function DashboardClient({ user }: { user: any }) {
                             <td style={tdStyle}>
                               <span style={{ 
                                 padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700,
-                                background: req.status === 'Processed' ? "#dcfce7" : req.status === 'Under Process' ? "#eff6ff" : "#fef3c7",
-                                color: req.status === 'Processed' ? "#15803d" : req.status === 'Under Process' ? "#1d4ed8" : "#b45309"
+                                background: req.status === 'Processed' ? "#dcfce7" : req.status === 'Under Process' ? "#eff6ff" : req.status === 'Rejected' ? "#fef2f2" : "#fef3c7",
+                                color: req.status === 'Processed' ? "#15803d" : req.status === 'Under Process' ? "#1d4ed8" : req.status === 'Rejected' ? "#ef4444" : "#b45309"
                               }}>
                                 {req.status}
                               </span>
                             </td>
-                            <td style={tdStyle}>
-                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                {(req.status === 'Pending' && !req.convertedTaskId && isAuthorizedAllocator) && (
-                                  <div style={{ display: "flex", gap: "8px" }}>
-                                    <button 
-                                      onClick={() => handleConvertToTask(req)}
-                                      style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                                    >
-                                      <Plus size={12} /> Convert to Task
-                                    </button>
-                                    <button 
-                                      onClick={() => { setRejectingReq(req); setShowRejectModal(true); }}
-                                      style={{ background: "white", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                                    >
-                                      Reject
-                                    </button>
-                                  </div>
-                                )}
-                                
-                                {(req.status === 'Under Process' || req.status === 'Processed') && req.convertedTaskId && (
-                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
-                                      TASK CREATED
-                                    </span>
-                                    <span style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 500 }}>ID: {req.convertedTaskId}</span>
-                                  </div>
-                                )}
+                            {canAllocateAnything && (
+                              <td style={tdStyle}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                  {(req.status === 'Pending' && !req.convertedTaskId && isAuthorizedAllocator) && (
+                                    <div style={{ display: "flex", gap: "8px" }}>
+                                      <button 
+                                        onClick={() => handleConvertToTask(req)}
+                                        style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                                      >
+                                        <Plus size={12} /> Convert to Task
+                                      </button>
+                                      <button 
+                                        onClick={() => { setRejectingReq(req); setShowRejectModal(true); }}
+                                        style={{ background: "white", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {(req.status === 'Under Process' || req.status === 'Processed') && req.convertedTaskId && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
+                                        TASK CREATED
+                                      </span>
+                                      <span style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 500 }}>ID: {req.convertedTaskId}</span>
+                                    </div>
+                                  )}
 
-                                {req.status === 'Rejected' && (
-                                  <div style={{ fontSize: "0.7rem", color: "#ef4444", maxWidth: "200px", padding: "8px", background: "#fef2f2", borderRadius: "6px", border: "1px solid #fee2e2" }}>
-                                    <strong>Rejected:</strong> { (req as any).rejectReason || "No reason provided" }
-                                  </div>
-                                )}
+                                  {req.status === 'Rejected' && (
+                                    <div style={{ fontSize: "0.7rem", color: "#ef4444", maxWidth: "200px", padding: "8px", background: "#fef2f2", borderRadius: "6px", border: "1px solid #fee2e2" }}>
+                                      <strong>Rejected:</strong> { (req as any).rejectReason || "No reason provided" }
+                                    </div>
+                                  )}
 
-                                {(isAdmin || (user as any).isAllocator) && (
-                                  <button 
-                                    onClick={() => handleDeleteExtRequest(req.id)}
-                                    style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
-                                    onMouseOver={(e) => e.currentTarget.style.color = "#ef4444"}
-                                    onMouseOut={(e) => e.currentTarget.style.color = "#94a3b8"}
-                                  >
-                                    <Trash2 size={12} /> <span style={{ fontSize: "0.65rem" }}>Delete Request</span>
-                                  </button>
-                                )}
-                              </div>
-                            </td>
+                                  {isAuthorizedAllocator && (
+                                    <button 
+                                      onClick={() => handleDeleteExtRequest(req.id)}
+                                      style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
+                                      onMouseOver={(e) => e.currentTarget.style.color = "#ef4444"}
+                                      onMouseOut={(e) => e.currentTarget.style.color = "#94a3b8"}
+                                    >
+                                      <Trash2 size={12} /> <span style={{ fontSize: "0.65rem" }}>Delete Request</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })
