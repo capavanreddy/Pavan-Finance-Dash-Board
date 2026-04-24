@@ -50,9 +50,10 @@ export default function Login() {
   return (
     <div className="login-container" style={{ minHeight: "100vh", display: "flex", background: "white", fontFamily: "'Inter', sans-serif" }}>
       {/* Left Side: Hero Section */}
-      <div className="hero-side" style={{ 
+      <div style={{ 
         flex: 1.2, 
-        position: 'relative'
+        position: 'relative',
+        display: 'flex'
       }}>
         <div style={{ 
           position: 'absolute', 
@@ -200,9 +201,6 @@ export default function Login() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { margin: 0; }
-        @media (max-width: 1023px) {
-          .hero-side { display: none !important; }
-        }
       `}</style>
     </div>
   );
