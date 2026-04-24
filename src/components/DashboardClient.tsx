@@ -228,8 +228,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   // Smart Permission Helpers
   const matrixAllocators = JSON.parse(settings.allocationMatrix || '{}');
   const userAllocatedDepts = Object.entries(matrixAllocators)
-    .filter(([_, email]) => email === user?.email)
-    .map(([dept, _]) => dept);
+    .filter(([_, email]) => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim())
+    .map(([dept, _]) => dept.trim());
   
   const canAllocateAnything = isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0;
 
@@ -1312,7 +1312,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
     const filteredReqs = externalRequests.filter(r => {
       const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-      const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+      const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
+        userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
       if (!isPrimaryAdmin && !isRelevantToUser) return false;
       if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
       if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
@@ -1346,7 +1347,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
     const filteredReqs = externalRequests.filter(r => {
       const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-      const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+      const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
+        userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
       if (!isPrimaryAdmin && !isRelevantToUser) return false;
       if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
       if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
@@ -2492,7 +2494,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     ) : (
                       externalRequests.filter(r => {
                         const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-                        const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
+                        const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
+                          userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
                         if (!isPrimaryAdmin && !isRelevantToUser) return false;
                         if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
                         if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
