@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { neon } from '@neondatabase/serverless';
 
-const prisma = new PrismaClient();
+const sql = neon(process.env.DATABASE_URL!);
 
 export async function GET() {
   try {
-    const settings = await prisma.systemSettings.findFirst();
-    return NextResponse.json(settings);
+    const settings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
+    return NextResponse.json(settings[0] || null);
   } catch (error) {
+    console.error('Error fetching system settings:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -15,21 +16,52 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const settings = await prisma.systemSettings.findFirst();
+    const existingSettings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
 
-    if (!settings) {
-      const newSettings = await prisma.systemSettings.create({
-        data: body
-      });
-      return NextResponse.json(newSettings);
+    if (!existingSettings || existingSettings.length === 0) {
+      // Create new settings
+      const columns = Object.keys(body);
+      const values = Object.values(body);
+      
+      // Build dynamic insert
+      const newSettings = await sql`
+        INSERT INTO "SystemSettings" (
+          "masterDepartments", "masterEntities", "masterTaskTypes", 
+          "masterCommunicationModes", "masterRequestTypes",
+          "matrixModuleAccess", "matrixAllocation"
+        ) VALUES (
+          ${body.masterDepartments || ''},
+          ${body.masterEntities || ''},
+          ${body.masterTaskTypes || ''},
+          ${body.masterCommunicationModes || ''},
+          ${body.masterRequestTypes || ''},
+          ${body.matrixModuleAccess || '{}'},
+          ${body.matrixAllocation || '{}'}
+        )
+        RETURNING *
+      `;
+      return NextResponse.json(newSettings[0]);
     }
 
-    const updatedSettings = await prisma.systemSettings.update({
-      where: { id: settings.id },
-      data: body
-    });
+    const settingsId = existingSettings[0].id;
+    
+    // Update existing settings
+    const updatedSettings = await sql`
+      UPDATE "SystemSettings"
+      SET 
+        "masterDepartments" = COALESCE(${body.masterDepartments}, "masterDepartments"),
+        "masterEntities" = COALESCE(${body.masterEntities}, "masterEntities"),
+        "masterTaskTypes" = COALESCE(${body.masterTaskTypes}, "masterTaskTypes"),
+        "masterCommunicationModes" = COALESCE(${body.masterCommunicationModes}, "masterCommunicationModes"),
+        "masterRequestTypes" = COALESCE(${body.masterRequestTypes}, "masterRequestTypes"),
+        "matrixModuleAccess" = COALESCE(${body.matrixModuleAccess}, "matrixModuleAccess"),
+        "matrixAllocation" = COALESCE(${body.matrixAllocation}, "matrixAllocation"),
+        "updatedAt" = NOW()
+      WHERE id = ${settingsId}
+      RETURNING *
+    `;
 
-    return NextResponse.json(updatedSettings);
+    return NextResponse.json(updatedSettings[0]);
   } catch (error) {
     console.error('Error updating system settings:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
