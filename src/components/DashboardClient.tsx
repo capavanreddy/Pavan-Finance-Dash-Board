@@ -1365,7 +1365,7 @@ export default function DashboardClient({ user }: { user: any }) {
           contentType = 'application/pdf';
           attachmentName = `Tasks_Report_${new Date().toISOString().split('T')[0]}.pdf`;
         }
-      } else {
+      } else if (shareData.type === 'lo') {
         if (shareData.format === 'excel') {
           const workbook = new ExcelJS.Workbook();
           const worksheet = workbook.addWorksheet("LOs");
