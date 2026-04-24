@@ -135,7 +135,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     loReportEmail: '',
     masterDepartments: 'SW - Engineering,Manufacturing and Supply Chain,Field Operations Technicians,HW - Engineering,Operations,CSM & Sales,Finance,HR and Admin,External People',
     masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
-    masterTaskTypes: 'Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assesments & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
+    masterTaskTypes: 'Accounts Receivable,Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assements & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
     masterCommunicationModes: 'Email,Verbal Discussion,Hangouts,Whatsapp-IC Group',
     masterRequestTypes: 'Accounts Receivable,Accounts Payable,General & Administration,Payroll',
     masterRequestStatuses: 'Under Process,Pending for Review,Processed',
@@ -4052,7 +4052,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
                           <Tag size={18} color="#10b981" />
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Task Names / Types</h4>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Task Type</h4>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
