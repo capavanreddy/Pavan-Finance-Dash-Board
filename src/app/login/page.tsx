@@ -1,6 +1,5 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
@@ -19,19 +18,29 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
+      // Call custom login API
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
-
-      if (res?.error) {
-        setError(res.error);
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || "Login failed");
         setLoading(false);
-      } else {
-        router.push("/");
-        router.refresh();
+        return;
       }
+      
+      // Store token in cookie manually (for v0 preview environment where server-set cookies may not work)
+      if (data.token) {
+        document.cookie = `session-token=${data.token}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
+      }
+      
+      // Full page redirect to ensure cookie is sent with next request
+      window.location.href = "/";
     } catch (err) {
       setError("An unexpected error occurred. Please try again later.");
       setLoading(false);
