@@ -27,3 +27,22 @@ export async function PATCH(
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
+    
+    await prisma.externalRequest.delete({
+      where: { id }
+    });
+    
+    return NextResponse.json({ message: "Request deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting external request:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
+}
