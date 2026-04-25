@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import Link from "next/link";
@@ -12,12 +12,30 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
+  const [departments, setDepartments] = useState(["Finance", "HR", "IT", "Operations", "Sales", "Marketing", "Admin"]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Default departments as defined in SystemSettings
-  const departments = ["Finance", "HR", "IT", "Operations", "Sales", "Marketing", "Admin", "Logistics", "Procurement"];
+  useEffect(() => {
+    async function fetchDepartments() {
+      try {
+        const res = await fetch("/api/public-settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.masterDepartments) {
+            const list = data.masterDepartments.split(',').map((s: string) => s.trim()).filter(Boolean);
+            if (list.length > 0) {
+              setDepartments(list);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch departments", err);
+      }
+    }
+    fetchDepartments();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

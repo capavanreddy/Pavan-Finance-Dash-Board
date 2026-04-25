@@ -23,7 +23,8 @@ export async function middleware(request: NextRequest) {
     "/register", 
     "/api/login", 
     "/api/auth/register",
-    "/api/auth" // NextAuth endpoints
+    "/api/auth", // NextAuth endpoints
+    "/api/public-settings"
   ];
   
   if (publicRoutes.some(route => pathname === route || pathname.startsWith(route))) {
