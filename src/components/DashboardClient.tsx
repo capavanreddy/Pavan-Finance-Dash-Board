@@ -1318,7 +1318,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       { header: 'Request From', key: 'requestFrom', width: 25 },
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Date', key: 'date', width: 15 },
-      { header: 'Request Type', key: 'type', width: 20 },
+      { header: 'Finance Function', key: 'type', width: 20 },
       { header: 'Nature of Request', key: 'nature', width: 40 },
       { header: 'Status', key: 'status', width: 15 }
     ];
@@ -2490,7 +2490,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       <th style={{ ...thStyle, width: "50px" }}>Sl No.</th>
                       <th style={thStyle}>Request From</th>
                       <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Request Type</th>
+                      <th style={thStyle}>Finance Function</th>
                       <th style={thStyle}>Nature of Request</th>
                       <th style={thStyle}>Request Status</th>
                       {canAllocateAnything && <th style={thStyle}>Action</th>}
@@ -4135,7 +4135,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
                           <FileText size={18} color="#8b5cf6" />
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Request Types</h4>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Finance Functions</h4>
                         </div>
                         <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 12px 0" }}>Used in Inter Department Request form.</p>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -4158,7 +4158,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <div style={{ display: "flex", gap: "8px" }}>
                             <input 
                               type="text" 
-                              placeholder="Add request type..." 
+                              placeholder="Add finance function..." 
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
@@ -4332,7 +4332,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
-                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Request Type</th>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Finance Function</th>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Authorized Allocator</th>
                                 </tr>
                               </thead>

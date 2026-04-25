@@ -124,7 +124,7 @@ export default function TaskForm({ onClose, onSuccess, settings, initialData }: 
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                 <AlertCircle size={18} color="#0284c7" />
                 <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>
-                  Any change in request type?
+                  Any change in finance function?
                 </span>
               </div>
               
@@ -155,14 +155,14 @@ export default function TaskForm({ onClose, onSuccess, settings, initialData }: 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", marginBottom: "6px", fontSize: "0.8125rem", fontWeight: 500, color: "#374151" }}>
-                      Select New Request Type
+                      Select New Finance Function
                     </label>
                     <select 
                       value={newRequestType} 
                       onChange={(e) => setNewRequestType(e.target.value)}
                       style={{ ...inputStyle, background: "white" }}
                     >
-                      <option value="">Choose request type...</option>
+                      <option value="">Choose finance function...</option>
                       {settings?.masterRequestTypes?.split(',').filter((t: string) => t.trim()).map((type: string) => (
                         <option key={type.trim()} value={type.trim()}>{type.trim()}</option>
                       ))}
