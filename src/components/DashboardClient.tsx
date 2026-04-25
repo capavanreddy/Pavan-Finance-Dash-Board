@@ -2125,7 +2125,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       </td>
 
                       <td style={tdStyle}>
-                        {(isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required') ? (
+                        {task.reviewerName === "Not Applicable" ? (
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
+                        ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
                           <select 
                             onChange={(e) => {
                               if (e.target.value === 'YES') {
