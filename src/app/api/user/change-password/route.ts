@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 import bcrypt from "bcrypt";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(req: Request) {
   const session = await getServerSession();
@@ -12,6 +11,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const sql = getDb();
     const { currentPassword, newPassword } = await req.json();
 
     if (!currentPassword || !newPassword) {

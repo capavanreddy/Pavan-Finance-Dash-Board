@@ -1,12 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import bcrypt from "bcrypt";
 import { sendEmail } from "@/lib/email";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(req: NextRequest) {
   try {
+    const sql = getDb();
     const { name, email, password, department } = await req.json();
 
     if (!name || !email || !password || !department) {
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     // Notify Admins
     try {
+    const sql = getDb();
       const admins = await sql`
         SELECT email FROM "User" WHERE role = 'ADMIN'
       `;

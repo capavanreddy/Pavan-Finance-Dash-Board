@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import bcrypt from "bcrypt";
-
-const sql = neon(process.env.DATABASE_URL!);
 
 const SECRET_KEY = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-key-change-in-production"
@@ -76,6 +74,7 @@ export async function authenticate(
 ): Promise<{ success: boolean; user?: SessionUser; error?: string }> {
   try {
     // Find user in database using Neon serverless
+    const sql = getDb();
     const users = await sql`
       SELECT id, email, name, password, role, department, "isApproved"
       FROM "User"

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '@/lib/db';
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function GET(request: Request) {
   try {
+    const sql = getDb();
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
     const department = searchParams.get('department');
     const role = searchParams.get('role');
 
-    let requests;
+    let requests: any[] = [];
 
     // Logic:
     // If Admin, see all.
@@ -43,6 +43,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const sql = getDb();
     const body = await request.json();
     const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType } = body;
 

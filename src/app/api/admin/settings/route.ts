@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '@/lib/db';
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function GET() {
   try {
+    const sql = getDb();
     const settings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
     return NextResponse.json(settings[0] || null);
   } catch (error) {
@@ -15,6 +15,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
+    const sql = getDb();
     const body = await request.json();
     const existingSettings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
 

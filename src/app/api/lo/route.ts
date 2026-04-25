@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 const EMAIL_TO_NAME: Record<string, string> = {
   "pavanreddy@intellicar.in": "Pavan",
@@ -25,6 +24,7 @@ export async function GET(req: Request) {
   const shortName = EMAIL_TO_NAME[session.user.email] || session.user.name || "";
 
   try {
+    const sql = getDb();
     let los;
     if (isAdmin) {
       los = await sql`
@@ -53,6 +53,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const sql = getDb();
     const data = await req.json();
     const los = await sql`
       INSERT INTO "LearningOpportunity" (

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { sendEmail, getEmailFromName } from "@/lib/email";
 import { getServerSession } from "@/lib/session";
 import * as ExcelJS from "exceljs";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 // Helper to check if a task is overdue
 function isOverdue(dueDate: Date | null, referenceDate: Date) {
@@ -208,6 +207,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
 }
 
 export async function GET(req: NextRequest) {
+  const sql = getDb();
   const url = new URL(req.url);
   let type = url.searchParams.get("type") || "all";
   const clientDateStr = url.searchParams.get("clientDate");
@@ -280,6 +280,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const sql = getDb();
     if (type === "lo") {
       const allLOs = await sql`SELECT * FROM "LearningOpportunity" ORDER BY "createdAt" DESC`;
       const stats = getLOStats(allLOs);
