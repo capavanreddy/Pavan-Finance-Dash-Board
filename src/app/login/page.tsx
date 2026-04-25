@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 export default function Login() {
   const router = useRouter();
@@ -96,16 +97,14 @@ export default function Login() {
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-             <img 
-               src="/logo.png" 
-               alt="Intellicar Logo" 
-               crossOrigin="anonymous"
-               style={{ height: "56px", marginBottom: '16px', objectFit: 'contain' }}
-               onError={(e) => {
-                 console.log("[v0] Logo failed to load from /logo.png");
-                 e.currentTarget.style.display = 'none';
-               }}
-             />
+            <Image
+              src="/logo.png"
+              alt="Intellicar Logo"
+              width={180}
+              height={56}
+              style={{ objectFit: 'contain', marginBottom: '16px' }}
+              priority
+            />
           </div>
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
