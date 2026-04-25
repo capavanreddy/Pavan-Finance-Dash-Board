@@ -1121,14 +1121,24 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     });
   };
 
+  // Base visibility filter for External Requests
+  const visibleExternalRequests = externalRequests.filter(r => {
+    // Admins and Super Admins see everything
+    if (isAdmin || user?.role === 'SUPER_ADMIN') return true;
+    
+    // Show if user is the requester
+    const isRequester = r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim();
+    if (isRequester) return true;
+    
+    // Show if user is an allocator for this specific Finance Function (requestType)
+    const isAllocatorForThis = userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
+    if (isAllocatorForThis) return true;
+    
+    return false;
+  });
+
   // External Requests Filtering and Sorting
-  const filteredExternalRequests = externalRequests.filter(r => {
-    const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-    const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
-      userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
-    
-    if (!isPrimaryAdmin && !isRelevantToUser) return false;
-    
+  const filteredExternalRequests = visibleExternalRequests.filter(r => {
     if (extReqSearch) {
       const q = extReqSearch.toLowerCase();
       if (!r.natureOfRequest.toLowerCase().includes(q) && !r.requestFrom.toLowerCase().includes(q)) return false;
@@ -2485,7 +2495,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: "white" }}>
                 <MetricCard 
                   title="All Requests" 
-                  value={externalRequests.length} 
+                  value={visibleExternalRequests.length} 
                   icon={<FileText size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #475569 0%, #1e293b 100%)" 
                   isActive={extReqFilter === 'ALL'} 
@@ -2493,7 +2503,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 />
                 <MetricCard 
                   title="Pending" 
-                  value={externalRequests.filter(r => r.status === 'Pending' || !r.status || r.status === 'New' || r.status === '').length} 
+                  value={visibleExternalRequests.filter(r => r.status === 'Pending' || !r.status || r.status === 'New' || r.status === '').length} 
                   icon={<Clock size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
                   isActive={extReqFilter === 'ALLOCATION'} 
@@ -2501,7 +2511,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 />
                 <MetricCard 
                   title="Under Process" 
-                  value={externalRequests.filter(r => r.status === 'Under Process').length} 
+                  value={visibleExternalRequests.filter(r => r.status === 'Under Process').length} 
                   icon={<AlertCircle size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" 
                   isActive={extReqFilter === 'PROCESS'} 
@@ -2509,7 +2519,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 />
                 <MetricCard 
                   title="Processed" 
-                  value={externalRequests.filter(r => r.status === 'Processed').length} 
+                  value={visibleExternalRequests.filter(r => r.status === 'Processed').length} 
                   icon={<CheckCircle2 size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #10b981 0%, #059669 100%)" 
                   isActive={extReqFilter === 'PROCESSED'} 
@@ -2517,7 +2527,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 />
                 <MetricCard 
                   title="Rejected" 
-                  value={externalRequests.filter(r => r.status === 'Rejected').length} 
+                  value={visibleExternalRequests.filter(r => r.status === 'Rejected').length} 
                   icon={<Trash2 size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
                   isActive={extReqFilter === 'REJECTED'} 
@@ -2565,7 +2575,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     borderRadius: "999px", 
                     fontSize: "0.75rem" 
                   }}>
-                    {externalRequests.filter(r => (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId).length}
+                    {visibleExternalRequests.filter(r => (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId).length}
                   </span>
                 </button>
 
