@@ -31,6 +31,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow static images and common files to bypass middleware
+  const staticFileExtensions = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp"];
+  if (staticFileExtensions.some(ext => pathname.endsWith(ext))) {
+    return NextResponse.next();
+  }
+
   // Check for session token in cookies
   const token = request.cookies.get("session-token")?.value;
 
