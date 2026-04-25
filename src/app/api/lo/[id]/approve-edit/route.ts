@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(
   req: Request,
@@ -15,6 +14,7 @@ export async function POST(
   if (!isAdmin) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   try {
+    const sql = getDb();
     const { action } = await req.json();
     const loId = parseInt(id);
 

@@ -1,14 +1,14 @@
 import { NextResponse, NextRequest } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const sql = getDb();
     const { id } = await params;
     const session = await getServerSession();
     if (!session || (session.user as any).role !== "ADMIN") {

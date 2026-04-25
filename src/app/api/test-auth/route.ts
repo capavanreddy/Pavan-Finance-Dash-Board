@@ -1,13 +1,13 @@
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(request: Request) {
   console.log("[v0] test-auth API called");
   
   try {
+    const sql = getDb();
     const { email, password } = await request.json();
     console.log("[v0] Testing login for:", email);
     

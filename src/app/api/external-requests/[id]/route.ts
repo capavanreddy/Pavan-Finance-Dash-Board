@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '@/lib/db';
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const sql = getDb();
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
     const body = await request.json();
@@ -49,6 +49,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const sql = getDb();
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
     

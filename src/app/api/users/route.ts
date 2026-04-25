@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 // GET all users
 export async function GET(req: Request) {
   try {
+    const sql = getDb();
     const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     
@@ -31,6 +31,7 @@ export async function GET(req: Request) {
 // PUT (update user role)
 export async function PUT(req: Request) {
   try {
+    const sql = getDb();
     const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     
@@ -89,6 +90,7 @@ export async function PUT(req: Request) {
 // PATCH (update specific user fields like isAllocator)
 export async function PATCH(req: Request) {
   try {
+    const sql = getDb();
     const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     

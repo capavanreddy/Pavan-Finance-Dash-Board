@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import bcrypt from "bcrypt";
 import { encode } from "next-auth/jwt";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(req: NextRequest) {
   try {
+    const sql = getDb();
     const { email, password } = await req.json();
     
     console.log("[v0] Test login - Direct auth check for:", email);

@@ -1,10 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function GET(req: NextRequest) {
   try {
+    const sql = getDb();
     // This will update all users who don't have isApproved set
     const result = await sql`
       UPDATE "User"

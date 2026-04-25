@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 import bcrypt from "bcrypt";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 const EMPLOYEES = [
   { name: "Saikath", email: "saikatdas@intellicar.in" },
@@ -27,6 +26,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const sql = getDb();
     const defaultPassword = "Intellicar@123";
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     

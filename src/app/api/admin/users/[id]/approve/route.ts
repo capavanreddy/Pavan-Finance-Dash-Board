@@ -1,15 +1,15 @@
 import { NextResponse, NextRequest } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 import { sendEmail } from "@/lib/email";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const sql = getDb();
     const { id } = await params;
     const session = await getServerSession();
     if (!session || (session.user as any).role !== "ADMIN") {
@@ -26,6 +26,7 @@ export async function POST(
 
     // Notify user of approval
     try {
+    const sql = getDb();
       if (user.email) {
         await sendEmail({
           to: user.email,

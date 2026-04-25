@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function PATCH(
   req: Request,
@@ -16,6 +15,7 @@ export async function PATCH(
   const loId = parseInt(id);
 
   try {
+    const sql = getDb();
     const existingLOs = await sql`
       SELECT * FROM "LearningOpportunity" WHERE id = ${loId}
     `;
