@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     
     if (!result.success || !result.user) {
       return NextResponse.json(
-        { error: result.error || "Authentication failed" },
+        { error: result.error || "Login Error: No message returned" },
         { status: 401 }
       );
     }

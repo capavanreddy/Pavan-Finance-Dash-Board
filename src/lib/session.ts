@@ -146,6 +146,6 @@ export async function authenticate(
     };
   } catch (error: any) {
     console.error("[Session] Auth error:", error);
-    return { success: false, error: "Authentication failed" };
+    return { success: false, error: "System Error: " + (error?.message || "Unknown error") };
   }
 }
