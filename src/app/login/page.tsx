@@ -50,7 +50,17 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container" style={{ minHeight: "100vh", display: "flex", background: "white", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Top Header Bar */}
+      <header style={{ 
+        height: "80px", width: "100%", background: "#ffffff", display: "flex", 
+        alignItems: "center", padding: "0 32px", borderBottom: "1px solid #e2e8f0",
+        flexShrink: 0
+      }}>
+        <img src="/logo.png" alt="Intellicar Logo" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
+      </header>
+
+      <div className="login-container" style={{ flex: 1, display: "flex", background: "white", fontFamily: "'Inter', sans-serif" }}>
       {/* Left Side: Hero Section */}
       <div style={{ 
         flex: 1.2, 
@@ -74,8 +84,6 @@ export default function Login() {
           padding: '80px', 
           color: 'white' 
         }}>
-          {/* Logo in top-left corner */}
-
           <h2 style={{ fontSize: '3.2rem', fontWeight: 800, marginBottom: '24px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
             Empowering<br />
             Financial Clarity & <span style={{ color: '#60a5fa' }}>Excellence.</span>
@@ -97,13 +105,7 @@ export default function Login() {
         background: '#f8fafc'
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <img
-              src="/logo.png"
-              alt="Intellicar Logo"
-              style={{ width: '180px', height: 'auto', objectFit: 'contain', marginBottom: '16px' }}
-            />
-          </div>
+
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
