@@ -245,6 +245,7 @@ export default function Register() {
           .hero-side { display: none !important; }
         }
       `}</style>
+      </div>
     </div>
   );
 }

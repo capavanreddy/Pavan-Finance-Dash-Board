@@ -213,6 +213,7 @@ export default function Login() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { margin: 0; }
       `}</style>
+      </div>
     </div>
   );
 }
