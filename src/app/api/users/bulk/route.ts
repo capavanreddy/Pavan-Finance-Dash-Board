@@ -24,25 +24,12 @@ export async function PUT(req: NextRequest) {
     for (const update of updates) {
       const { userId, role, department } = update;
       
-      const fields: string[] = [];
-      const values: any[] = [];
-      
-      if (role !== undefined) {
-        fields.push(`role = $${values.length + 1}`);
-        values.push(role);
-      }
-      if (department !== undefined) {
-        fields.push(`department = $${values.length + 1}`);
-        values.push(department);
-      }
-
-      if (fields.length > 0) {
-        values.push(userId);
-        await sql`
-          UPDATE "User"
-          SET ${sql.unsafe(fields.join(', '))}
-          WHERE id = $${values.length}
-        `;
+      if (role !== undefined && department !== undefined) {
+        await sql`UPDATE "User" SET role = ${role}, department = ${department} WHERE id = ${userId}`;
+      } else if (role !== undefined) {
+        await sql`UPDATE "User" SET role = ${role} WHERE id = ${userId}`;
+      } else if (department !== undefined) {
+        await sql`UPDATE "User" SET department = ${department} WHERE id = ${userId}`;
       }
     }
 
