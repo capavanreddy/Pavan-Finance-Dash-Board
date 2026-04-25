@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -291,6 +291,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string; isSuspended?: boolean }>>({});
   const [isSavingUsers, setIsSavingUsers] = useState(false);
+  
+  // New Filters
+  const [taskTypeFilter, setTaskTypeFilter] = useState<'ALL' | 'INTERNAL' | 'EXTERNAL'>('ALL');
+  const [requestTypeFilter, setRequestTypeFilter] = useState<'ALL' | 'ORIGINAL' | 'TRANSFERRED'>('ALL');
 
   const fetchTasks = async () => {
     try {
@@ -640,6 +644,32 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       console.error("Bulk add failed", error);
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const handleResetUserPassword = async (userId: number, userName: string) => {
+    const newPassword = prompt(`Enter new password for ${userName}:`);
+    if (!newPassword || newPassword.trim().length < 6) {
+      if (newPassword !== null) alert("Password must be at least 6 characters.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPassword.trim() })
+      });
+
+      if (res.ok) {
+        alert(`Password for ${userName} has been reset successfully!`);
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.error || "Failed to reset password"}`);
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      alert("Network error. Failed to reset password.");
     }
   };
 
@@ -1030,6 +1060,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (taskEntityFilter !== "ALL" && t.entityName !== taskEntityFilter) dropdownMatch = false;
     if (taskOwnerFilter !== "ALL" && t.ownerName !== taskOwnerFilter) dropdownMatch = false;
     if (taskStatusFilter !== "ALL" && t.taskStatus !== taskStatusFilter) dropdownMatch = false;
+    
+    // 5. Task Type Filter
+    if (taskTypeFilter === "INTERNAL" && t.linkedRequestId) dropdownMatch = false;
+    if (taskTypeFilter === "EXTERNAL" && !t.linkedRequestId) dropdownMatch = false;
 
     return statusMatch && dateMatch && searchMatch && dropdownMatch;
   });
@@ -1168,6 +1202,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (extReqFilter === 'CONVERT_PENDING') {
       return (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId;
     }
+
+    // New Request Type Filter (Original vs Transferred)
+    if (requestTypeFilter === 'ORIGINAL' && r.transferStatus === 'T') return false;
+    if (requestTypeFilter === 'TRANSFERRED' && r.transferStatus !== 'T') return false;
+
     return true;
   });
 
@@ -1986,6 +2025,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 {uniqueTaskStatuses.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
 
+              <select 
+                value={taskTypeFilter} 
+                onChange={e => setTaskTypeFilter(e.target.value as any)}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569", fontWeight: 600 }}
+              >
+                <option value="ALL">All Task Types</option>
+                <option value="INTERNAL">Internal Only</option>
+                <option value="EXTERNAL">External Only</option>
+              </select>
+
               <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: "1px solid #e2e8f0" }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rows:</span>
                 <select 
@@ -2183,20 +2232,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
                             {task.taskType}
                           </span>
-                          {task.transferStatus === 'T' ? (
-                            <span 
-                              title={`Transferred Request (Original: ${task.originalRequestType || 'Unknown'})`}
-                              style={{ cursor: "help", fontSize: "1rem" }}
-                            >
-                              🔴
-                            </span>
-                          ) : (
-                            <span 
-                              title="Original Request"
-                              style={{ cursor: "help", fontSize: "1rem" }}
-                            >
-                              🟢
-                            </span>
+                          </span>
+                          {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                            task.transferStatus === 'T' ? (
+                              <span 
+                                title={`Transferred Request (Original: ${task.originalRequestType || 'Unknown'})`}
+                                style={{ cursor: "help", fontSize: "1rem" }}
+                              >
+                                🔴
+                              </span>
+                            ) : (
+                              <span 
+                                title="Original Request"
+                                style={{ cursor: "help", fontSize: "1rem" }}
+                              >
+                                🟢
+                              </span>
+                            )
                           )}
                         </div>
                       </td>
@@ -2586,6 +2638,18 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   </span>
                 </button>
 
+                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                  <select 
+                    value={requestTypeFilter} 
+                    onChange={e => setRequestTypeFilter(e.target.value as any)}
+                    style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "white", color: "#475569", fontWeight: 600 }}
+                  >
+                    <option value="ALL">All Request Origins</option>
+                    <option value="ORIGINAL">Original Only</option>
+                    <option value="TRANSFERRED">Transferred Only</option>
+                  </select>
+                )}
+
                 <div style={{ marginLeft: "auto", position: "relative" }}>
                   <button 
                     onClick={() => setShowExtReqDownloadDropdown(!showExtReqDownloadDropdown)}
@@ -2692,21 +2756,22 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
                                   {req.requestType}
                                 </span>
-                                {req.transferStatus && (
-                                  <div 
-                                    title={req.transferStatus === 'T' ? `Transferred from: ${req.originalRequestType || 'Unknown'}` : 'Original Request'}
-                                    style={{ 
-                                      width: "20px", height: "20px", borderRadius: "50%", 
-                                      background: req.transferStatus === 'T' ? "#fef2f2" : "#f0fdf4", 
-                                      color: req.transferStatus === 'T' ? "#ef4444" : "#10b981", 
-                                      display: "flex", alignItems: "center", justifyContent: "center", 
-                                      fontSize: "0.65rem", fontWeight: 800, 
-                                      border: `1px solid ${req.transferStatus === 'T' ? "#fee2e2" : "#dcfce7"}`,
-                                      cursor: "help"
-                                    }}
-                                  >
-                                    {req.transferStatus}
-                                  </div>
+                                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                                  req.transferStatus === 'T' ? (
+                                    <span 
+                                      title={`Transferred Request (Original: ${req.originalRequestType || 'Unknown'})`}
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🔴
+                                    </span>
+                                  ) : (
+                                    <span 
+                                      title="Original Request"
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🟢
+                                    </span>
+                                  )
                                 )}
                               </div>
                             </td>
@@ -3958,15 +4023,26 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   </div>
                                 </td>
                                 <td style={{ padding: "12px 8px", textAlign: "right" }}>
-                                  <button 
-                                    onClick={() => handleRemoveUser(u.id)}
-                                    style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
-                                    title="Remove User"
-                                    onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
-                                    onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleResetUserPassword(u.id, u.name)}
+                                      style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Reset Password"
+                                      onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
+                                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                      <Key size={18} />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleRemoveUser(u.id)}
+                                      style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Remove User"
+                                      onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                      onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}

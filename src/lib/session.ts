@@ -139,7 +139,7 @@ export async function authenticate(
     // Verify password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      return { success: false, error: "Invalid password provided" };
+      return { success: false, error: "Invalid password" };
     }
     
     // Return user data
@@ -155,6 +155,6 @@ export async function authenticate(
     };
   } catch (error: any) {
     console.error("[Session] Auth error:", error);
-    return { success: false, error: "System Error: " + (error?.message || "Unknown error") };
+    return { success: false, error: "Authentication failed" };
   }
 }
