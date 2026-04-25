@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
 
 export async function POST(
-  req: Request,
+  req: NextRequest,
   props: { params: Promise<{ id: string }> }
 ) {
   const { id } = await props.params;

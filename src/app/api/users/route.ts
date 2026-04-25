@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
 
 // GET all users
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 }
 
 // PUT (update user role)
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();
@@ -88,7 +88,7 @@ export async function PUT(req: Request) {
 }
 
 // PATCH (update specific user fields like isAllocator)
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 import bcrypt from "bcryptjs";
 
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession();
   if (!session || !session.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
