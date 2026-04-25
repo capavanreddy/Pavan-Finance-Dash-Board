@@ -415,7 +415,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         alert("Matrix settings saved successfully!");
       } else {
-        alert("Failed to save matrix settings.");
+        const errData = await res.json();
+        alert(`Failed to save matrix settings: ${errData.details || errData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Failed to save settings", error);

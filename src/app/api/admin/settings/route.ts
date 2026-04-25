@@ -17,19 +17,34 @@ export async function PATCH(request: Request) {
   try {
     const sql = getDb();
     const body = await request.json();
+    console.log('PATCH /api/admin/settings - Body:', JSON.stringify(body));
+
     const existingSettings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
+    console.log('PATCH /api/admin/settings - Existing settings found:', existingSettings.length);
 
     if (!existingSettings || existingSettings.length === 0) {
-      // Create new settings
-      const columns = Object.keys(body);
-      const values = Object.values(body);
-      
-      // Build dynamic insert
+      console.log('PATCH /api/admin/settings - No existing settings, creating new row');
+      // Create new settings with all provided fields or defaults
       const newSettings = await sql`
         INSERT INTO "SystemSettings" (
-          "id", "masterDepartments", "masterEntities", "masterTaskTypes", 
-          "masterCommunicationModes", "masterRequestTypes",
-          "moduleAccessMatrix", "allocationMatrix", "createdAt", "updatedAt"
+          "id", 
+          "masterDepartments", 
+          "masterEntities", 
+          "masterTaskTypes", 
+          "masterCommunicationModes", 
+          "masterRequestTypes",
+          "moduleAccessMatrix", 
+          "allocationMatrix",
+          "reminderFrequency",
+          "reminderTimes",
+          "managerReportFrequency",
+          "managerReportTimes",
+          "loReportFrequency",
+          "loReportTimes",
+          "managerEmail",
+          "loReportEmail",
+          "createdAt", 
+          "updatedAt"
         ) VALUES (
           'singleton',
           ${body.masterDepartments || ''},
@@ -39,6 +54,14 @@ export async function PATCH(request: Request) {
           ${body.masterRequestTypes || ''},
           ${body.moduleAccessMatrix || '{}'},
           ${body.allocationMatrix || '{}'},
+          ${body.reminderFrequency || 'DAILY'},
+          ${body.reminderTimes || '09:00,18:00'},
+          ${body.managerReportFrequency || 'DAILY'},
+          ${body.managerReportTimes || '10:00'},
+          ${body.loReportFrequency || 'WEEKLY'},
+          ${body.loReportTimes || '10:00'},
+          ${body.managerEmail || ''},
+          ${body.loReportEmail || ''},
           NOW(), NOW()
         )
         RETURNING *
@@ -47,8 +70,9 @@ export async function PATCH(request: Request) {
     }
 
     const settingsId = existingSettings[0].id;
+    console.log('PATCH /api/admin/settings - Updating settings with ID:', settingsId);
     
-    // Update existing settings
+    // Update existing settings - cover ALL possible columns from state
     const updatedSettings = await sql`
       UPDATE "SystemSettings"
       SET 
@@ -59,14 +83,28 @@ export async function PATCH(request: Request) {
         "masterRequestTypes" = ${body.masterRequestTypes ?? existingSettings[0].masterRequestTypes},
         "moduleAccessMatrix" = ${body.moduleAccessMatrix ?? existingSettings[0].moduleAccessMatrix},
         "allocationMatrix" = ${body.allocationMatrix ?? existingSettings[0].allocationMatrix},
+        "reminderFrequency" = ${body.reminderFrequency ?? existingSettings[0].reminderFrequency},
+        "reminderTimes" = ${body.reminderTimes ?? existingSettings[0].reminderTimes},
+        "managerReportFrequency" = ${body.managerReportFrequency ?? existingSettings[0].managerReportFrequency},
+        "managerReportTimes" = ${body.managerReportTimes ?? existingSettings[0].managerReportTimes},
+        "loReportFrequency" = ${body.loReportFrequency ?? existingSettings[0].loReportFrequency},
+        "loReportTimes" = ${body.loReportTimes ?? existingSettings[0].loReportTimes},
+        "managerEmail" = ${body.managerEmail ?? existingSettings[0].managerEmail},
+        "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
         "updatedAt" = NOW()
       WHERE id = ${settingsId}
       RETURNING *
     `;
 
+    console.log('PATCH /api/admin/settings - Successfully updated');
     return NextResponse.json(updatedSettings[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating system settings:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    // Return detailed error for debugging if possible
+    return NextResponse.json({ 
+      message: 'Internal Server Error', 
+      details: error.message,
+      stack: error.stack
+    }, { status: 500 });
   }
 }
