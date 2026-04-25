@@ -7,10 +7,11 @@ type TaskFormProps = {
   onClose: () => void;
   onSuccess: () => void;
   settings: any;
+  usersList?: any[];
   initialData?: any;
 };
 
-export default function TaskForm({ onClose, onSuccess, settings, initialData }: TaskFormProps) {
+export default function TaskForm({ onClose, onSuccess, settings, usersList = [], initialData }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [changeRequestType, setChangeRequestType] = useState(false);
@@ -247,32 +248,24 @@ export default function TaskForm({ onClose, onSuccess, settings, initialData }: 
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Owner Name *</label>
                   <select name="ownerName" required value={formData.ownerName} onChange={handleChange} style={inputStyle}>
                     <option value="">Choose</option>
-                    <option value="Venkat">Venkat</option>
-                    <option value="Saikath">Saikath</option>
-                    <option value="Nikhat">Nikhat</option>
-                    <option value="Sami">Sami</option>
-                    <option value="Pavan">Pavan</option>
-                    <option value="Sharath">Sharath</option>
-                    <option value="Sreenivas">Sreenivas</option>
-                    <option value="Hanusha">Hanusha</option>
-                    <option value="Chandana">Chandana</option>
-                    <option value="Sidharth Saneja">Sidharth Saneja</option>
+                    {usersList
+                      .filter(u => u.department === 'Finance' && u.isApproved !== false)
+                      .map(u => (
+                        <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
+                      ))
+                    }
                   </select>
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Reviewer Name</label>
                   <select name="reviewerName" value={formData.reviewerName} onChange={handleChange} style={inputStyle}>
                     <option value="">Not Applicable / None</option>
-                    <option value="Venkat">Venkat</option>
-                    <option value="Saikath">Saikath</option>
-                    <option value="Nikhat">Nikhat</option>
-                    <option value="Sami">Sami</option>
-                    <option value="Pavan">Pavan</option>
-                    <option value="Sharath">Sharath</option>
-                    <option value="Sreenivas">Sreenivas</option>
-                    <option value="Hanusha">Hanusha</option>
-                    <option value="Chandana">Chandana</option>
-                    <option value="Sidharth Saneja">Sidharth Saneja</option>
+                    {usersList
+                      .filter(u => u.department === 'Finance' && u.isApproved !== false)
+                      .map(u => (
+                        <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
+                      ))
+                    }
                   </select>
                 </div>
               </div>

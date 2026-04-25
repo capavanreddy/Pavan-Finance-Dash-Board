@@ -351,9 +351,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchLOs();
     fetchExternalRequests();
     fetchSettings();
-    if (isAdmin) {
-      fetchUsersList();
-    }
+    fetchUsersList();
   }, [isAdmin]);
 
   // SMART REDIRECTION LOGIC
@@ -577,7 +575,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const fetchUsersList = async () => {
-    if (!isAdmin) return;
     setUsersLoading(true);
     try {
       const res = await fetch("/api/users");
@@ -3043,6 +3040,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {showForm && (
         <TaskForm 
           settings={settings}
+          usersList={usersList}
           initialData={preFilledTask}
           onClose={() => {
             setShowForm(false);

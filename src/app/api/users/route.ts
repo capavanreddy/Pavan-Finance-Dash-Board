@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession();
     const userRole = (session?.user as any)?.role;
     
-    // Allow if ADMIN or if email matches superadmin
-    if (userRole !== "ADMIN" && session?.user?.email !== "pavanreddy@intellicar.in") {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    // Allow any authenticated user to GET the users list (for dropdowns)
+    if (!session?.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const users = await sql`
