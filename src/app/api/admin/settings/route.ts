@@ -72,39 +72,67 @@ export async function PATCH(request: Request) {
     const settingsId = existingSettings[0].id;
     console.log('PATCH /api/admin/settings - Updating settings with ID:', settingsId);
     
-    // Update existing settings - cover ALL possible columns from state
-    const updatedSettings = await sql`
-      UPDATE "SystemSettings"
-      SET 
-        "masterDepartments" = ${body.masterDepartments ?? existingSettings[0].masterDepartments},
-        "masterEntities" = ${body.masterEntities ?? existingSettings[0].masterEntities},
-        "masterTaskTypes" = ${body.masterTaskTypes ?? existingSettings[0].masterTaskTypes},
-        "masterCommunicationModes" = ${body.masterCommunicationModes ?? existingSettings[0].masterCommunicationModes},
-        "masterRequestTypes" = ${body.masterRequestTypes ?? existingSettings[0].masterRequestTypes},
-        "moduleAccessMatrix" = ${body.moduleAccessMatrix ?? existingSettings[0].moduleAccessMatrix},
-        "allocationMatrix" = ${body.allocationMatrix ?? existingSettings[0].allocationMatrix},
-        "reminderFrequency" = ${body.reminderFrequency ?? existingSettings[0].reminderFrequency},
-        "reminderTimes" = ${body.reminderTimes ?? existingSettings[0].reminderTimes},
-        "managerReportFrequency" = ${body.managerReportFrequency ?? existingSettings[0].managerReportFrequency},
-        "managerReportTimes" = ${body.managerReportTimes ?? existingSettings[0].managerReportTimes},
-        "loReportFrequency" = ${body.loReportFrequency ?? existingSettings[0].loReportFrequency},
-        "loReportTimes" = ${body.loReportTimes ?? existingSettings[0].loReportTimes},
-        "managerEmail" = ${body.managerEmail ?? existingSettings[0].managerEmail},
-        "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
-        "updatedAt" = NOW()
-      WHERE id = ${settingsId}
-      RETURNING *
-    `;
+    try {
+      // Update existing settings - cover ALL possible columns from state
+      const updatedSettings = await sql`
+        UPDATE "SystemSettings"
+        SET 
+          "masterDepartments" = ${body.masterDepartments ?? existingSettings[0].masterDepartments},
+          "masterEntities" = ${body.masterEntities ?? existingSettings[0].masterEntities},
+          "masterTaskTypes" = ${body.masterTaskTypes ?? existingSettings[0].masterTaskTypes},
+          "masterCommunicationModes" = ${body.masterCommunicationModes ?? existingSettings[0].masterCommunicationModes},
+          "masterRequestTypes" = ${body.masterRequestTypes ?? existingSettings[0].masterRequestTypes},
+          "moduleAccessMatrix" = ${body.moduleAccessMatrix ?? existingSettings[0].moduleAccessMatrix},
+          "allocationMatrix" = ${body.allocationMatrix ?? existingSettings[0].allocationMatrix},
+          "reminderFrequency" = ${body.reminderFrequency ?? existingSettings[0].reminderFrequency},
+          "reminderTimes" = ${body.reminderTimes ?? existingSettings[0].reminderTimes},
+          "managerReportFrequency" = ${body.managerReportFrequency ?? existingSettings[0].managerReportFrequency},
+          "managerReportTimes" = ${body.managerReportTimes ?? existingSettings[0].managerReportTimes},
+          "loReportFrequency" = ${body.loReportFrequency ?? existingSettings[0].loReportFrequency},
+          "loReportTimes" = ${body.loReportTimes ?? existingSettings[0].loReportTimes},
+          "managerEmail" = ${body.managerEmail ?? existingSettings[0].managerEmail},
+          "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
+          "updatedAt" = NOW()
+        WHERE id = ${settingsId}
+        RETURNING *
+      `;
 
-    console.log('PATCH /api/admin/settings - Successfully updated');
-    return NextResponse.json(updatedSettings[0]);
+      console.log('PATCH /api/admin/settings - Successfully updated');
+      return NextResponse.json(updatedSettings[0]);
+    } catch (updateError: any) {
+      if (updateError.message.includes('column "updatedAt" does not exist') || updateError.message.includes('column "createdAt" does not exist')) {
+        console.log('PATCH /api/admin/settings - Detected missing columns, running auto-migration...');
+        // Auto-fix missing columns
+        await sql`
+          ALTER TABLE "SystemSettings" 
+          ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) DEFAULT NOW(),
+          ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) DEFAULT NOW()
+        `;
+        
+        // Retry the update
+        const retriedSettings = await sql`
+          UPDATE "SystemSettings"
+          SET 
+            "masterDepartments" = ${body.masterDepartments ?? existingSettings[0].masterDepartments},
+            "masterEntities" = ${body.masterEntities ?? existingSettings[0].masterEntities},
+            "masterTaskTypes" = ${body.masterTaskTypes ?? existingSettings[0].masterTaskTypes},
+            "masterCommunicationModes" = ${body.masterCommunicationModes ?? existingSettings[0].masterCommunicationModes},
+            "masterRequestTypes" = ${body.masterRequestTypes ?? existingSettings[0].masterRequestTypes},
+            "moduleAccessMatrix" = ${body.moduleAccessMatrix ?? existingSettings[0].moduleAccessMatrix},
+            "allocationMatrix" = ${body.allocationMatrix ?? existingSettings[0].allocationMatrix},
+            "updatedAt" = NOW()
+          WHERE id = ${settingsId}
+          RETURNING *
+        `;
+        return NextResponse.json(retriedSettings[0]);
+      }
+      throw updateError;
+    }
   } catch (error: any) {
     console.error('Error updating system settings:', error);
-    // Return detailed error for debugging if possible
     return NextResponse.json({ 
       message: 'Internal Server Error', 
-      details: error.message,
-      stack: error.stack
+      details: error.message
     }, { status: 500 });
   }
 }
