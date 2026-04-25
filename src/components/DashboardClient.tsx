@@ -3837,6 +3837,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       )}
                     </div>
 
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
                             <Users size={20} color="#166534" />
@@ -3860,7 +3861,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             <Users size={14} /> Import All Employees
                           </button>
                         </div>
-                      </div>
+                    </div>
 
                     {usersLoading ? (
                       <p>Loading users...</p>
