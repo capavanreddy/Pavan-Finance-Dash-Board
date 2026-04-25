@@ -235,7 +235,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   // Smart Permission Helpers
   const matrixAllocators = JSON.parse(settings.allocationMatrix || '{}');
   const userAllocatedDepts = Object.entries(matrixAllocators)
-    .filter(([_, email]) => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim())
+    .filter(([_, allocators]) => {
+      const emailList = Array.isArray(allocators) ? allocators : [allocators];
+      return emailList.some(email => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim());
+    })
     .map(([dept, _]) => dept.trim());
   
   const canAllocateAnything = isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0;
@@ -2625,7 +2628,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     ) : (
                       sortedExternalRequests.map((req, idx) => {
                         const matrix = JSON.parse(settings.allocationMatrix || '{}');
-                        const isAuthorizedAllocator = matrix[req.requestType] === user?.email || isAdmin || (user as any).isAllocator;
+                        const allocators = Array.isArray(matrix[req.requestType]) ? matrix[req.requestType] : (matrix[req.requestType] ? [matrix[req.requestType]] : []);
+                        const isAuthorizedAllocator = allocators.includes(user?.email) || isAdmin || (user as any).isAllocator;
                         
                         return (
                           <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -4491,24 +4495,54 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     <tr key={type} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{type}</td>
                                       <td style={{ padding: "12px" }}>
-                                        <select 
-                                          value={matrix[type] || ""}
-                                          onChange={(e) => {
-                                            setSettings({
-                                              ...settings,
-                                              allocationMatrix: JSON.stringify({ ...matrix, [type]: e.target.value })
-                                            });
-                                          }}
-                                          style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.875rem" }}
-                                        >
-                                          <option value="">No Allocator Assigned</option>
-                                          {usersList
-                                            .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
-                                            .map(u => (
-                                              <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
-                                            ))
-                                          }
-                                        </select>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                            {(() => {
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.length === 0) return <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No Allocators Assigned</span>;
+                                              return allocators.map((email: string) => (
+                                                <div key={email} style={{ 
+                                                  background: "#f0f9ff", border: "1px solid #bae6fd", 
+                                                  padding: "2px 8px", borderRadius: "6px", 
+                                                  fontSize: "0.75rem", color: "#0369a1", 
+                                                  display: "flex", alignItems: "center", gap: "6px" 
+                                                }}>
+                                                  {usersList.find(u => u.email === email)?.name || email}
+                                                  <button 
+                                                    onClick={() => {
+                                                      const updated = allocators.filter((e: string) => e !== email);
+                                                      setSettings({ ...settings, allocationMatrix: JSON.stringify({ ...matrix, [type]: updated }) });
+                                                    }}
+                                                    style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, display: "flex" }}
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                              ));
+                                            })()}
+                                          </div>
+                                          <select 
+                                            value=""
+                                            onChange={(e) => {
+                                              if (!e.target.value) return;
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.includes(e.target.value)) return;
+                                              setSettings({
+                                                ...settings,
+                                                allocationMatrix: JSON.stringify({ ...matrix, [type]: [...allocators, e.target.value] })
+                                              });
+                                            }}
+                                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem" }}
+                                          >
+                                            <option value="">+ Add Allocator</option>
+                                            {usersList
+                                              .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
+                                              .map(u => (
+                                                <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
+                                              ))
+                                            }
+                                          </select>
+                                        </div>
                                       </td>
                                     </tr>
                                   );
