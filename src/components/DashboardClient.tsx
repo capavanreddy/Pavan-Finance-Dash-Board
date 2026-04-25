@@ -2232,7 +2232,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
                             {task.taskType}
                           </span>
-                          </span>
                           {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
                             task.transferStatus === 'T' ? (
                               <span 
