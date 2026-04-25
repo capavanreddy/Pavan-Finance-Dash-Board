@@ -55,13 +55,33 @@ export async function getSession(): Promise<Session | null> {
       return null;
     }
     
-    const user = await verifyToken(token);
+    const payload = await verifyToken(token);
     
-    if (!user) {
+    if (!payload || !payload.id) {
       return null;
     }
+
+    // Fetch LATEST user data from DB to ensure instant updates (role/dept changes)
+    const sql = getDb();
+    const users = await sql`
+      SELECT id, email, name, role, department
+      FROM "User"
+      WHERE id = ${payload.id}
+      LIMIT 1
+    `;
     
-    return { user };
+    if (users.length === 0) return null;
+    const user = users[0];
+    
+    return { 
+      user: {
+        id: String(user.id),
+        email: user.email || "",
+        name: user.name || "",
+        role: user.role || "",
+        department: user.department || "",
+      } 
+    };
   } catch (error) {
     return null;
   }

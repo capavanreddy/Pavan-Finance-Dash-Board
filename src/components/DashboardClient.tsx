@@ -289,6 +289,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
 
+  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string }>>({});
+  const [isSavingUsers, setIsSavingUsers] = useState(false);
+
   const fetchTasks = async () => {
     try {
       const res = await fetch("/api/tasks");
@@ -709,21 +712,49 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const handleUpdateUserDepartment = async (userId: string, newDept: string) => {
+  const handleSaveUserUpdates = async () => {
+    if (Object.keys(pendingUserUpdates).length === 0) return;
+    setIsSavingUsers(true);
     try {
-      const res = await fetch("/api/users", {
+      const updates = Object.entries(pendingUserUpdates).map(([userId, fields]) => ({
+        userId,
+        ...fields
+      }));
+
+      const res = await fetch("/api/users/bulk", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, department: newDept }),
+        body: JSON.stringify({ updates }),
       });
+
       if (res.ok) {
-        fetchUsersList(); // Refresh
+        setPendingUserUpdates({});
+        fetchUsersList();
+        alert("User updates saved successfully!");
       } else {
-        alert("Failed to update user department.");
+        const data = await res.json();
+        alert(data.message || "Failed to save user updates.");
       }
     } catch (error) {
-      console.error("Failed to update department", error);
+      console.error("Save users error", error);
+      alert("An error occurred while saving user updates.");
+    } finally {
+      setIsSavingUsers(false);
     }
+  };
+
+  const handleUpdateUserDepartment = (userId: string, newDept: string) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], department: newDept }
+    }));
+  };
+
+  const handleUpdateUserRole = (userId: string, newRole: string) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], role: newRole }
+    }));
   };
 
   const handleUpdate = async (taskId: number, field: string, value: string) => {
@@ -3772,9 +3803,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
                                   <td style={{ padding: "16px" }}>
                                     <select 
-                                      value={u.department || ""}
+                                      value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
                                       onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
-                                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                      style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
                                     >
                                       <option value="">Select Dept</option>
                                       {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
@@ -3806,20 +3837,30 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
-                          <Users size={20} color="#166534" />
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
+                            <Users size={20} color="#166534" />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          {Object.keys(pendingUserUpdates).length > 0 && (
+                            <button 
+                              onClick={handleSaveUserUpdates}
+                              disabled={isSavingUsers}
+                              style={{ padding: "8px 24px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: isSavingUsers ? "not-allowed" : "pointer", boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)" }}
+                            >
+                              {isSavingUsers ? "Saving..." : "Save Changes"}
+                            </button>
+                          )}
+                          <button 
+                            onClick={handleBulkAddUsers}
+                            style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <Users size={14} /> Import All Employees
+                          </button>
+                        </div>
                       </div>
-                      <button 
-                        onClick={handleBulkAddUsers}
-                        style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <Users size={14} /> Import All Employees
-                      </button>
-                    </div>
 
                     {usersLoading ? (
                       <p>Loading users...</p>
@@ -3842,9 +3883,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 <td style={{ padding: "12px 8px" }}>{u.email}</td>
                                  <td style={{ padding: "12px 8px" }}>
                                   <select 
-                                    value={u.department || ""}
+                                    value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
                                     onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
-                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
                                   >
                                     <option value="">Select Dept</option>
                                     {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
@@ -3854,12 +3895,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 </td>
                                 <td style={{ padding: "12px 8px" }}>
                                   <select 
-                                    value={u.role}
-                                    onChange={(e) => handleUpdateRole(u.id, e.target.value)}
-                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                                    value={pendingUserUpdates[u.id]?.role !== undefined ? pendingUserUpdates[u.id].role : (u.role || "USER")}
+                                    onChange={(e) => handleUpdateUserRole(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.role !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1" }}
                                   >
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                                   </select>
                                 </td>
                                 <td style={{ padding: "12px 8px", textAlign: "right" }}>
