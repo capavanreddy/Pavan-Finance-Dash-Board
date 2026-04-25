@@ -27,17 +27,19 @@ export async function PATCH(request: Request) {
       // Build dynamic insert
       const newSettings = await sql`
         INSERT INTO "SystemSettings" (
-          "masterDepartments", "masterEntities", "masterTaskTypes", 
+          "id", "masterDepartments", "masterEntities", "masterTaskTypes", 
           "masterCommunicationModes", "masterRequestTypes",
-          "moduleAccessMatrix", "allocationMatrix"
+          "moduleAccessMatrix", "allocationMatrix", "createdAt", "updatedAt"
         ) VALUES (
+          'singleton',
           ${body.masterDepartments || ''},
           ${body.masterEntities || ''},
           ${body.masterTaskTypes || ''},
           ${body.masterCommunicationModes || ''},
           ${body.masterRequestTypes || ''},
           ${body.moduleAccessMatrix || '{}'},
-          ${body.allocationMatrix || '{}'}
+          ${body.allocationMatrix || '{}'},
+          NOW(), NOW()
         )
         RETURNING *
       `;

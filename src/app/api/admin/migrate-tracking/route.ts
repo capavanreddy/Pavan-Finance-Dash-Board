@@ -21,6 +21,13 @@ export async function GET() {
       ADD COLUMN IF NOT EXISTS "transferStatus" TEXT DEFAULT 'O'
     `;
 
+    // Add columns to SystemSettings if they don't exist
+    await sql`
+      ALTER TABLE "SystemSettings" 
+      ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) DEFAULT NOW(),
+      ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) DEFAULT NOW()
+    `;
+
     // Backfill ExternalRequest
     await sql`
       UPDATE "ExternalRequest" 

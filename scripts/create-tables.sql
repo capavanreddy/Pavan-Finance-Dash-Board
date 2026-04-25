@@ -114,6 +114,8 @@ CREATE TABLE "SystemSettings" (
     "masterRequestStatuses" TEXT NOT NULL DEFAULT 'Under Process,Pending for Review,Processed',
     "moduleAccessMatrix" TEXT NOT NULL DEFAULT '{}',
     "allocationMatrix" TEXT NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "SystemSettings_pkey" PRIMARY KEY ("id")
 );
