@@ -649,9 +649,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const handleRejectUser = async (id: string) => {
-    if (!window.confirm("Reject and delete this access request?")) return;
+    const comment = window.prompt("Please provide a reason for rejecting this access request (this will be emailed to the user):");
+    if (comment === null) return; // User cancelled
+    
     try {
-      const res = await fetch(`/api/admin/users/${id}/reject`, { method: "POST" });
+      const res = await fetch(`/api/admin/users/${id}/reject`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment })
+      });
       if (res.ok) {
         alert("Request rejected.");
         fetchUsersList();
@@ -3728,9 +3734,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   <td style={{ padding: "16px", fontWeight: 500 }}>{u.name}</td>
                                   <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
                                   <td style={{ padding: "16px" }}>
-                                    <span style={{ padding: "4px 10px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
-                                      {u.department}
-                                    </span>
+                                    <select 
+                                      value={u.department || ""}
+                                      onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
+                                      style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                    >
+                                      <option value="">Select Dept</option>
+                                      {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                                        <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                                      ))}
+                                    </select>
                                   </td>
                                   <td style={{ padding: "16px", textAlign: "right" }}>
                                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
