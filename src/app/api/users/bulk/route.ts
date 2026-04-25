@@ -20,33 +20,31 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Invalid updates format" }, { status: 400 });
     }
 
-    // Execute updates in a transaction
-    await sql.begin(async (sql) => {
-      for (const update of updates) {
-        const { userId, role, department } = update;
-        
-        const fields: string[] = [];
-        const values: any[] = [];
-        
-        if (role !== undefined) {
-          fields.push(`role = $${values.length + 1}`);
-          values.push(role);
-        }
-        if (department !== undefined) {
-          fields.push(`department = $${values.length + 1}`);
-          values.push(department);
-        }
-
-        if (fields.length > 0) {
-          values.push(userId);
-          await sql`
-            UPDATE "User"
-            SET ${sql.unsafe(fields.join(', '))}
-            WHERE id = $${values.length}
-          `;
-        }
+    // Execute updates sequentially (Neon serverless over HTTP does not support transactions via .begin)
+    for (const update of updates) {
+      const { userId, role, department } = update;
+      
+      const fields: string[] = [];
+      const values: any[] = [];
+      
+      if (role !== undefined) {
+        fields.push(`role = $${values.length + 1}`);
+        values.push(role);
       }
-    });
+      if (department !== undefined) {
+        fields.push(`department = $${values.length + 1}`);
+        values.push(department);
+      }
+
+      if (fields.length > 0) {
+        values.push(userId);
+        await sql`
+          UPDATE "User"
+          SET ${sql.unsafe(fields.join(', '))}
+          WHERE id = $${values.length}
+        `;
+      }
+    }
 
     return NextResponse.json({ message: "Users updated successfully" }, { status: 200 });
   } catch (error: any) {
