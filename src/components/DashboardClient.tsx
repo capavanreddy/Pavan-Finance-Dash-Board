@@ -1319,6 +1319,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Finance Function', key: 'type', width: 20 },
+      { header: 'Request From', key: 'requestFrom', width: 25 },
       { header: 'Nature of Request', key: 'nature', width: 40 },
       { header: 'Status', key: 'status', width: 15 }
     ];
@@ -1980,6 +1981,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       Task Type {taskSortConfig?.key === 'taskType' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('requestFrom')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Request From {taskSortConfig?.key === 'requestFrom' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Owner {taskSortConfig?.key === 'ownerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -2001,8 +2007,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </div>
                   </th>
                   <th style={thStyle}>Reviewer</th>
-                  <th style={thStyle}>Review Status</th>
                   <th style={thStyle}>Review Date</th>
+                  <th style={thStyle}>Review Status</th>
                   <th style={thStyle}>Capture LO?</th>
                   <th style={thStyle}>Owner Comments</th>
                   <th style={thStyle}>Reviewer Comments</th>
@@ -2012,9 +2018,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={16} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
                 ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={16} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
+                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
                     const currentUserName = EMAIL_TO_NAME[user?.email || ""];
@@ -2038,6 +2044,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>{task.entityName}</td>
                       <td style={tdStyle}><span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>{task.taskType}</span></td>
+                      <td style={tdStyle}>{task.requestFrom}</td>
                       <td style={tdStyle}>{task.ownerName}</td>
                       <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                       
@@ -2078,17 +2085,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         />
                       </td>
                       <td style={tdStyle}>{task.reviewerName === "Not Applicable" ? <span style={{ color: "#94a3b8" }}>N/A</span> : task.reviewerName}</td>
-                      <td style={tdStyle}>
-                        <StatusPill 
-                          status={task.reviewerName === "Not Applicable" ? "Review Not Required" : task.reviewStatus} 
-                          type="review" 
-                          taskId={task.id} 
-                          onUpdate={handleUpdate} 
-                          disabled={isReviewerLocked || !canEditReviewFields}
-                        />
-                      </td>
-
-
+                      
                       <td 
                         style={{ ...tdStyle, cursor: task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields ? "not-allowed" : "pointer", minWidth: "140px" }}
                         onClick={() => { 
@@ -2115,6 +2112,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
                           </span>
                         )}
+                      </td>
+
+                      <td style={tdStyle}>
+                        <StatusPill 
+                          status={task.reviewerName === "Not Applicable" ? "Review Not Required" : task.reviewStatus} 
+                          type="review" 
+                          taskId={task.id} 
+                          onUpdate={handleUpdate} 
+                          disabled={isReviewerLocked || !canEditReviewFields}
+                        />
                       </td>
 
                       <td style={tdStyle}>
