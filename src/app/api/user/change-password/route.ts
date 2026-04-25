@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 
 export async function POST(req: Request) {

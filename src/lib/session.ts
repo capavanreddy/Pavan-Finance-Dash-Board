@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { getDb } from "@/lib/db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const SECRET_KEY = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-key-change-in-production"

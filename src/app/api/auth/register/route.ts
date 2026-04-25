@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { sendEmail } from "@/lib/email";
 
 
@@ -22,18 +22,18 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = crypto.randomUUID();
 
     // New users are created as PENDING (isApproved: false)
     const users = await sql`
       INSERT INTO "User" (id, name, email, password, department, "isApproved", role, "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), ${name}, ${email}, ${hashedPassword}, ${department}, false, 'USER', NOW(), NOW())
+      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${department}, false, 'USER', NOW(), NOW())
       RETURNING id, name, email
     `;
     const user = users[0];
 
     // Notify Admins
     try {
-    const sql = getDb();
       const admins = await sql`
         SELECT email FROM "User" WHERE role = 'ADMIN'
       `;
