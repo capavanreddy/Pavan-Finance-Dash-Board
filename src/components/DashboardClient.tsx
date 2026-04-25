@@ -182,7 +182,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [externalRequests, setExternalRequests] = useState<ExternalRequest[]>([]);
   const [extReqLoading, setExtReqLoading] = useState(false);
   const [showExtReqForm, setShowExtReqForm] = useState(false);
-  const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED' | 'REJECTED'>('ALL');
+  const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED' | 'REJECTED' | 'CONVERT_PENDING'>('ALL');
   const [extReqSearch, setExtReqSearch] = useState("");
   const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
@@ -1109,6 +1109,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
     if (extReqFilter === 'REJECTED') {
       return r.status === 'Rejected';
+    }
+    if (extReqFilter === 'CONVERT_PENDING') {
+      return (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId;
     }
     return true;
   });
@@ -2406,83 +2409,61 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         )}
 
 
-        {/* Other Dept View (Requests Module) */}
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
           <div className="other-dept-view">
             <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
               <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
-                  <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-                    {/* All Tab */}
-                    <button 
-                      onClick={() => setExtReqFilter('ALL')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'ALL' ? "#475569" : "white",
-                        borderColor: extReqFilter === 'ALL' ? "#475569" : "#e2e8f0",
-                        color: extReqFilter === 'ALL' ? "white" : "#64748b"
-                      }}
-                    >
-                      All
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('ALLOCATION')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "white",
-                        borderColor: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "#e2e8f0",
-                        color: extReqFilter === 'ALLOCATION' ? "white" : "#64748b"
-                      }}
-                    >
-                      Pending
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('PROCESS')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'PROCESS' ? "#3b82f6" : "white",
-                        borderColor: extReqFilter === 'PROCESS' ? "#3b82f6" : "#e2e8f0",
-                        color: extReqFilter === 'PROCESS' ? "white" : "#64748b"
-                      }}
-                    >
-                      Under Process
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('PROCESSED')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'PROCESSED' ? "#10b981" : "white",
-                        borderColor: extReqFilter === 'PROCESSED' ? "#10b981" : "#e2e8f0",
-                        color: extReqFilter === 'PROCESSED' ? "white" : "#64748b"
-                      }}
-                    >
-                      Processed
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('REJECTED')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'REJECTED' ? "#ef4444" : "white",
-                        borderColor: extReqFilter === 'REJECTED' ? "#ef4444" : "#e2e8f0",
-                        color: extReqFilter === 'REJECTED' ? "white" : "#64748b"
-                      }}
-                    >
-                      Rejected
-                    </button>
-                  </div>
-                </div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
                   style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
                 >
                   <Plus size={18} /> Submit New Request
                 </button>
+              </div>
+              
+              {/* Metric Cards for Inter-Dept */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: "white" }}>
+                <MetricCard 
+                  title="All Requests" 
+                  value={externalRequests.length} 
+                  icon={<FileText size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #475569 0%, #1e293b 100%)" 
+                  isActive={extReqFilter === 'ALL'} 
+                  onClick={() => setExtReqFilter('ALL')} 
+                />
+                <MetricCard 
+                  title="Pending" 
+                  value={externalRequests.filter(r => r.status === 'Pending' || !r.status || r.status === 'New' || r.status === '').length} 
+                  icon={<Clock size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
+                  isActive={extReqFilter === 'ALLOCATION'} 
+                  onClick={() => setExtReqFilter('ALLOCATION')} 
+                />
+                <MetricCard 
+                  title="Under Process" 
+                  value={externalRequests.filter(r => r.status === 'Under Process').length} 
+                  icon={<AlertCircle size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" 
+                  isActive={extReqFilter === 'PROCESS'} 
+                  onClick={() => setExtReqFilter('PROCESS')} 
+                />
+                <MetricCard 
+                  title="Processed" 
+                  value={externalRequests.filter(r => r.status === 'Processed').length} 
+                  icon={<CheckCircle2 size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                  isActive={extReqFilter === 'PROCESSED'} 
+                  onClick={() => setExtReqFilter('PROCESSED')} 
+                />
+                <MetricCard 
+                  title="Rejected" 
+                  value={externalRequests.filter(r => r.status === 'Rejected').length} 
+                  icon={<Trash2 size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
+                  isActive={extReqFilter === 'REJECTED'} 
+                  onClick={() => setExtReqFilter('REJECTED')} 
+                />
               </div>
 
               {/* Enhanced Filter Bar */}
@@ -2497,29 +2478,37 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
                   />
                 </div>
-                <select 
-                    value={extReqStatusFilter}
-                    onChange={(e) => setExtReqStatusFilter(e.target.value)}
-                    style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "10px 16px", fontSize: "0.875rem", color: "#64748b", cursor: "pointer", outline: "none" }}
-                  >
-                    <option value="ALL">All Statuses</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Under Process">Under Process</option>
-                    <option value="Processed">Processed</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                {canAllocateAnything && (
-                  <select 
-                    onChange={e => {
-                      if (e.target.value === 'ACTION') setExtReqFilter('ALLOCATION');
-                      else setExtReqFilter('ALL');
-                    }}
-                    style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569", minWidth: "150px" }}
-                  >
-                    <option value="ALL">All Actions</option>
-                    <option value="ACTION">Needs My Allocation</option>
-                  </select>
-                )}
+                
+                {/* Pending to Convert Dynamic Button */}
+                <button 
+                  onClick={() => setExtReqFilter(extReqFilter === 'CONVERT_PENDING' ? 'ALL' : 'CONVERT_PENDING')}
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "rgba(79, 70, 229, 0.1)" : "white", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#64748b", 
+                    border: extReqFilter === 'CONVERT_PENDING' ? "2px solid #4f46e5" : "1px solid #e2e8f0", 
+                    padding: "8px 16px", 
+                    borderRadius: "10px", 
+                    fontSize: "0.875rem", 
+                    fontWeight: 600, 
+                    cursor: "pointer", 
+                    transition: "all 0.2s" 
+                  }}
+                >
+                  <ListFilter size={18} />
+                  Pending to Convert
+                  <span style={{ 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#f1f5f9", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "white" : "#64748b", 
+                    padding: "2px 8px", 
+                    borderRadius: "999px", 
+                    fontSize: "0.75rem" 
+                  }}>
+                    {externalRequests.filter(r => (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId).length}
+                  </span>
+                </button>
 
                 <div style={{ marginLeft: "auto", position: "relative" }}>
                   <button 
