@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Login() {
   const router = useRouter();
@@ -199,7 +200,7 @@ export default function Login() {
 
           <div style={{ textAlign: "center", marginTop: "32px", borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
             <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-              Don't have an account? <a href="/register" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Request Access</a>
+              Don't have an account? <Link href="/register" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Request Access</Link>
             </p>
           </div>
         </div>

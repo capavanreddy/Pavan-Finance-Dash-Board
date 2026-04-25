@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function Register() {
   const router = useRouter();
@@ -95,7 +97,14 @@ export default function Register() {
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-             <img src="/logo.png" alt="Intellicar Logo" style={{ height: "56px", marginBottom: '16px' }} />
+            <Image
+              src="/logo.png"
+              alt="Intellicar Logo"
+              width={180}
+              height={56}
+              style={{ objectFit: 'contain', marginBottom: '16px' }}
+              priority
+            />
           </div>
 
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
@@ -206,7 +215,7 @@ export default function Register() {
 
           <div style={{ textAlign: "center", marginTop: "32px", borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
             <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-              Already have an account? <a href="/login" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Sign In</a>
+              Already have an account? <Link href="/login" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
             </p>
           </div>
         </div>
