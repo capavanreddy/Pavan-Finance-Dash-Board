@@ -103,7 +103,7 @@ export async function authenticate(
     const users = await sql`
       SELECT id, email, name, password, role, department, "isApproved", "isSuspended"
       FROM "User"
-      WHERE email = ${email}
+      WHERE LOWER(email) = LOWER(${email})
       LIMIT 1
     `;
     

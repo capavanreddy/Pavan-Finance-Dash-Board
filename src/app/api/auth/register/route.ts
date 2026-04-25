@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existingUsers = await sql`
-      SELECT id FROM "User" WHERE email = ${email} LIMIT 1
+      SELECT id FROM "User" WHERE LOWER(email) = LOWER(${email}) LIMIT 1
     `;
 
     if (existingUsers.length > 0) {

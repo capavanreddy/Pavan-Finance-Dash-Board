@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     const tokens = await sql`
       SELECT * FROM "VerificationToken" 
-      WHERE identifier = ${email} AND token = ${otp}
+      WHERE LOWER(identifier) = LOWER(${email}) AND token = ${otp}
       LIMIT 1
     `;
 

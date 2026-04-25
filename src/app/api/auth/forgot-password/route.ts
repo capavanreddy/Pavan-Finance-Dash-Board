@@ -24,23 +24,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user exists
-    const users = await sql`SELECT email FROM "User" WHERE email = ${email} LIMIT 1`;
+    const users = await sql`SELECT email FROM "User" WHERE LOWER(email) = LOWER(${email}) LIMIT 1`;
     if (users.length === 0) {
       // Don't reveal if user exists for security, but we'll return success to avoid enumeration
       return NextResponse.json({ message: "If your email is registered, you will receive an OTP." }, { status: 200 });
     }
+    
+    const dbEmail = users[0].email; // Use the actual email from DB for token storage
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
     // Clear old tokens and save new one
-    await sql`DELETE FROM "VerificationToken" WHERE identifier = ${email}`;
-    await sql`INSERT INTO "VerificationToken" (identifier, token, expires) VALUES (${email}, ${otp}, ${expires})`;
+    await sql`DELETE FROM "VerificationToken" WHERE LOWER(identifier) = LOWER(${dbEmail})`;
+    await sql`INSERT INTO "VerificationToken" (identifier, token, expires) VALUES (${dbEmail}, ${otp}, ${expires})`;
 
     // Send email
     await sendEmail({
-      to: email,
+      to: dbEmail,
       subject: "Your Password Reset OTP",
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">

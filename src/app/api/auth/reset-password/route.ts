@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Verify OTP one last time to be safe
     const tokens = await sql`
       SELECT * FROM "VerificationToken" 
-      WHERE identifier = ${email} AND token = ${otp}
+      WHERE LOWER(identifier) = LOWER(${email}) AND token = ${otp}
       LIMIT 1
     `;
 
@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
     await sql`
       UPDATE "User"
       SET password = ${hashedPassword}
-      WHERE email = ${email}
+      WHERE LOWER(email) = LOWER(${email})
     `;
 
     // Delete the used token
-    await sql`DELETE FROM "VerificationToken" WHERE identifier = ${email}`;
+    await sql`DELETE FROM "VerificationToken" WHERE LOWER(identifier) = LOWER(${email})`;
 
     return NextResponse.json({ message: "Password reset successful" }, { status: 200 });
   } catch (error: any) {
