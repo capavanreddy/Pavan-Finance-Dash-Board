@@ -61,10 +61,10 @@ export async function getSession(): Promise<Session | null> {
       return null;
     }
 
-    // Fetch LATEST user data from DB to ensure instant updates (role/dept changes)
+    // Fetch LATEST user data from DB to ensure instant updates (role/dept changes/suspension)
     const sql = getDb();
     const users = await sql`
-      SELECT id, email, name, role, department
+      SELECT id, email, name, role, department, "isSuspended"
       FROM "User"
       WHERE id = ${payload.id}
       LIMIT 1
@@ -72,6 +72,11 @@ export async function getSession(): Promise<Session | null> {
     
     if (users.length === 0) return null;
     const user = users[0];
+
+    // If account is suspended, block session immediately
+    if (user.isSuspended) {
+      return null;
+    }
     
     return { 
       user: {
@@ -96,7 +101,7 @@ export async function authenticate(
     // Find user in database using Neon serverless
     const sql = getDb();
     const users = await sql`
-      SELECT id, email, name, password, role, department, "isApproved"
+      SELECT id, email, name, password, role, department, "isApproved", "isSuspended"
       FROM "User"
       WHERE email = ${email}
       LIMIT 1
@@ -108,6 +113,11 @@ export async function authenticate(
       return { success: false, error: "User not found" };
     }
     
+    // Check if account is suspended
+    if (user.isSuspended) {
+      return { success: false, error: "Your account is temporarily on hold. Please contact Admin." };
+    }
+
     // Check if user is approved
     if (user.isApproved === false) {
       return { success: false, error: "Your account is pending admin approval." };

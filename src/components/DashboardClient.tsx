@@ -289,7 +289,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
 
-  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string }>>({});
+  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string; isSuspended?: boolean }>>({});
   const [isSavingUsers, setIsSavingUsers] = useState(false);
 
   const fetchTasks = async () => {
@@ -754,6 +754,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     setPendingUserUpdates(prev => ({
       ...prev,
       [userId]: { ...prev[userId], role: newRole }
+    }));
+  };
+
+  const handleUpdateUserSuspension = (userId: string, isSuspended: boolean) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], isSuspended }
     }));
   };
 
@@ -3884,6 +3891,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                <th style={{ padding: "12px 8px" }}>Email</th>
                                <th style={{ padding: "12px 8px" }}>Department</th>
                                <th style={{ padding: "12px 8px" }}>Role</th>
+                               <th style={{ padding: "12px 8px" }}>Account Status</th>
                                <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                             </tr>
                           </thead>
@@ -3914,6 +3922,40 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     <option value="ADMIN">ADMIN</option>
                                     <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                                   </select>
+                                </td>
+                                <td style={{ padding: "12px 8px" }}>
+                                  <div 
+                                    onClick={() => {
+                                      const currentVal = pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : ((u as any).isSuspended || false);
+                                      handleUpdateUserSuspension(u.id, !currentVal);
+                                    }}
+                                    style={{ 
+                                      width: "44px", 
+                                      height: "22px", 
+                                      background: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "#ef4444" : "#10b981", 
+                                      borderRadius: "11px", 
+                                      position: "relative", 
+                                      cursor: "pointer", 
+                                      transition: "all 0.2s ease",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      padding: "0 2px",
+                                      boxSizing: "border-box",
+                                      justifyContent: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "flex-end" : "flex-start"
+                                    }}
+                                  >
+                                    <div style={{ width: "18px", height: "18px", background: "white", borderRadius: "50%", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }}></div>
+                                    <span style={{ 
+                                      position: "absolute", 
+                                      left: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "6px" : "24px", 
+                                      fontSize: "8px", 
+                                      color: "white", 
+                                      fontWeight: 800,
+                                      pointerEvents: "none"
+                                    }}>
+                                      {(pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "HOLD" : "LIVE"}
+                                    </span>
+                                  </div>
                                 </td>
                                 <td style={{ padding: "12px 8px", textAlign: "right" }}>
                                   <button 

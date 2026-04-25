@@ -8,15 +8,22 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();
-    const userRole = (session?.user as any)?.role;
     
-    // Allow any authenticated user to GET the users list (for dropdowns)
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    // --- Self-healing Migration ---
+    // Add isSuspended column if it doesn't exist
+    try {
+      await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT FALSE`;
+    } catch (e) {
+      // Ignore errors if column already exists (though IF NOT EXISTS handles it)
+      console.log("Migration check done or skipped");
+    }
+
     const users = await sql`
-      SELECT id, name, email, role, department, "isApproved", "isAllocator", "createdAt"
+      SELECT id, name, email, role, department, "isApproved", "isAllocator", "isSuspended", "createdAt"
       FROM "User"
       ORDER BY "createdAt" DESC
     `;

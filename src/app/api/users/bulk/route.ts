@@ -22,14 +22,22 @@ export async function PUT(req: NextRequest) {
 
     // Execute updates sequentially (Neon serverless over HTTP does not support transactions via .begin)
     for (const update of updates) {
-      const { userId, role, department } = update;
+      const { userId, role, department, isSuspended } = update;
       
-      if (role !== undefined && department !== undefined) {
+      if (role !== undefined && department !== undefined && isSuspended !== undefined) {
+        await sql`UPDATE "User" SET role = ${role}, department = ${department}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
+      } else if (role !== undefined && department !== undefined) {
         await sql`UPDATE "User" SET role = ${role}, department = ${department} WHERE id = ${userId}`;
+      } else if (role !== undefined && isSuspended !== undefined) {
+        await sql`UPDATE "User" SET role = ${role}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
+      } else if (department !== undefined && isSuspended !== undefined) {
+        await sql`UPDATE "User" SET department = ${department}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
       } else if (role !== undefined) {
         await sql`UPDATE "User" SET role = ${role} WHERE id = ${userId}`;
       } else if (department !== undefined) {
         await sql`UPDATE "User" SET department = ${department} WHERE id = ${userId}`;
+      } else if (isSuspended !== undefined) {
+        await sql`UPDATE "User" SET "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
       }
     }
 
