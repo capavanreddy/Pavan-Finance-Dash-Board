@@ -104,25 +104,40 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
           </div>
 
           <div>
-            <label style={labelStyle}>Entity Name *</label>
-            <select 
-              name="entityName" 
-              required 
-              value={formData.entityName} 
-              onChange={handleChange} 
-              style={inputStyle}
-            >
-              <option value="">Select Entity</option>
-              {(() => {
-                const matrix = JSON.parse(settings.entityMatrix || '{}');
-                const allowedEntities = matrix[user.id] || [];
-                return settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => {
-                  const name = entity.trim();
-                  if (allowedEntities.length > 0 && !allowedEntities.includes(name)) return null;
-                  return <option key={name} value={name}>{name}</option>;
-                });
-              })()}
-            </select>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>Select Entities *</label>
+              <button 
+                type="button" 
+                onClick={handleSelectAll}
+                style={{ fontSize: "0.7rem", color: "#4f46e5", background: "none", border: "none", cursor: "pointer", fontWeight: 700, textTransform: "uppercase" }}
+              >
+                {formData.entityNames.length === allowedEntities.length ? "Deselect All" : "Consolidate (Select All)"}
+              </button>
+            </div>
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", 
+              gap: "8px", 
+              maxHeight: "150px", 
+              overflowY: "auto",
+              padding: "12px",
+              background: "#f8fafc",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0"
+            }}>
+              {allowedEntities.map(entity => (
+                <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: "pointer", padding: "4px", borderRadius: "4px", transition: "background 0.2s" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={formData.entityNames.includes(entity)} 
+                    onChange={() => handleEntityToggle(entity)}
+                    style={{ width: "16px", height: "16px", accentColor: "#4f46e5" }}
+                  />
+                  {entity}
+                </label>
+              ))}
+              {allowedEntities.length === 0 && <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>No entities assigned to you.</span>}
+            </div>
           </div>
 
           <div>

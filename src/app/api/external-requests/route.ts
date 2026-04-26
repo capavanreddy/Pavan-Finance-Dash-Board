@@ -45,23 +45,29 @@ export async function POST(request: Request) {
   try {
     const sql = getDb();
     const body = await request.json();
-    const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityName } = body;
+    const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityNames } = body;
 
-    if (!requestFrom || !requesterEmail || !natureOfRequest || !departmentName || !requestType) {
+    if (!requestFrom || !requesterEmail || !natureOfRequest || !departmentName || !requestType || !entityNames || !entityNames.length) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    const newRequests = await sql`
-      INSERT INTO "ExternalRequest" (
-        "requestFrom", "requesterEmail", "natureOfRequest", "departmentName", 
-        "requestType", "originalRequestType", "transferStatus", "status", "entityName", "createdAt", "updatedAt"
-      )
-      VALUES (
-        ${requestFrom}, ${requesterEmail}, ${natureOfRequest}, ${departmentName},
-        ${requestType}, ${requestType}, 'O', 'Pending', ${entityName}, NOW(), NOW()
-      )
-      RETURNING *
-    `;
+    const createdRequests = [];
+    for (const entityName of entityNames) {
+      const result = await sql`
+        INSERT INTO "ExternalRequest" (
+          "requestFrom", "requesterEmail", "natureOfRequest", "departmentName", 
+          "requestType", "originalRequestType", "transferStatus", "status", "entityName", "createdAt", "updatedAt"
+        )
+        VALUES (
+          ${requestFrom}, ${requesterEmail}, ${natureOfRequest}, ${departmentName},
+          ${requestType}, ${requestType}, 'O', 'Pending', ${entityName}, NOW(), NOW()
+        )
+        RETURNING *
+      `;
+      createdRequests.push(result[0]);
+    }
+
+    return NextResponse.json(createdRequests, { status: 201 });
 
     return NextResponse.json(newRequests[0], { status: 201 });
   } catch (error) {

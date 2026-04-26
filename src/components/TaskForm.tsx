@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, AlertCircle } from "lucide-react";
 
 type TaskFormProps = {
@@ -21,46 +21,84 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
 
   const [formData, setFormData] = useState({
     taskName: initialData?.taskName || "",
-    entityName: initialData?.entityName || "",
     taskType: initialData?.taskType || "",
     departmentName: initialData?.departmentName || "",
     requestFrom: initialData?.requestFrom || "",
-    ownerName: "",
-    reviewerName: "",
-    dueDate: "",
-    mailLink: "",
+    dueDate: initialData?.dueDate || "",
+    mailLink: initialData?.mailLink || "",
     linkedRequestId: initialData?.linkedRequestId || null,
     transferStatus: initialData?.transferStatus || 'O',
     originalRequestType: initialData?.originalRequestType || null
   });
 
+  const [selectedEntities, setSelectedEntities] = useState<string[]>(initialData?.entityName ? [initialData.entityName] : []);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [allowedEntities, setAllowedEntities] = useState<string[]>([]);
+
+  // Initialize allowed entities based on Matrix C
+  useState(() => {
+    const matrix = JSON.parse(settings.entityMatrix || '{}');
+    const userPerms = matrix[user.id] || [];
+    const allEntities = settings?.masterEntities?.split(',').map((e: string) => e.trim()).filter((e: string) => e) || [];
+    
+    if (userPerms.includes('ALL')) {
+      setAllowedEntities(allEntities);
+    } else {
+      setAllowedEntities(allEntities.filter((e: string) => userPerms.includes(e)));
+    }
+  });
+
+  // Sync assignments when selectedEntities change
+  useState(() => {
+    const newAssignments = selectedEntities.map(entity => {
+      const existing = assignments.find(a => a.entityName === entity);
+      return existing || { entityName: entity, ownerName: "", reviewerName: "" };
+    });
+    setAssignments(newAssignments);
+  });
+
+  // We use useEffect to keep assignments in sync with selectedEntities
+  useEffect(() => {
+    setAssignments(prev => {
+      return selectedEntities.map(entity => {
+        const existing = prev.find(a => a.entityName === entity);
+        return existing || { entityName: entity, ownerName: "", reviewerName: "" };
+      });
+    });
+  }, [selectedEntities]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle request type transfer - update request and send to new allocator
+  const handleAssignmentChange = (entityName: string, field: string, value: string) => {
+    setAssignments(prev => prev.map(a => 
+      a.entityName === entityName ? { ...a, [field]: value } : a
+    ));
+  };
+
+  const handleEntityToggle = (entity: string) => {
+    setSelectedEntities(current => 
+      current.includes(entity) ? current.filter(e => e !== entity) : [...current, entity]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedEntities(selectedEntities.length === allowedEntities.length ? [] : [...allowedEntities]);
+  };
+
   const handleTransferRequest = async () => {
     if (!newRequestType || !initialData?.linkedRequestId) return;
-    
     setTransferring(true);
     setError("");
-    
     try {
       const res = await fetch(`/api/external-requests/${initialData.linkedRequestId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          requestType: newRequestType,
-          status: "Pending" // Reset to pending for new allocator
-        }),
+        body: JSON.stringify({ requestType: newRequestType, status: "Pending" }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to transfer request");
-      }
-
-      alert(`Request transferred to ${newRequestType} allocator successfully!`);
+      if (!res.ok) throw new Error("Failed to transfer request");
+      alert(`Request transferred successfully!`);
       onSuccess();
     } catch (err: any) {
       setError(err.message);
@@ -71,6 +109,16 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedEntities.length === 0) {
+      setError("Please select at least one entity.");
+      return;
+    }
+    const missingAssignment = assignments.find(a => !a.ownerName);
+    if (missingAssignment) {
+      setError(`Please select an owner for ${missingAssignment.entityName}`);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -78,12 +126,12 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, assignments }),
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || "Failed to create task");
+        throw new Error(errData.message || "Failed to create tasks");
       }
 
       onSuccess();
@@ -209,19 +257,39 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Entity Name *</label>
-                    <select name="entityName" required value={formData.entityName} onChange={handleChange} style={inputStyle}>
-                      <option value="">Choose</option>
-                      {(() => {
-                        const matrix = JSON.parse(settings.entityMatrix || '{}');
-                        const allowedEntities = matrix[user.id] || [];
-                        return settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => {
-                          const name = entity.trim();
-                          if (allowedEntities.length > 0 && !allowedEntities.includes(name)) return null;
-                          return <option key={name} value={name}>{name}</option>;
-                        });
-                      })()}
-                    </select>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Select Entities *</label>
+                    <button 
+                      type="button" 
+                      onClick={handleSelectAll}
+                      style={{ fontSize: "0.7rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: 700, textTransform: "uppercase" }}
+                    >
+                      {selectedEntities.length === allowedEntities.length ? "Deselect All" : "Consolidate (Select All)"}
+                    </button>
+                  </div>
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", 
+                    gap: "8px", 
+                    maxHeight: "120px", 
+                    overflowY: "auto",
+                    padding: "12px",
+                    background: "#f8fafc",
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0"
+                  }}>
+                    {allowedEntities.map(entity => (
+                      <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: "pointer", padding: "4px", borderRadius: "4px" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedEntities.includes(entity)} 
+                          onChange={() => handleEntityToggle(entity)}
+                          style={{ width: "16px", height: "16px", accentColor: "#2563eb" }}
+                        />
+                        {entity}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Task Type *</label>
@@ -233,6 +301,56 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
                   </select>
                 </div>
               </div>
+
+              {/* Assignment Grid */}
+              {selectedEntities.length > 0 && (
+                <div style={{ marginTop: "4px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Manual Assignment Grid (Owner & Reviewer per Entity)</label>
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8125rem" }}>
+                      <thead style={{ background: "#f8fafc" }}>
+                        <tr>
+                          <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>Entity</th>
+                          <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>Owner *</th>
+                          <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>Reviewer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {assignments.map(a => (
+                          <tr key={a.entityName}>
+                            <td style={{ padding: "8px", fontWeight: 600, color: "#475569", background: "#f8fafc", width: "100px" }}>{a.entityName}</td>
+                            <td style={{ padding: "4px" }}>
+                              <select 
+                                required 
+                                value={a.ownerName} 
+                                onChange={(e) => handleAssignmentChange(a.entityName, 'ownerName', e.target.value)}
+                                style={{ ...inputStyle, padding: "6px 8px" }}
+                              >
+                                <option value="">Owner</option>
+                                {usersList.filter(u => u.department === 'Finance' && u.isApproved !== false).map(u => (
+                                  <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ padding: "4px" }}>
+                              <select 
+                                value={a.reviewerName} 
+                                onChange={(e) => handleAssignmentChange(a.entityName, 'reviewerName', e.target.value)}
+                                style={{ ...inputStyle, padding: "6px 8px" }}
+                              >
+                                <option value="">N/A</option>
+                                {usersList.filter(u => u.department === 'Finance' && u.isApproved !== false).map(u => (
+                                  <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
+                                ))}
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
@@ -247,33 +365,6 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Request From *</label>
                   <input name="requestFrom" required value={formData.requestFrom} onChange={handleChange} style={inputStyle} placeholder="Your answer" />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Owner Name *</label>
-                  <select name="ownerName" required value={formData.ownerName} onChange={handleChange} style={inputStyle}>
-                    <option value="">Choose</option>
-                    {usersList
-                      .filter(u => u.department === 'Finance' && u.isApproved !== false)
-                      .map(u => (
-                        <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
-                      ))
-                    }
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Reviewer Name</label>
-                  <select name="reviewerName" value={formData.reviewerName} onChange={handleChange} style={inputStyle}>
-                    <option value="">Not Applicable / None</option>
-                    {usersList
-                      .filter(u => u.department === 'Finance' && u.isApproved !== false)
-                      .map(u => (
-                        <option key={u.email} value={u.name || u.email}>{u.name || u.email}</option>
-                      ))
-                    }
-                  </select>
                 </div>
               </div>
 

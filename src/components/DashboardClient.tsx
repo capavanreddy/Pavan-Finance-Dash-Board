@@ -4774,6 +4774,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>User Name / Email</th>
+                                  <th style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#2563eb", fontSize: "0.7rem", textTransform: "uppercase", background: "#eff6ff" }}>Consolidated (ALL)</th>
                                   {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => (
                                     <th key={entity} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{entity.trim()}</th>
                                   ))}
@@ -4783,11 +4784,27 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 {usersList.filter(u => (u as any).isApproved !== false).map((u) => {
                                   const matrix = JSON.parse(settings.entityMatrix || '{}');
                                   const userEntities = matrix[u.id] || [];
+                                  const isConsolidated = userEntities.includes('ALL');
+                                  
                                   return (
                                     <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontSize: "0.875rem" }}>
                                         <div style={{ fontWeight: 600, color: "#1e293b" }}>{u.name || "--"}</div>
                                         <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
+                                      </td>
+                                      <td style={{ padding: "12px", textAlign: "center", background: "#f8fafc" }}>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={isConsolidated} 
+                                          onChange={(e) => {
+                                            const updated = e.target.checked ? ['ALL'] : [];
+                                            setSettings({
+                                              ...settings, 
+                                              entityMatrix: JSON.stringify({ ...matrix, [u.id]: updated })
+                                            });
+                                          }}
+                                          style={{ width: "20px", height: "20px", cursor: "pointer" }}
+                                        />
                                       </td>
                                       {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => {
                                         const entityName = entity.trim();
@@ -4795,17 +4812,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                           <td key={entityName} style={{ padding: "12px", textAlign: "center" }}>
                                             <input 
                                               type="checkbox" 
-                                              checked={userEntities.includes(entityName)} 
+                                              disabled={isConsolidated}
+                                              checked={isConsolidated || userEntities.includes(entityName)} 
                                               onChange={(e) => {
+                                                const current = userEntities.filter((en: string) => en !== 'ALL');
                                                 const updated = e.target.checked 
-                                                  ? [...userEntities, entityName] 
-                                                  : userEntities.filter((en: string) => en !== entityName);
+                                                  ? [...current, entityName] 
+                                                  : current.filter((en: string) => en !== entityName);
                                                 setSettings({
                                                   ...settings, 
                                                   entityMatrix: JSON.stringify({ ...matrix, [u.id]: updated })
                                                 });
                                               }}
-                                              style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                              style={{ width: "18px", height: "18px", cursor: "pointer", opacity: isConsolidated ? 0.5 : 1 }}
                                             />
                                           </td>
                                         );
