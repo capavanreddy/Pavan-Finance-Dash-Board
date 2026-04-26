@@ -1904,26 +1904,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           >
                             Inter-Dept
                           </button>
+
+                          {(isAdmin || access.RECURRING) && (
+                            <button 
+                              onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                              style={{ 
+                                padding: "10px", borderRadius: "12px", border: "none", 
+                                background: activeView === 'RECURRING' ? "rgba(255,255,255,0.1)" : "transparent",
+                                color: activeView === 'RECURRING' ? "white" : "#94a3b8",
+                                fontSize: "0.65rem", fontWeight: 600, cursor: "pointer", textAlign: "center", transition: "all 0.2s"
+                              }}
+                            >
+                              Recurring
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Recurring Module */}
-                  {(isAdmin || access.RECURRING) && (
-                    <button 
-                      onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
-                      style={{ 
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8", 
-                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px"
-                      }}
-                    >
-                      <RefreshCw size={24} color={activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Recurring</span>
-                    </button>
                   )}
 
                   {/* Requests Module (Only shown if separate from main task view) */}
