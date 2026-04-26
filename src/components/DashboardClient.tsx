@@ -2873,8 +2873,26 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", textAlign: "left" }}>
                   <thead>
                     <tr style={{ background: t.bg, borderBottom: `2px solid ${t.border}`, color: t.textMuted }}>
-                      {['ID', 'Date', 'From', 'Entity', 'Nature', 'Type', 'Status', 'Actions'].map((h) => (
-                        <th key={h} style={{ padding: "16px 20px", fontWeight: 700, textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em" }}>{h}</th>
+                      {[
+                        { key: 'id', label: 'ID' },
+                        { key: 'createdAt', label: 'Date' },
+                        { key: 'requestFrom', label: 'From' },
+                        { key: 'entityName', label: 'Entity' },
+                        { key: 'natureOfRequest', label: 'Nature' },
+                        { key: 'requestType', label: 'Type' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'actions', label: 'Actions' }
+                      ].map((col) => (
+                        <th 
+                          key={col.key} 
+                          onClick={() => col.key !== 'actions' && handleExtReqSort(col.key as keyof ExternalRequest)}
+                          style={{ 
+                            padding: "16px 20px", fontWeight: 700, textTransform: "uppercase", fontSize: "0.75rem", 
+                            letterSpacing: "0.05em", color: t.textMuted, cursor: col.key !== 'actions' ? "pointer" : "default" 
+                          }}
+                        >
+                          {col.label}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -3004,7 +3022,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     ].map((col) => (
                       <th 
                         key={col.key}
-                        onClick={() => col.key !== 'actions' && handleLoSort(col.key as keyof LearningOpportunity)}
+                        onClick={() => col.key !== 'actions' && handleLOSort(col.key as keyof LearningOpportunity)}
                         style={{ 
                           padding: "16px 20px", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", 
                           letterSpacing: "0.05em", color: t.textMuted, cursor: col.key !== 'actions' ? "pointer" : "default" 
