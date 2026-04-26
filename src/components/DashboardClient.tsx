@@ -111,6 +111,7 @@ const EMAIL_TO_NAME: Record<string, string> = {
 
 export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [user, setUser] = useState(initialUser);
+  const [theme, setTheme] = useState<'LIGHT' | 'DARK'>('LIGHT');
   const isAdmin = user?.role === 'ADMIN' || user?.email === 'pavanreddy@intellicar.in';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,6 +224,28 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   // Wait, I'll use a simpler approach since I can't easily add refs everywhere without more edits.
   // I'll use event.target check.
   
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'LIGHT' | 'DARK';
+    if (savedTheme) setTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const t = {
+    bg: theme === 'DARK' ? '#0f172a' : '#f8fafc',
+    card: theme === 'DARK' ? '#1e293b' : '#ffffff',
+    text: theme === 'DARK' ? '#f8fafc' : '#0f172a',
+    textMuted: theme === 'DARK' ? '#94a3b8' : '#64748b',
+    border: theme === 'DARK' ? '#334155' : '#e2e8f0',
+    input: theme === 'DARK' ? '#0f172a' : '#ffffff',
+    sidebar: theme === 'DARK' ? '#020617' : '#0f172a',
+    sidebarText: '#94a3b8',
+    sidebarActive: '#60a5fa',
+    accent: '#2563eb'
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -1702,13 +1725,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc", color: "#0f172a", overflow: "hidden" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: t.bg, color: t.text, overflow: "hidden", transition: "all 0.3s ease" }}>
       {/* Top Navigation Bar (Full Width) */}
       <header style={{ 
-        height: "80px", width: "100%", background: "#ffffff", display: "flex", 
+        height: "80px", width: "100%", background: t.card, display: "flex", 
         alignItems: "center", justifyContent: "space-between", padding: "0 32px", 
-        borderBottom: "1px solid #e2e8f0", zIndex: 100, flexShrink: 0,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+        borderBottom: `1px solid ${t.border}`, zIndex: 100, flexShrink: 0,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "all 0.3s ease"
       }}>
         {/* Brand Area */}
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -1717,9 +1740,22 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
         {/* Global Actions Area */}
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          {/* Theme Toggle */}
+          <button 
+            onClick={() => setTheme(theme === 'DARK' ? 'LIGHT' : 'DARK')}
+            style={{ 
+              background: t.bg, border: `1px solid ${t.border}`, color: t.text, 
+              width: "40px", height: "40px", borderRadius: "10px", cursor: "pointer", 
+              display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s ease" 
+            }}
+            title={`Switch to ${theme === 'DARK' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'DARK' ? <Lightbulb size={20} color="#f59e0b" /> : <Clock size={20} color="#64748b" />}
+          </button>
+
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{user.name || "Master Admin"}</div>
-            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{user.email}</div>
+            <div style={{ fontSize: "0.875rem", fontWeight: 600, color: t.text }}>{user.name || "Master Admin"}</div>
+            <div style={{ fontSize: "0.75rem", color: t.textMuted }}>{user.email}</div>
           </div>
           
           <div style={{ height: "30px", width: "1px", background: "#f1f5f9" }}></div>
@@ -1746,9 +1782,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {/* Main Body (Sidebar + Content) */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <nav style={{ 
-          width: "110px", background: "#0f172a", display: "flex", 
+          width: "110px", background: t.sidebar, display: "flex", 
           flexDirection: "column", alignItems: "center", paddingTop: "32px", 
-          flexShrink: 0, zIndex: 90, borderRight: "1px solid rgba(255,255,255,0.05)"
+          flexShrink: 0, zIndex: 90, borderRight: "1px solid rgba(255,255,255,0.05)", transition: "all 0.3s ease"
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", padding: "0 12px" }}>
             {/* Logic: Check if module is allowed for user's department */}
@@ -1898,7 +1934,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </nav>
 
         {/* Content Area */}
-        <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: "#f8fafc" }}>
+        <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: t.bg, transition: "all 0.3s ease" }}>
           {activeView === 'RECURRING' && (
             <RecurringActivities settings={settings} usersList={usersList} />
           )}
@@ -1909,10 +1945,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           <div style={{ 
             marginBottom: "32px", 
             paddingBottom: "24px", 
-            borderBottom: "1px solid #e2e8f0",
+            borderBottom: `1px solid ${t.border}`,
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-end"
+            alignItems: "flex-end",
+            transition: "all 0.3s ease"
           }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
@@ -1922,7 +1959,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
                 </span>
               </div>
-              <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
+              <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
                 {activeView === 'HOME' ? "Finance Home Hub" : 
                  activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
               </h2>
