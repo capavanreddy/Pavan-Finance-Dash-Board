@@ -126,7 +126,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [loLoading, setLoLoading] = useState(false);
   const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB'>('ACCOUNT');
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | ''>('ACCESS');
-  const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(true);
+  const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
   const [settings, setSettings] = useState({
@@ -1777,7 +1777,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         }}
                       >
                         <Home size={24} color={activeView === 'HOME' ? "#60a5fa" : "#94a3b8"} />
-                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Home Hub</span>
+                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Home</span>
                       </button>
                     );
                   })()}
@@ -1786,7 +1786,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     <div style={{ width: "100%" }}>
                       <button 
                         onClick={() => {
-                          setActiveView('TASKS');
+                          if (activeView !== 'TASKS') {
+                            setActiveView('TASKS');
+                            setActiveSubView('MAIN');
+                          }
                           setIsTasksMenuOpen(!isTasksMenuOpen);
                           setActiveMainView('DASHBOARD');
                         }}
@@ -1800,7 +1803,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           position: "relative"
                         }}
                       >
-                        <Home size={24} color={activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                        <Briefcase size={24} color={activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
                         <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Tasks</span>
                         <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
                       </button>
@@ -1931,7 +1934,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </p>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
+              {activeView === 'HOME' ? null : (activeView === 'TASKS' && activeSubView === 'MAIN') ? (
                 <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                   <Plus size={18} /> New Task
                 </button>
