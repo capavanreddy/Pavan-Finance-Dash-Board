@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -49,13 +49,11 @@ type ExternalRequest = {
   departmentName: string;
   requestType: string;
   status: string;
-  entityName: string;
   assignedAllocatorEmail: string | null;
   convertedTaskId: number | null;
   originalRequestType: string | null;
   transferStatus: string | null;
   createdAt: string;
-  updatedAt?: string;
 };
 
 type LearningOpportunity = {
@@ -150,8 +148,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     moduleAccessMatrix: '{}',
     allocationMatrix: '{}',
     entityMatrix: '{}',
-    homeContent: '{}',
-    escalationBuffer: 2 // Adding to state for UI consistency, though not in DB yet
+    homeContent: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -222,11 +219,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [rejectReason, setRejectReason] = useState("");
   const [hoveredRejectId, setHoveredRejectId] = useState<number | null>(null);
 
-  // User Management State
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [editRequests, setEditRequests] = useState<any[]>([]);
-
   // Dropdown Refs
   const taskDropdownRef = useState<HTMLDivElement | null>(null)[0]; // Actually I should use useRef
   // Wait, I'll use a simpler approach since I can't easily add refs everywhere without more edits.
@@ -259,42 +251,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const target = event.target as HTMLElement;
       // If clicking a download button or inside a dropdown, don't close immediately here
       // or better: only close if target is NOT part of the dropdown logic
-    };
+      };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showTaskDownloadDropdown, showLODownloadDropdown]);
-
-  // Styles (Defined inside component to access theme t)
-  const inputStyle = {
-    width: "100%", 
-    border: `1px solid ${t.border}`, 
-    borderRadius: "10px", 
-    padding: "10px 14px", 
-    fontSize: "0.875rem", 
-    outline: "none", 
-    background: t.card,
-    color: t.text,
-    transition: "all 0.2s",
-    fontFamily: "inherit"
-  };
-
-  const tdStyle = {
-    padding: "16px 20px",
-    verticalAlign: "middle" as const,
-    color: t.text
-  };
-
-  const thStyle = {
-    background: t.bg,
-    color: t.textMuted,
-    padding: "16px 20px",
-    fontWeight: 700,
-    fontSize: "0.75rem",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
-    borderBottom: `2px solid ${t.border}`,
-    whiteSpace: "nowrap" as const,
-  };
 
 
 
@@ -501,102 +461,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const triggerManualMail = async (type: 'DASHBOARD' | 'EXTERNAL' | 'LO') => {
-    try {
-      const endpointMap = {
-        DASHBOARD: '/api/cron/daily-summary',
-        EXTERNAL: '/api/cron/external-summary',
-        LO: '/api/cron/lo-summary',
-      };
-      const res = await fetch(endpointMap[type], { method: 'GET' });
-      if (res.ok) {
-        alert(`✅ ${type} report email triggered successfully!`);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(`❌ Failed to trigger ${type} report: ${err.message || res.statusText}`);
-      }
-    } catch (error) {
-      console.error('Failed to trigger manual mail:', error);
-      alert(`❌ Error triggering ${type} report email.`);
-    }
-  };
-
   const [preFilledTask, setPreFilledTask] = useState<any>(null);
-
-  const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    try {
-      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchUsersList();
-        alert('User deleted successfully.');
-      } else {
-        alert('Failed to delete user.');
-      }
-    } catch (err) {
-      console.error('Delete user error:', err);
-    }
-  };
-
-  const handleApproveEditRequest = async (requestId: number, taskId: number) => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/approve-edit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId })
-      });
-      if (res.ok) {
-        setEditRequests(prev => prev.filter((r: any) => r.id !== requestId));
-        fetchTasks();
-        alert('Edit request approved.');
-      } else {
-        alert('Failed to approve edit request.');
-      }
-    } catch (err) {
-      console.error('Approve edit request error:', err);
-    }
-  };
-
-  const handleRejectEditRequest = async (requestId: number) => {
-    try {
-      const res = await fetch(`/api/tasks/edit-requests/${requestId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'REJECTED' })
-      });
-      if (res.ok) {
-        setEditRequests(prev => prev.filter((r: any) => r.id !== requestId));
-        alert('Edit request rejected.');
-      } else {
-        alert('Failed to reject edit request.');
-      }
-    } catch (err) {
-      console.error('Reject edit request error:', err);
-    }
-  };
-
-  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>, type: 'task' | 'lo') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
-    try {
-      const res = await fetch('/api/admin/bulk-import', { method: 'POST', body: formData });
-      if (res.ok) {
-        const data = await res.json();
-        alert(`✅ Bulk import successful: ${data.count || 0} records imported.`);
-        if (type === 'task') fetchTasks(); else fetchLOs();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(`❌ Bulk import failed: ${err.message || 'Unknown error'}`);
-      }
-    } catch (err) {
-      console.error('Bulk import error:', err);
-      alert('❌ Error during bulk import.');
-    }
-    e.target.value = '';
-  };
 
   const handleConvertToTask = (req: ExternalRequest) => {
     setPreFilledTask({
@@ -1885,7 +1750,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             }}
             title={`Switch to ${theme === 'DARK' ? 'Light' : 'Dark'} Mode`}
           >
-            {theme === 'DARK' ? <Clock size={20} color="#fbbf24" /> : <Clock size={20} color="#6366f1" />}
+            {theme === 'DARK' ? <Lightbulb size={20} color="#f59e0b" /> : <Clock size={20} color="#64748b" />}
           </button>
 
           <div style={{ textAlign: "right" }}>
@@ -1893,18 +1758,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             <div style={{ fontSize: "0.75rem", color: t.textMuted }}>{user.email}</div>
           </div>
           
-          <div style={{ height: "30px", width: "1px", background: t.border }}></div>
+          <div style={{ height: "30px", width: "1px", background: "#f1f5f9" }}></div>
 
-          <button 
-            onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} 
-            style={{ 
-              padding: "8px 16px", background: t.bg, color: t.text, border: `1px solid ${t.border}`, 
-              borderRadius: "10px", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px", 
-              cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s" 
-            }}
-            onMouseOver={e => e.currentTarget.style.background = t.card}
-            onMouseOut={e => e.currentTarget.style.background = t.bg}
-          >
+
+          <button onClick={() => { setShowOptionsModal(true); if (isAdmin) { fetchUsersList(); fetchSettings(); } else { setActiveOptionsTab('ACCOUNT'); } }} style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.875rem" }}>
             {isAdmin ? <ShieldCheck size={16} /> : <Sliders size={16} />}
             {isAdmin ? "Control Center" : "Account Settings"}
           </button>
@@ -1915,7 +1772,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               document.cookie = "session-token=; path=/; max-age=0";
               window.location.href = "/login";
             }} 
-            style={{ color: t.textMuted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
+            style={{ color: "#64748b", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
           >
             <LogOut size={18} />
           </button>
@@ -1933,29 +1790,35 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             {/* Logic: Check if module is allowed for user's department */}
             {(() => {
               const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
-              const access = matrix[user?.department || ''] || { HOME: true, TASKS: true, RECURRING: true, LOS: true, REQUESTS: false };
+              const canSeeTasks = isAdmin || matrix['Tasks']?.includes(user?.department);
+              const canSeeRequests = isAdmin || matrix['Requests']?.includes(user?.department);
+              const canSeeLearning = isAdmin || matrix['Learning']?.includes(user?.department);
 
               return (
                 <>
                   {/* Home Module */}
-                  {(isAdmin || access.HOME) && (
-                    <button 
-                      onClick={() => { setActiveView('HOME'); setActiveMainView('DASHBOARD'); }}
-                      style={{ 
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'HOME' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'HOME' ? "#60a5fa" : "#94a3b8", 
-                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px"
-                      }}
-                    >
-                      <Home size={24} color={activeView === 'HOME' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Home</span>
-                    </button>
-                  )}
+                  {(() => {
+                    const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                    const canSeeHome = isAdmin || (matrix['Home'] && matrix['Home'].includes(user?.department));
+                    if (!canSeeHome) return null;
+                    return (
+                      <button 
+                        onClick={() => { setActiveView('HOME'); setActiveMainView('DASHBOARD'); }}
+                        style={{ 
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                          background: activeView === 'HOME' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                          border: "none", color: activeView === 'HOME' ? "#60a5fa" : "#94a3b8", 
+                          cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                          width: "100%", borderRadius: "16px"
+                        }}
+                      >
+                        <Home size={24} color={activeView === 'HOME' ? "#60a5fa" : "#94a3b8"} />
+                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Home</span>
+                      </button>
+                    );
+                  })()}
 
-                  {/* Tasks Module */}
-                  {(isAdmin || access.TASKS) && (
+                  {canSeeTasks && (
                     <div style={{ width: "100%" }}>
                       <button 
                         onClick={() => {
@@ -1986,37 +1849,44 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <button 
                             onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); }}
                             style={{ 
-                              padding: "10px", borderRadius: "12px", border: "none", 
-                              background: activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(255,255,255,0.1)" : "transparent",
-                              color: activeView === 'TASKS' && activeSubView === 'MAIN' ? "white" : "#94a3b8",
-                              fontSize: "0.65rem", fontWeight: 600, cursor: "pointer", textAlign: "center", transition: "all 0.2s"
+                              padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                              background: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                              color: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                              cursor: "pointer", transition: "all 0.2s"
                             }}
                           >
-                            Workplace
+                            Task Dashboard
                           </button>
-                          <button 
-                            onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              padding: "10px", borderRadius: "12px", border: "none", 
-                              background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(255,255,255,0.1)" : "transparent",
-                              color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "white" : "#94a3b8",
-                              fontSize: "0.65rem", fontWeight: 600, cursor: "pointer", textAlign: "center", transition: "all 0.2s"
-                            }}
-                          >
-                            Inter-Dept
-                          </button>
-
-                          {(isAdmin || access.RECURRING) && (
+                          {(() => {
+                            // Check Matrix for Recurring Activities access
+                            const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                            const canSeeRecurring = isAdmin || (matrix['Recurring Activities'] && matrix['Recurring Activities'].includes(user?.department));
+                            if (!canSeeRecurring) return null;
+                            return (
+                              <button 
+                                onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                                style={{ 
+                                  padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                  background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                  color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
+                                  cursor: "pointer", transition: "all 0.2s"
+                                }}
+                              >
+                                Recurring Activities
+                              </button>
+                            );
+                          })()}
+                          {canSeeRequests && (
                             <button 
-                              onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                              onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
                               style={{ 
-                                padding: "10px", borderRadius: "12px", border: "none", 
-                                background: activeView === 'RECURRING' ? "rgba(255,255,255,0.1)" : "transparent",
-                                color: activeView === 'RECURRING' ? "white" : "#94a3b8",
-                                fontSize: "0.65rem", fontWeight: 600, cursor: "pointer", textAlign: "center", transition: "all 0.2s"
+                                padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                                cursor: "pointer", transition: "all 0.2s"
                               }}
                             >
-                              Recurring
+                              Inter Dept Request
                             </button>
                           )}
                         </div>
@@ -2024,8 +1894,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </div>
                   )}
 
-                  {/* Requests Module (Only shown if separate from main task view) */}
-                  {(isAdmin || access.REQUESTS) && !access.TASKS && (
+                  {!canSeeTasks && canSeeRequests && (
                     <button 
                       onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
                       style={{ 
@@ -2041,26 +1910,26 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </button>
                   )}
 
-                  {/* LO Module */}
-                  {(isAdmin || access.LOS) && (
+                  {canSeeLearning && (
                     <button 
                       onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
                       style={{ 
                         display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'LOS' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'LOS' ? "#60a5fa" : "#94a3b8", 
+                        background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                        border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
                         cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px"
+                        width: "100%", borderRadius: "16px",
+                        boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
                       }}
                     >
-                      <BookOpen size={24} color={activeView === 'LOS' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>LOs</span>
+                      <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
                     </button>
                   )}
+
                 </>
               );
             })()}
-
           </div>
         </nav>
 
@@ -2073,46 +1942,46 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           {activeView !== 'RECURRING' && (
             <>
           {/* Active View Title/Context Area */}
-          {true && (
-            <div style={{ 
-              marginBottom: "32px", 
-              paddingBottom: "24px", 
-              borderBottom: `1px solid ${t.border}`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              transition: "all 0.3s ease"
-            }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
-                  <span style={{ color: t.textMuted, opacity: 0.5 }}>/</span>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
-                    {activeView === 'HOME' ? "Development" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development")}
-                  </span>
-                </div>
-                <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
-                  {activeView === 'HOME' ? "Finance Home Hub" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities")}
-                </h2>
-                <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
-                  {activeView === 'HOME' ? "Your central space for team mission, stories, and achievements." : (activeView === 'TASKS' ? 
-                    (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
-                    : "Turning challenges into structured growth opportunities.")}
-                </p>
+          <div style={{ 
+            marginBottom: "32px", 
+            paddingBottom: "24px", 
+            borderBottom: `1px solid ${t.border}`,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            transition: "all 0.3s ease"
+          }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
+                <span style={{ color: "#cbd5e1" }}>/</span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
+                  {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
+                </span>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
-                  <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                    <Plus size={18} /> New Task
-                  </button>
-                ) : activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? null : (
-                  <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "12px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = t.bg} onMouseOut={e => e.currentTarget.style.background = t.card}>
-                    <Lightbulb size={18} color="#fbbf24" /> Update LO
-                  </button>
-                )}
-              </div>
+              <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
+                {activeView === 'HOME' ? "Finance Home Hub" : 
+                 activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
+              </h2>
+              <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
+                {activeView === 'HOME' ? "Your central space for team mission, stories, and achievements." : 
+                 activeView === 'TASKS' ? 
+                  (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
+                  : "Turning challenges into structured growth opportunities."}
+              </p>
             </div>
-          )}
+            <div style={{ display: "flex", gap: "8px" }}>
+              {activeView === 'HOME' ? null : (activeView === 'TASKS' && activeSubView === 'MAIN') ? (
+                <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                  <Plus size={18} /> New Task
+                </button>
+              ) : activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? null : (
+                <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#ffffff", color: "#0f172a", padding: "10px 20px", borderRadius: "12px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
+                  <Lightbulb size={18} color="#f59e0b" /> Update LO
+                </button>
+              )}
+            </div>
+          </div>
 
         {/* Metric Cards / Motivational Quote / Home Content */}
         {activeView === 'HOME' ? (
@@ -2160,8 +2029,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     ];
                     return stories.map((s: any) => (
                       <div key={s.id} style={{ 
-                        padding: "24px", borderRadius: "20px", background: t.card, 
-                        border: `1px solid ${t.border}`, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                        padding: "24px", borderRadius: "20px", background: "white", 
+                        border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
                         transition: "transform 0.2s", cursor: "default"
                       }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-4px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                         <div style={{ background: "#eff6ff", width: "40px", height: "40px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
@@ -2195,8 +2064,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     ];
                     return achievements.map((a: any) => (
                       <div key={a.id} style={{ 
-                        padding: "16px", borderRadius: "16px", background: t.card, 
-                        border: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: "16px" 
+                        padding: "16px", borderRadius: "16px", background: "white", 
+                        border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "16px" 
                       }}>
                         <div style={{ background: "#f0fdf4", padding: "8px", borderRadius: "10px" }}>
                           <ShieldCheck size={20} color="#10b981" />
@@ -2262,12 +2131,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "16px" }}>
           
           {/* Date Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: t.card, padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: t.textMuted }}>Filter by Date:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "white", padding: "8px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#475569" }}>Filter by Date:</span>
             <select
               value={dateFilterPreset}
               onChange={(e) => handlePresetChange(e.target.value)}
-              style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text, background: t.bg }}
+              style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: "#0f172a", background: "#f8fafc" }}
             >
               <option value="ALL_TIME">All Time</option>
               <option value="CURRENT_MONTH">Current Month</option>
@@ -2307,15 +2176,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
           
           {/* Filter Bar */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "16px", alignItems: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: "white", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "16px", alignItems: "center" }}>
             <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
-              <Search size={18} color={t.textMuted} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+              <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={18} />
               <input 
                 type="text" 
                 placeholder="Search tasks, types, entities, owners..." 
                 value={taskSearchQuery}
                 onChange={e => setTaskSearchQuery(e.target.value)}
-                style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }} 
+                style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc" }} 
               />
             </div>
 
@@ -2323,7 +2192,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <select 
                 value={taskEntityFilter} 
                 onChange={e => setTaskEntityFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
               >
                 <option value="ALL">All Entities</option>
                 {uniqueTaskEntities.map(e => <option key={e} value={e}>{e}</option>)}
@@ -2332,7 +2201,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <select 
                 value={taskOwnerFilter} 
                 onChange={e => setTaskOwnerFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
               >
                 <option value="ALL">All Owners</option>
                 {uniqueTaskOwners.map(o => <option key={o} value={o}>{o}</option>)}
@@ -2341,7 +2210,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <select 
                 value={taskStatusFilter} 
                 onChange={e => setTaskStatusFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569" }}
               >
                 <option value="ALL">All Statuses</option>
                 {uniqueTaskStatuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -2350,15 +2219,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <select 
                 value={taskTypeFilter} 
                 onChange={e => setTaskTypeFilter(e.target.value as any)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text, fontWeight: 600 }}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569", fontWeight: 600 }}
               >
                 <option value="ALL">All Task Types</option>
                 <option value="INTERNAL">Internal Only</option>
                 <option value="EXTERNAL">External Only</option>
               </select>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: `1px solid ${t.border}` }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rows:</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rows:</span>
                 <select 
                   value={itemsPerPage} 
                   onChange={e => setItemsPerPage(Number(e.target.value))}
@@ -2375,8 +2244,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <button 
                   onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
                   style={{ 
-                    display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, 
-                    padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
+                    display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", 
+                    padding: "8px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", 
                     cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
                   }} 
                   onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
@@ -2387,20 +2256,20 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 {showTaskDownloadDropdown && (
                   <div style={{ 
                     position: "absolute", top: "100%", right: 0, marginTop: "8px", 
-                    background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
-                    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", zIndex: 1000, 
+                    background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", 
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
                     minWidth: "160px", overflow: "hidden" 
                   }}>
                     <button 
                       onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
                       style={{ 
                         width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                        padding: "12px 16px", border: "none", background: "transparent", 
-                        color: t.text, cursor: "pointer", fontSize: "0.875rem", 
+                        padding: "12px 16px", border: "none", background: "white", 
+                        color: "#475569", cursor: "pointer", fontSize: "0.875rem", 
                         textAlign: "left", transition: "background 0.2s" 
                       }}
-                      onMouseOver={e => e.currentTarget.style.background = t.bg}
-                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                      onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseOut={e => e.currentTarget.style.background = "white"}
                     >
                       <FileSpreadsheet size={16} color="#166534" /> Excel Format
                     </button>
@@ -2408,16 +2277,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
                       style={{ 
                         width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                        padding: "12px 16px", border: "none", background: "transparent", 
-                        color: t.text, cursor: "pointer", fontSize: "0.875rem", 
+                        padding: "12px 16px", border: "none", background: "white", 
+                        color: "#475569", cursor: "pointer", fontSize: "0.875rem", 
                         textAlign: "left", transition: "background 0.2s" 
                       }}
-                      onMouseOver={e => e.currentTarget.style.background = t.bg}
-                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                      onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseOut={e => e.currentTarget.style.background = "white"}
                     >
                       <FileText size={16} color="#991b1b" /> PDF Document
                     </button>
-                    <div style={{ height: "1px", background: t.border, margin: "4px 0" }}></div>
+                    <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }}></div>
                     <button 
                       onClick={() => { 
                         setShareData({...shareData, type: 'task', format: 'excel', subject: `Task Report - ${new Date().toISOString().split('T')[0]}`});
@@ -2426,12 +2295,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       }}
                       style={{ 
                         width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                        padding: "12px 16px", border: "none", background: "transparent", 
+                        padding: "12px 16px", border: "none", background: "white", 
                         color: "#2563eb", cursor: "pointer", fontSize: "0.875rem", 
                         textAlign: "left", transition: "background 0.2s", fontWeight: 600
                       }}
                       onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
-                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                      onMouseOut={e => e.currentTarget.style.background = "white"}
                     >
                       <Mail size={16} color="#2563eb" /> Share via Email
                     </button>
@@ -2441,7 +2310,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           </div>
 
         {/* Data Table */}
-        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
               <thead>
@@ -2524,9 +2393,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading tasks...</td></tr>
                 ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
+                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
                     const currentUserName = EMAIL_TO_NAME[user?.email || ""];
@@ -2544,14 +2413,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     const canEditOwnerFields = isAdmin || isCurrentUserOwner;
                     
                     return (
-                    <tr key={task.id} style={{ borderBottom: `1px solid ${t.border}`, transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
-                      <td style={tdStyle}><span style={{ color: t.textMuted, fontWeight: 500 }}>#{task.id}</span></td>
-                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: t.text }}>{formatDateTime(task.createdAt)}</span></td>
+                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
+                      <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
                       <td style={tdStyle}>{task.entityName}</td>
-                      <td style={{ ...tdStyle, fontWeight: 500, color: t.text, minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.text }}>
+                          <span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
                             {task.taskType}
                           </span>
                           {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && task.linkedRequestId && (
@@ -2575,7 +2444,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       </td>
                       <td style={tdStyle}>{task.requestFrom}</td>
                       <td style={tdStyle}>{task.ownerName}</td>
-                      <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: t.textMuted }}>--</span>}</td>
+                      <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                       
                       {/* Editable Completion Date */}
                       <td 
@@ -2597,7 +2466,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.completionDate ? t.text : t.textMuted, fontWeight: 500 }}>
+                          <span style={{ color: task.completionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
                             {formatDate(task.completionDate)}
                             {(isOwnerLocked || !canEditOwnerFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditOwnerFields ? "Only Owner can edit" : "Task Completed"}>🔒</span>}
                           </span>
@@ -2613,7 +2482,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           disabled={isOwnerLocked}
                         />
                       </td>
-                      <td style={tdStyle}>{task.reviewerName === "Not Applicable" ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
+                      <td style={tdStyle}>{task.reviewerName === "Not Applicable" ? <span style={{ color: "#94a3b8" }}>N/A</span> : task.reviewerName}</td>
                       
                       <td 
                         style={{ ...tdStyle, cursor: task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields ? "not-allowed" : "pointer", minWidth: "140px" }}
@@ -2624,7 +2493,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         }}
                       >
                         {task.reviewerName === "Not Applicable" ? (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
                         ) : editingCell?.id === task.id && editingCell.field === "reviewCompletionDate" ? (
                           <input 
                             type="date"
@@ -2636,7 +2505,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.reviewCompletionDate ? t.text : t.textMuted, fontWeight: 500 }}>
+                          <span style={{ color: task.reviewCompletionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
                             {formatDate(task.reviewCompletionDate)}
                             {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
                           </span>
@@ -2655,7 +2524,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
                       <td style={tdStyle}>
                         {task.reviewerName === "Not Applicable" ? (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
                         ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
                           <select 
                             onChange={(e) => {
@@ -2676,15 +2545,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               }
                             }}
                             style={{ 
-                              padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, 
-                              fontSize: "0.75rem", fontWeight: 600, background: t.bg, color: t.text, cursor: "pointer" 
+                              padding: "4px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", 
+                              fontSize: "0.75rem", fontWeight: 600, background: "#f8fafc", color: "#475569", cursor: "pointer" 
                             }}
                           >
                             <option value="NO">No</option>
                             <option value="YES">Yes</option>
                           </select>
                         ) : (
-                          <span style={{ color: t.textMuted }}>--</span>
+                          <span style={{ color: "#cbd5e1" }}>--</span>
                         )}
                       </td>
                       
@@ -2707,7 +2576,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.ownerComments ? t.text : t.textMuted }}>{task.ownerComments || "Click to add..."}</span>
+                          <span style={{ color: task.ownerComments ? "#475569" : "#cbd5e1" }}>{task.ownerComments || "Click to add..."}</span>
                         )}
                       </td>
 
@@ -2729,7 +2598,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.reviewerComments ? t.text : t.textMuted }}>
+                          <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
                             {task.reviewerComments || "Click to add..."}
                             {(isReviewerLocked || !canEditReviewFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
                           </span>
@@ -2770,7 +2639,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             )}
                           </div>
                         ) : (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
                         )}
                       </td>
 
@@ -2800,7 +2669,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             <button 
                               onClick={() => handleRequestEdit(task.id, "OWNER")}
                               disabled={task.editRequested && task.editRequestBy === "OWNER"}
-                              style={{ background: task.editRequested && task.editRequestBy === "OWNER" ? t.bg : "#eff6ff", color: task.editRequested && task.editRequestBy === "OWNER" ? t.textMuted : "#3b82f6", border: task.editRequested && task.editRequestBy === "OWNER" ? `1px solid ${t.border}` : "1px solid #bfdbfe", cursor: task.editRequested && task.editRequestBy === "OWNER" ? "not-allowed" : "pointer", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 }}
+                              style={{ background: task.editRequested && task.editRequestBy === "OWNER" ? "#e2e8f0" : "#eff6ff", color: task.editRequested && task.editRequestBy === "OWNER" ? "#94a3b8" : "#3b82f6", border: task.editRequested && task.editRequestBy === "OWNER" ? "1px solid #cbd5e1" : "1px solid #bfdbfe", cursor: task.editRequested && task.editRequestBy === "OWNER" ? "not-allowed" : "pointer", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 }}
                               title="Request Edit (Owner)"
                             >
                               {task.editRequested && task.editRequestBy === "OWNER" ? "Requested" : "Edit Req"}
@@ -2810,7 +2679,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             <button 
                               onClick={() => handleRequestEdit(task.id, "REVIEWER")}
                               disabled={task.editRequested && task.editRequestBy === "REVIEWER"}
-                              style={{ background: task.editRequested && task.editRequestBy === "REVIEWER" ? t.bg : "#fdf4ff", color: task.editRequested && task.editRequestBy === "REVIEWER" ? t.textMuted : "#d946ef", border: task.editRequested && task.editRequestBy === "REVIEWER" ? `1px solid ${t.border}` : "1px solid #f5d0fe", cursor: task.editRequested && task.editRequestBy === "REVIEWER" ? "not-allowed" : "pointer", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 }}
+                              style={{ background: task.editRequested && task.editRequestBy === "REVIEWER" ? "#e2e8f0" : "#fdf4ff", color: task.editRequested && task.editRequestBy === "REVIEWER" ? "#94a3b8" : "#d946ef", border: task.editRequested && task.editRequestBy === "REVIEWER" ? "1px solid #cbd5e1" : "1px solid #f5d0fe", cursor: task.editRequested && task.editRequestBy === "REVIEWER" ? "not-allowed" : "pointer", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 }}
                               title="Request Edit (Reviewer)"
                             >
                               {task.editRequested && task.editRequestBy === "REVIEWER" ? "Requested" : "Rev Edit"}
@@ -2829,25 +2698,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: `1px solid ${t.border}`, background: t.bg }}>
-              <div style={{ fontSize: "0.875rem", color: t.textMuted }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: "1px solid #e2e8f0", background: "#f8fafc" }}>
+              <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasksToDisplay.length)} of {filteredTasksToDisplay.length} tasks
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button 
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === 1 ? t.textMuted : t.text, cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: "white", border: "1px solid #cbd5e1", borderRadius: "6px", color: currentPage === 1 ? "#94a3b8" : "#0f172a", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
                 >
                   <ChevronLeft size={16} /> Prev
                 </button>
-                <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px", color: t.text }}>
+                <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px" }}>
                   Page {currentPage} of {totalPages}
                 </div>
                 <button 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === totalPages ? t.textMuted : t.text, cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: "white", border: "1px solid #cbd5e1", borderRadius: "6px", color: currentPage === totalPages ? "#94a3b8" : "#0f172a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
                 >
                   Next <ChevronRight size={16} />
                 </button>
@@ -2860,9 +2729,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
           <div className="other-dept-view">
-            <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-              <div style={{ padding: "28px 32px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: t.bg }}>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Inter Dept Request</h3>
+            <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
                   style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
@@ -2872,7 +2741,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
               
               {/* Metric Cards for Inter-Dept */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: t.card }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: "white" }}>
                 <MetricCard 
                   title="All Requests" 
                   value={visibleExternalRequests.length} 
@@ -2916,51 +2785,103 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
 
               {/* Enhanced Filter Bar */}
-              <div style={{ padding: "16px 32px", background: t.bg, borderBottom: `1px solid ${t.border}`, display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ padding: "16px 32px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
-                  <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={16} />
+                  <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={16} />
                   <input 
                     type="text" 
-                    placeholder="Search requests..." 
+                    placeholder="Search by name, email or request nature..." 
                     value={extReqSearch}
                     onChange={e => setExtReqSearch(e.target.value)}
-                    style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.8125rem", width: "100%", background: t.card, color: t.text }} 
+                    style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
                   />
                 </div>
                 
-                <select 
-                  value={extReqStatusFilter}
-                  onChange={e => setExtReqStatusFilter(e.target.value)}
-                  style={{ padding: "8px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.card, color: t.text }}
+                {/* Pending to Convert Dynamic Button */}
+                <button 
+                  onClick={() => setExtReqFilter(extReqFilter === 'CONVERT_PENDING' ? 'ALL' : 'CONVERT_PENDING')}
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "rgba(79, 70, 229, 0.1)" : "white", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#64748b", 
+                    border: extReqFilter === 'CONVERT_PENDING' ? "2px solid #4f46e5" : "1px solid #e2e8f0", 
+                    padding: "8px 16px", 
+                    borderRadius: "10px", 
+                    fontSize: "0.875rem", 
+                    fontWeight: 600, 
+                    cursor: "pointer", 
+                    transition: "all 0.2s" 
+                  }}
                 >
-                  <option value="ALL">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Allocated">Allocated</option>
-                  <option value="Under Process">Under Process</option>
-                  <option value="Processed">Processed</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
+                  <ListFilter size={18} />
+                  Pending to Convert
+                  <span style={{ 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#f1f5f9", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "white" : "#64748b", 
+                    padding: "2px 8px", 
+                    borderRadius: "999px", 
+                    fontSize: "0.75rem" 
+                  }}>
+                    {visibleExternalRequests.filter(r => (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId).length}
+                  </span>
+                </button>
+
+                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                  <select 
+                    value={requestTypeFilter} 
+                    onChange={e => setRequestTypeFilter(e.target.value as any)}
+                    style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "white", color: "#475569", fontWeight: 600 }}
+                  >
+                    <option value="ALL">All Request Origins</option>
+                    <option value="ORIGINAL">Original Only</option>
+                    <option value="TRANSFERRED">Transferred Only</option>
+                  </select>
+                )}
 
                 <div style={{ marginLeft: "auto", position: "relative" }}>
                   <button 
                     onClick={() => setShowExtReqDownloadDropdown(!showExtReqDownloadDropdown)}
-                    style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, border: `1px solid ${t.border}`, padding: "8px 16px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
+                    style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#2563eb", border: "1px solid #2563eb", padding: "10px 20px", borderRadius: "10px", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
                   >
-                    <Download size={18} /> Download Report
+                    <Download size={18} /> Download Report <ChevronDown size={16} />
                   </button>
+
                   {showExtReqDownloadDropdown && (
-                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: t.card, borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", border: `1px solid ${t.border}`, zIndex: 100, minWidth: "200px", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", border: "1px solid #e2e8f0", zIndex: 100, minWidth: "200px", overflow: "hidden" }}>
                       <button 
                         onClick={() => { exportExtRequestsToExcel(); setShowExtReqDownloadDropdown(false); }}
-                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "transparent", color: t.text, cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500 }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#166534", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#f0fdf4"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
                       >
                         <FileSpreadsheet size={16} /> Excel Format
                       </button>
                       <button 
                         onClick={() => { exportExtRequestsToPDF(); setShowExtReqDownloadDropdown(false); }}
-                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "transparent", color: t.text, cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500 }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#991b1b", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#fef2f2"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
                       >
                         <FileText size={16} /> PDF Document
+                      </button>
+                      <div style={{ borderTop: "1px solid #f1f5f9" }}></div>
+                      <button 
+                        onClick={() => {
+                          setShareData({
+                            ...shareData,
+                            type: 'request',
+                            subject: `Inter-Departmental Requests Report - ${new Date().toLocaleDateString()}`
+                          });
+                          setShowShareModal(true);
+                          setShowExtReqDownloadDropdown(false);
+                        }}
+                        style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "white", color: "#1e40af", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", fontWeight: 500, transition: "background 0.2s" }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#eff6ff"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        <Mail size={16} /> Share via Email
                       </button>
                     </div>
                   )}
@@ -2968,67 +2889,197 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
 
               <div style={{ padding: "32px", overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem", textAlign: "left" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ background: t.bg, borderBottom: `2px solid ${t.border}`, color: t.textMuted }}>
-                      {[
-                        { key: 'id', label: 'ID' },
-                        { key: 'createdAt', label: 'Date' },
-                        { key: 'requestFrom', label: 'From' },
-                        { key: 'entityName', label: 'Entity' },
-                        { key: 'natureOfRequest', label: 'Nature' },
-                        { key: 'requestType', label: 'Type' },
-                        { key: 'status', label: 'Status' },
-                        { key: 'actions', label: 'Actions' }
-                      ].map((col) => (
-                        <th 
-                          key={col.key} 
-                          onClick={() => col.key !== 'actions' && handleExtReqSort(col.key as keyof ExternalRequest)}
-                          style={{ 
-                            padding: "16px 20px", fontWeight: 700, textTransform: "uppercase", fontSize: "0.75rem", 
-                            letterSpacing: "0.05em", color: t.textMuted, cursor: col.key !== 'actions' ? "pointer" : "default" 
-                          }}
-                        >
-                          {col.label}
-                        </th>
-                      ))}
+                    <tr style={{ background: "#f8fafc" }}>
+                      <th style={{ ...thStyle, width: "50px" }}>Sl No.</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('requestFrom')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request From {extReqSortConfig?.key === 'requestFrom' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('createdAt')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Date {extReqSortConfig?.key === 'createdAt' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('requestType')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Finance Function {extReqSortConfig?.key === 'requestType' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('natureOfRequest')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Nature of Request {extReqSortConfig?.key === 'natureOfRequest' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('status')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request Status {extReqSortConfig?.key === 'status' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      {canAllocateAnything && <th style={thStyle}>Action</th>}
+                      <th style={thStyle}>Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
                     {extReqLoading ? (
-                      <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading...</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
                     ) : sortedExternalRequests.length === 0 ? (
-                      <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No requests found.</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
-                      sortedExternalRequests.map((req) => (
-                        <tr key={req.id} style={{ borderBottom: `1px solid ${t.border}`, transition: "background 0.2s" }} className="table-row">
-                          <td style={tdStyle}><span style={{ color: t.textMuted }}>#{req.id}</span></td>
-                          <td style={tdStyle}>{formatDate(req.createdAt)}</td>
-                          <td style={tdStyle}>{req.requestFrom}</td>
-                          <td style={tdStyle}>{req.entityName}</td>
-                          <td style={tdStyle}>{req.natureOfRequest}</td>
-                          <td style={tdStyle}>
-                            <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.text }}>
-                              {req.requestType}
-                            </span>
-                          </td>
-                          <td style={tdStyle}>
-                            <span style={{ 
-                              padding: "6px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700,
-                              background: req.status === 'Pending' ? "#fff7ed" : req.status === 'Processed' ? "#f0fdf4" : req.status === 'Rejected' ? "#fef2f2" : t.bg,
-                              color: req.status === 'Pending' ? "#c2410c" : req.status === 'Processed' ? "#15803d" : req.status === 'Rejected' ? "#b91c1c" : t.text,
-                              border: req.status === 'Pending' ? "1px solid #fed7aa" : req.status === 'Processed' ? "1px solid #bbf7d0" : req.status === 'Rejected' ? "1px solid #fecaca" : `1px solid ${t.border}`
-                            }}>
-                              {req.status}
-                            </span>
-                          </td>
-                          <td style={tdStyle}>
-                            {canAllocateAnything && (req.status === 'Pending' || req.status === 'New') && (
-                              <button onClick={() => handleConvertToTask(req)} style={{ background: "#4f46e5", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "0.75rem" }}>Convert</button>
+                      sortedExternalRequests.map((req, idx) => {
+                        const matrix = JSON.parse(settings.allocationMatrix || '{}');
+                        const allocators = Array.isArray(matrix[req.requestType]) ? matrix[req.requestType] : (matrix[req.requestType] ? [matrix[req.requestType]] : []);
+                        const isAuthorizedAllocator = allocators.includes(user?.email) || isAdmin || (user as any).isAllocator;
+                        
+                        return (
+                          <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={tdStyle}>{idx + 1}</td>
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: 600, color: "#0f172a" }}>{req.requestFrom}</div>
+                              <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{req.departmentName}</div>
+                            </td>
+                            <td style={tdStyle}>{new Date(req.createdAt).toLocaleDateString()}</td>
+                            <td style={tdStyle}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
+                                  {req.requestType}
+                                </span>
+                                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                                  req.transferStatus === 'T' ? (
+                                    <span 
+                                      title={`Transferred Request (Original: ${req.originalRequestType || 'Unknown'})`}
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🔴
+                                    </span>
+                                  ) : (
+                                    <span 
+                                      title="Original Request"
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🟢
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ ...tdStyle, maxWidth: "300px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
+                            <td style={tdStyle}>
+                                {(!req.status || req.status === 'Pending' || req.status === 'New') && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5" }}>
+                                    Pending
+                                  </span>
+                                )}
+                                {req.status === 'Under Process' && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#eff6ff", fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", border: "1px solid #dbeafe" }}>
+                                    Under Process
+                                  </span>
+                                )}
+                                {req.status === 'Processed' && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#f0fdf4", fontSize: "0.75rem", fontWeight: 700, color: "#166534", border: "1px solid #dcfce7" }}>
+                                    Processed
+                                  </span>
+                                )}
+                                {req.status === 'Rejected' && (
+                                  <div 
+                                    style={{ position: "relative" }}
+                                    onMouseEnter={() => setHoveredRejectId(req.id)}
+                                    onMouseLeave={() => setHoveredRejectId(null)}
+                                  >
+                                    <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fef2f2", fontSize: "0.75rem", fontWeight: 700, color: "#991b1b", border: "1px solid #fee2e2", cursor: "help" }}>
+                                      Rejected
+                                    </span>
+                                    {hoveredRejectId === req.id && (
+                                      <div style={{
+                                        position: "absolute",
+                                        bottom: "100%",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        marginBottom: "8px",
+                                        padding: "10px 14px",
+                                        background: "#1e293b",
+                                        color: "white",
+                                        fontSize: "0.75rem",
+                                        borderRadius: "10px",
+                                        whiteSpace: "normal",
+                                        width: "220px",
+                                        zIndex: 100,
+                                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
+                                        border: "1px solid rgba(255,255,255,0.1)",
+                                        lineHeight: "1.4"
+                                      }}>
+                                        <div style={{ fontWeight: 700, marginBottom: "4px", color: "#f87171", fontSize: "0.65rem", textTransform: "uppercase" }}>Rejection Reason</div>
+                                        { (req as any).rejectReason || "No reason specified" }
+                                        <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", border: "6px solid transparent", borderTopColor: "#1e293b" }}></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                            </td>
+                            {canAllocateAnything && (
+                              <td style={tdStyle}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                  {(req.status === 'Pending' && !req.convertedTaskId && isAuthorizedAllocator) && (
+                                    <div style={{ display: "flex", gap: "8px" }}>
+                                      <button 
+                                        onClick={() => handleConvertToTask(req)}
+                                        style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                                      >
+                                        <Plus size={12} /> Convert to Task
+                                      </button>
+                                      <button 
+                                        onClick={() => { setRejectingReq(req); setShowRejectModal(true); }}
+                                        style={{ background: "white", color: "#ef4444", border: "1px solid #fee2e2", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {(req.status === 'Under Process' || req.status === 'Processed') && req.convertedTaskId && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
+                                        TASK CREATED
+                                      </span>
+                                      <span style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 500 }}>ID: {req.convertedTaskId}</span>
+                                    </div>
+                                  )}
+
+                                  {req.status === 'Rejected' && (
+                                    <div style={{ fontSize: "0.7rem", color: "#ef4444", maxWidth: "200px", padding: "8px", background: "#fef2f2", borderRadius: "6px", border: "1px solid #fee2e2" }}>
+                                      <strong>Rejected:</strong> { (req as any).rejectReason || "No reason provided" }
+                                    </div>
+                                  )}
+
+                                  {isAuthorizedAllocator && (
+                                    <button 
+                                      onClick={() => handleDeleteExtRequest(req.id)}
+                                      style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
+                                      onMouseOver={(e) => e.currentTarget.style.color = "#ef4444"}
+                                      onMouseOut={(e) => e.currentTarget.style.color = "#94a3b8"}
+                                    >
+                                      <Trash2 size={12} /> <span style={{ fontSize: "0.65rem" }}>Delete Request</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
                             )}
-                          </td>
-                        </tr>
-                      ))
+                            <td style={{ ...tdStyle, maxWidth: "280px", whiteSpace: "normal", color: "#64748b", fontSize: "0.8rem" }}>
+                              {req.status === 'Rejected' ? (
+                                <span style={{ color: "#ef4444", fontWeight: 500 }}>
+                                  {(req as any).rejectReason || "No reason specified"}
+                                </span>
+                              ) : req.status === 'Processed' ? (
+                                <span style={{ color: "#10b981", fontWeight: 500 }}>N/A</span>
+                              ) : (
+                                <span style={{ color: "#cbd5e1" }}>-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -3041,19 +3092,20 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         {activeView === 'LOS' && (
           <div className="lo-view">
           {/* LO View */}
-          <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)", overflow: "hidden", transition: "all 0.3s ease" }}>
-             <div style={{ padding: "28px 32px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: t.bg }}>
+          <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+             <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Learning Opportunities</h3>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Learning Opportunities</h3>
                   <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
                     <button 
                       onClick={() => setLoActiveFilter('ALL')}
                       style={{ 
                         padding: "6px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600, 
                         border: "1px solid", cursor: "pointer", transition: "all 0.2s",
-                        background: loActiveFilter === 'ALL' ? "#2563eb" : t.card,
-                        borderColor: loActiveFilter === 'ALL' ? "#2563eb" : t.border,
-                        color: loActiveFilter === 'ALL' ? "white" : t.textMuted
+                        background: loActiveFilter === 'ALL' ? "#2563eb" : "white",
+                        borderColor: loActiveFilter === 'ALL' ? "#2563eb" : "#e2e8f0",
+                        color: loActiveFilter === 'ALL' ? "white" : "#64748b",
+                        boxShadow: loActiveFilter === 'ALL' ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "none"
                       }}
                     >
                       All
@@ -3063,9 +3115,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       style={{ 
                         padding: "6px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600, 
                         border: "1px solid", cursor: "pointer", transition: "all 0.2s",
-                        background: loActiveFilter === 'REPORTS' ? "#3b82f6" : t.card,
-                        borderColor: loActiveFilter === 'REPORTS' ? "#3b82f6" : t.border,
-                        color: loActiveFilter === 'REPORTS' ? "white" : t.textMuted
+                        background: loActiveFilter === 'REPORTS' ? "#3b82f6" : "white",
+                        borderColor: loActiveFilter === 'REPORTS' ? "#3b82f6" : "#e2e8f0",
+                        color: loActiveFilter === 'REPORTS' ? "white" : "#64748b",
+                        boxShadow: loActiveFilter === 'REPORTS' ? "0 4px 6px -1px rgba(59, 130, 246, 0.2)" : "none"
                       }}
                     >
                       My Reports
@@ -3075,9 +3128,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       style={{ 
                         padding: "6px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600, 
                         border: "1px solid", cursor: "pointer", transition: "all 0.2s",
-                        background: loActiveFilter === 'LEARNINGS' ? "#ef4444" : t.card,
-                        borderColor: loActiveFilter === 'LEARNINGS' ? "#ef4444" : t.border,
-                        color: loActiveFilter === 'LEARNINGS' ? "white" : t.textMuted
+                        background: loActiveFilter === 'LEARNINGS' ? "#ef4444" : "white",
+                        borderColor: loActiveFilter === 'LEARNINGS' ? "#ef4444" : "#e2e8f0",
+                        color: loActiveFilter === 'LEARNINGS' ? "white" : "#64748b",
+                        boxShadow: loActiveFilter === 'LEARNINGS' ? "0 4px 6px -1px rgba(239, 68, 68, 0.2)" : "none"
                       }}
                     >
                       My Learnings
@@ -3086,73 +3140,206 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ position: "relative", minWidth: "250px" }}>
-                    <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={16} />
+                    <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} size={16} />
                     <input 
                       type="text" 
                       placeholder="Search LOs, entities, names..." 
                       value={loSearchQuery}
                       onChange={e => setLoSearchQuery(e.target.value)}
-                      style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.8125rem", width: "100%", background: t.card, color: t.text }} 
+                      style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
                     />
                   </div>
                   <select 
                     value={loEntityFilter} 
                     onChange={e => setLoEntityFilter(e.target.value)}
-                    style={{ padding: "8px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.8125rem", background: t.card, color: t.text }}
+                    style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569" }}
                   >
                     <option value="ALL">All Entities</option>
                     {uniqueLOEntities.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
+                  <div className="download-container" style={{ position: "relative" }}>
+                    <button 
+                      onClick={() => setShowLODownloadDropdown(!showLODownloadDropdown)}
+                      style={{ 
+                        display: "flex", alignItems: "center", gap: "8px", background: "white", color: "#475569", 
+                        padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", 
+                        cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, 
+                        boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" 
+                      }} 
+                      onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
+                    >
+                      <Download size={16} color="#2563eb" /> Download
+                    </button>
+                    
+                    {showLODownloadDropdown && (
+                      <div style={{ 
+                        position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                        background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", 
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                        minWidth: "160px", overflow: "hidden" 
+                      }}>
+                        <button 
+                          onClick={() => { exportLOsToExcel(); setShowLODownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "10px 16px", border: "none", background: "white", 
+                            color: "#475569", cursor: "pointer", fontSize: "0.8125rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileSpreadsheet size={14} color="#059669" /> Excel Format
+                        </button>
+                        <button 
+                          onClick={() => { exportLOsToPDF(); setShowLODownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "10px 16px", border: "none", background: "white", 
+                            color: "#475569", cursor: "pointer", fontSize: "0.8125rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileText size={14} color="#991b1b" /> PDF Document
+                        </button>
+                        <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }}></div>
+                        <button 
+                          onClick={() => { 
+                            setShareData({...shareData, type: 'lo', format: 'excel', subject: `LO Report - ${new Date().toISOString().split('T')[0]}`});
+                            setShowShareModal(true); 
+                            setShowLODownloadDropdown(false); 
+                          }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "10px 16px", border: "none", background: "white", 
+                            color: "#4f46e5", cursor: "pointer", fontSize: "0.8125rem", 
+                            textAlign: "left", transition: "background 0.2s", fontWeight: 600
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f5f3ff"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <Mail size={14} color="#4f46e5" /> Share via Email
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
              </div>
              <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                <thead>
-                  <tr style={{ background: t.bg, borderBottom: `2px solid ${t.border}`, transition: "all 0.3s ease" }}>
-                    {[
-                      { key: 'entity', label: 'Entity' },
-                      { key: 'dateOfIdentification', label: 'Identified On' },
-                      { key: 'learningOpportunity', label: 'Learning Opportunity' },
-                      { key: 'identifiedBy', label: 'Identified By' },
-                      { key: 'committedBy', label: 'Committed By' },
-                      { key: 'resolutionProvided', label: 'Resolution' },
-                      { key: 'actions', label: 'Actions' }
-                    ].map((col) => (
-                      <th 
-                        key={col.key}
-                        onClick={() => col.key !== 'actions' && handleLOSort(col.key as keyof LearningOpportunity)}
-                        style={{ 
-                          padding: "16px 20px", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", 
-                          letterSpacing: "0.05em", color: t.textMuted, cursor: col.key !== 'actions' ? "pointer" : "default" 
-                        }}
-                      >
-                        {col.label}
+                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>SI No</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loLoading ? (
-                    <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading Learning Opportunities...</td></tr>
-                  ) : sortedLOs.length === 0 ? (
-                    <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No Learning Opportunities recorded.</td></tr>
-                  ) : (
-                    sortedLOs.map((lo) => (
-                      <tr key={lo.id} style={{ borderBottom: `1px solid ${t.border}`, transition: "background-color 0.2s" }} className="table-row">
-                        <td style={tdStyle}>{lo.entity}</td>
-                        <td style={tdStyle}>{formatDate(lo.dateOfIdentification)}</td>
-                        <td style={{ ...tdStyle, maxWidth: "400px" }}>{lo.learningOpportunity}</td>
-                        <td style={tdStyle}>{lo.identifiedBy}</td>
-                        <td style={tdStyle}>{lo.committedBy}</td>
-                        <td style={{ ...tdStyle, maxWidth: "400px" }}>{lo.resolutionProvided}</td>
-                        <td style={{ ...tdStyle, textAlign: "center" }}>
-                          <button onClick={() => setEditingLO(lo)} style={{ background: t.bg, color: t.text, border: `1px solid ${t.border}`, padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.75rem" }}>Edit</button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('entity')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Entity {loSortConfig?.key === 'entity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('learningOpportunity')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Learning Opportunity {loSortConfig?.key === 'learningOpportunity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('identifiedBy')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('committedBy')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('resolutionProvided')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Resolution {loSortConfig?.key === 'resolutionProvided' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('modeOfCommunication')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Communication Mode {loSortConfig?.key === 'modeOfCommunication' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loLoading ? (
+                      <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading Learning Opportunities...</td></tr>
+                    ) : los.length === 0 ? (
+                      <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No Learning Opportunities recorded.</td></tr>
+                    ) : (
+                      sortedLOs.map((lo, idx) => (
+                        <tr key={lo.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s" }} className="table-row">
+                          <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>{idx + 1}</span></td>
+                          <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDate(lo.dateOfIdentification)}</td>
+                          <td style={tdStyle}>{lo.entity}</td>
+                          <td style={{ ...tdStyle, minWidth: "300px", maxWidth: "500px", whiteSpace: "normal", wordWrap: "break-word" }}>{lo.learningOpportunity}</td>
+                          <td style={tdStyle}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              {lo.identifiedBy}
+                              {lo.identifiedBy === (EMAIL_TO_NAME[user?.email || ''] || user?.name) && (
+                                <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Reported</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={tdStyle}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              {lo.committedBy}
+                              {lo.committedBy === (EMAIL_TO_NAME[user?.email || ''] || user?.name) && (
+                                <span style={{ background: "#fef2f2", color: "#ef4444", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Learning</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ ...tdStyle, minWidth: "300px", maxWidth: "500px", whiteSpace: "normal", wordWrap: "break-word" }}>{lo.resolutionProvided}</td>
+                          <td style={tdStyle}>{lo.modeOfCommunication}</td>
+                          <td style={{ ...tdStyle, textAlign: "center" }}>
+                            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                              {/* Show Edit Button if Admin OR if Approved for User */}
+                              {(isAdmin || lo.editApproved) ? (
+                                <button 
+                                  onClick={() => setEditingLO(lo)}
+                                  style={{ 
+                                    padding: "6px 12px", borderRadius: "6px", border: "1px solid #2563eb",
+                                    background: "#2563eb", color: "white", fontSize: "0.75rem", fontWeight: 600,
+                                    cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "4px"
+                                  }}
+                                >
+                                  <Edit2 size={12} /> Edit
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => handleRequestEditLO(lo.id)}
+                                  disabled={lo.editRequested}
+                                  style={{ 
+                                    padding: "6px 12px", borderRadius: "6px", border: "1px solid",
+                                    background: lo.editRequested ? "#f1f5f9" : "white",
+                                    color: lo.editRequested ? "#94a3b8" : "#475569",
+                                    borderColor: "#cbd5e1",
+                                    fontSize: "0.75rem", fontWeight: 600,
+                                    cursor: lo.editRequested ? "not-allowed" : "pointer",
+                                    transition: "all 0.2s"
+                                  }}
+                                  onMouseOver={e => !lo.editRequested && (e.currentTarget.style.background = "#f8fafc")}
+                                  onMouseOut={e => !lo.editRequested && (e.currentTarget.style.background = "white")}
+                                >
+                                  {lo.editRequested ? "Edit Requested" : "Request Edit"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
              </div>
           </div>
         </div>
@@ -3212,8 +3399,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         />
       )}
       {showLOCaptureModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-          <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "600px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", border: `1px solid ${t.border}` }}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "600px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
             <div style={{ padding: "24px", background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Capture Learning Opportunity</h3>
@@ -3225,53 +3412,53 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Entity</label>
-                  <input type="text" readOnly value={loCaptureForm.entity} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Entity</label>
+                  <input type="text" readOnly value={loCaptureForm.entity} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Date of Identification</label>
-                  <input type="text" readOnly value={formatDate(loCaptureForm.dateOfIdentification)} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Date of Identification</label>
+                  <input type="text" readOnly value={formatDate(loCaptureForm.dateOfIdentification)} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Identified By</label>
-                  <input type="text" readOnly value={loCaptureForm.identifiedBy} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Identified By</label>
+                  <input type="text" readOnly value={loCaptureForm.identifiedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Committed By</label>
-                  <input type="text" readOnly value={loCaptureForm.committedBy} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Committed By</label>
+                  <input type="text" readOnly value={loCaptureForm.committedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Mistake / Learning Opportunity</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mistake / Learning Opportunity</label>
                 <textarea 
                   rows={3} 
                   placeholder="Describe the learning opportunity..."
                   value={loCaptureForm.learningOpportunity}
-                  onChange={(e) => setLOCaptureForm({ ...loCaptureForm, learningOpportunity: e.target.value })}
-                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
+                  onChange={e => setLOCaptureForm({...loCaptureForm, learningOpportunity: e.target.value})}
+                  style={{ ...inputStyle, resize: "none" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Resolution Provided</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Resolution Provided</label>
                 <textarea 
                   rows={3} 
-                  placeholder="What was the resolution or fix?"
+                  placeholder="Describe the resolution/correction..."
                   value={loCaptureForm.resolutionProvided}
-                  onChange={(e) => setLOCaptureForm({ ...loCaptureForm, resolutionProvided: e.target.value })}
-                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
+                  onChange={e => setLOCaptureForm({...loCaptureForm, resolutionProvided: e.target.value})}
+                  style={{ ...inputStyle, resize: "none" }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Mode of Communication</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mode of Communication</label>
                 <select 
                   value={loCaptureForm.modeOfCommunication}
                   onChange={e => setLOCaptureForm({...loCaptureForm, modeOfCommunication: e.target.value})}
-                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
+                  style={inputStyle}
                 >
-                  <option value="">Choose Mode</option>
+                  <option value="">Choose</option>
                   {settings?.masterCommunicationModes?.split(',').filter((m: string) => m.trim()).map((mode: string) => (
                     <option key={mode.trim()} value={mode.trim()}>{mode.trim()}</option>
                   ))}
@@ -3279,8 +3466,18 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
 
               <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                <button onClick={() => setShowLOCaptureModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button onClick={handleSubmitLOCapture} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)" }}>Save LO Entry</button>
+                <button 
+                  onClick={() => setShowLOCaptureModal(false)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSubmitLOCapture}
+                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.2)" }}
+                >
+                  Submit LO to Tracker
+                </button>
               </div>
             </div>
           </div>
@@ -3288,212 +3485,760 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       )}
       {showOptionsModal && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
-            <div style={{ position: "relative", width: "100%", maxWidth: "1000px", background: t.card, borderRadius: "24px", display: "flex", flexDirection: "column", height: "85vh", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", border: `1px solid ${t.border}`, transition: "all 0.3s ease" }}>
-              {/* Modal Header */}
-              <div style={{ padding: "24px 32px", borderBottom: `1px solid ${t.border}`, background: t.bg, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ padding: "10px", background: "#3b82f6", borderRadius: "12px", color: "white" }}>
-                    <Sliders size={20} />
-                  </div>
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: t.text }}>{isAdmin ? "Control Center" : "Account Settings"}</h2>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: t.textMuted }}>Manage your preferences and system settings.</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowOptionsModal(false)} style={{ padding: "8px", borderRadius: "10px", border: "none", background: "transparent", color: t.textMuted, cursor: "pointer" }}>
-                  <X size={20} />
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "800px", height: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
+            <div style={{ padding: "24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {isAdmin ? <ShieldCheck size={24} color="#4f46e5" /> : <Sliders size={24} color="#4f46e5" />}
+                <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>{isAdmin ? "Control Center" : "Account Settings"}</h2>
+              </div>
+              <button onClick={() => setShowOptionsModal(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "1.5rem", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+            </div>
+            
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* Sidebar Tabs */}
+              <div style={{ width: "200px", background: "#f8fafc", borderRight: "1px solid #e2e8f0", padding: "16px" }}>
+                <button 
+                  onClick={() => setActiveOptionsTab('ACCOUNT')} 
+                  style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                >
+                  Account
                 </button>
+                {isAdmin && (
+                  <>
+                    <button 
+                      onClick={() => setActiveOptionsTab('SCHEDULE')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'SCHEDULE' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                    >
+                      Email Trigger
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('MAILS')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MAILS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                    >
+                      Manual Mails
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('USERS')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'USERS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                    >
+                      User Management
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
+                    >
+                      Edit Request
+                      {(tasks.filter(t => t.editRequested).length + los.filter(l => l.editRequested).length) > 0 && (
+                        <span style={{ marginLeft: "8px", background: "#ef4444", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
+                          {tasks.filter(t => t.editRequested).length + los.filter(l => l.editRequested).length}
+                        </span>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('MASTER_DATA')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    >
+                      Master Data
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('DATA')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    >
+                      <Download size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Bulk Import
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('MATRICES')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    >
+                      Matrix Module
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('HOME_HUB')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'HOME_HUB' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    >
+                      Home Hub
+                    </button>
+                  </>
+                )}
               </div>
 
-              {/* Modal Body */}
-              <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-                {/* Options Sidebar */}
-                <div style={{ width: "240px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "24px 16px", overflowY: "auto", transition: "all 0.3s ease" }}>
-                  <button 
-                    onClick={() => setActiveOptionsTab('ACCOUNT')} 
-                    style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'ACCOUNT' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                  >
-                    Account
-                  </button>
-                  {isAdmin && (
-                    <>
-                      <button 
-                        onClick={() => setActiveOptionsTab('SCHEDULE')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'SCHEDULE' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                      >
-                        Primary Emails
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('LO_REPORT')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'LO_REPORT' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'LO_REPORT' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                      >
-                        LO Emails
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('MAILS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MAILS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                      >
-                        Manual Mails
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('USERS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'USERS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                      >
-                        User Management
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer" }}
-                      >
-                        Edit Request
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('MASTER_DATA')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                      >
-                        Master Data
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('DATA')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'DATA' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                      >
-                        Bulk Import
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('MATRICES')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MATRICES' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                      >
-                        Matrix Module
-                      </button>
-                      <button 
-                        onClick={() => setActiveOptionsTab('HOME_HUB')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'HOME_HUB' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                      >
-                        Home Hub
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Tab Content */}
-                <div style={{ flex: 1, padding: "32px", overflow: "auto" }}>
-                  {activeOptionsTab === 'ACCOUNT' && (
-                    <div style={{ maxWidth: "500px" }}>
-                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>My Account</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <div>
-                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Name</label>
-                          <input type="text" readOnly value={user.name || "Master Admin"} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Email</label>
-                          <input type="text" readOnly value={user.email} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
-                        </div>
-                        <div>
-                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Department</label>
-                          <input type="text" readOnly value={user.department || "Admin"} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeOptionsTab === 'SCHEDULE' && isAdmin && (
-                    <div>
-                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Primary Email Settings</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "600px" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                          <div>
-                            <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Manager Report Time (24h Format)</label>
-                            <input type="time" value={settings.managerReportTimes || "10:00"} onChange={(e) => setSettings({ ...settings, managerReportTimes: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Escalation Buffer (Days)</label>
-                            <input type="number" value={settings.escalationBuffer || 2} onChange={(e) => setSettings({ ...settings, escalationBuffer: Number(e.target.value) })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Primary Recipients (Comma separated)</label>
-                          <textarea rows={3} value={settings.managerEmail || ""} onChange={(e) => setSettings({ ...settings, managerEmail: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="email1@example.com, email2@example.com" />
-                        </div>
-                        <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Primary Settings</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeOptionsTab === 'LO_REPORT' && isAdmin && (
-                    <div>
-                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>LO Email Settings</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "600px" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
-                          <div>
-                            <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>LO Report Time (24h Format)</label>
-                            <input type="time" value={settings.loReportTimes || "10:00"} onChange={(e) => setSettings({ ...settings, loReportTimes: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>LO Report Recipients (Comma separated)</label>
-                          <textarea rows={3} value={settings.loReportEmail || ""} onChange={(e) => setSettings({ ...settings, loReportEmail: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="email1@example.com, email2@example.com" />
-                        </div>
-                        <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save LO Settings</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeOptionsTab === 'MAILS' && isAdmin && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+              {/* Tab Content */}
+              <div style={{ flex: 1, padding: "32px", overflow: "auto" }}>
+                {activeOptionsTab === 'ACCOUNT' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Account Settings</h3>
+                    <p style={{ color: "#64748b", marginBottom: "24px" }}>Update your password to keep your account secure.</p>
+                    
+                    <form onSubmit={handlePasswordChange} style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "20px" }}>
                       <div>
-                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Trigger Manual Report</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                          <button onClick={() => triggerManualMail('DASHBOARD')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                            <FileSpreadsheet size={24} color="#3b82f6" />
-                            <span style={{ fontWeight: 600 }}>Task Dashboard</span>
-                          </button>
-                          <button onClick={() => triggerManualMail('EXTERNAL')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                            <Users size={24} color="#f59e0b" />
-                            <span style={{ fontWeight: 600 }}>Inter-Dept Requests</span>
-                          </button>
-                          <button onClick={() => triggerManualMail('LO')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                            <Lightbulb size={24} color="#10b981" />
-                            <span style={{ fontWeight: 600 }}>Learning Opportunities</span>
-                          </button>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600 }}>Current Password</label>
+                        <input 
+                          type="password" 
+                          required
+                          value={passwordData.current}
+                          onChange={e => setPasswordData({...passwordData, current: e.target.value})}
+                          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none" }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600 }}>New Password</label>
+                        <input 
+                          type="password" 
+                          required
+                          value={passwordData.new}
+                          onChange={e => setPasswordData({...passwordData, new: e.target.value})}
+                          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none" }} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600 }}>Confirm New Password</label>
+                        <input 
+                          type="password" 
+                          required
+                          value={passwordData.confirm}
+                          onChange={e => setPasswordData({...passwordData, confirm: e.target.value})}
+                          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none" }} 
+                        />
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={passwordLoading}
+                        style={{ background: "#2563eb", color: "white", padding: "12px", borderRadius: "8px", border: "none", cursor: passwordLoading ? "not-allowed" : "pointer", fontWeight: 600 }}
+                      >
+                        {passwordLoading ? "Updating..." : "Update Password"}
+                      </button>
+                    </form>
+
+                    <div style={{ marginTop: "48px", paddingTop: "32px", borderTop: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#0f172a", fontWeight: 700 }}>Profile Information</h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", maxWidth: "600px" }}>
+                        <div>
+                          <p style={{ margin: "0 0 4px 0", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Full Name</p>
+                          <p style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 500 }}>{user?.name || "Not Set"}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: "0 0 4px 0", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Email Address</p>
+                          <p style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 500 }}>{user?.email}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: "0 0 4px 0", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Role</p>
+                          <p style={{ margin: 0, fontSize: "0.875rem", display: "inline-block", padding: "4px 12px", background: "#f1f5f9", borderRadius: "9999px", color: "#475569", fontWeight: 600 }}>{user?.role || "USER"}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: "0 0 4px 0", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Assigned Department</p>
+                          <p style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 500 }}>{user?.department || "Finance (Default)"}</p>
+                        </div>
+                      </div>
+                      <p style={{ marginTop: "24px", fontSize: "0.8125rem", color: "#94a3b8", fontStyle: "italic" }}>
+                        Note: If your department is incorrect, please contact an Administrator to update it in User Management.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activeOptionsTab === 'SCHEDULE' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Email Trigger & Schedule</h3>
+                    
+                    {/* Dynamic Emails Control */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd" }}>
+                      <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#0369a1", fontWeight: 700 }}>Report Recipients</h4>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                        {/* Task Report Managers */}
+                        <div>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600, color: "#475569" }}>Primary Emails</label>
+                          <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                              {(settings.managerEmail || "").split(',').filter(e => e.trim()).map((email, idx) => (
+                                <div key={`m-${idx}`} style={{ background: "#f8fafc", color: "#334155", padding: "8px 12px", borderRadius: "8px", fontSize: "0.875rem", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #e2e8f0" }}>
+                                  <span style={{ fontFamily: "monospace" }}>{email.trim()}</span>
+                                  <button 
+                                    onClick={() => {
+                                      const emails = (settings.managerEmail || "").split(',').filter((_, i) => i !== idx);
+                                      setSettings({...settings, managerEmail: emails.join(',')});
+                                    }}
+                                    style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.25rem", display: "flex", alignItems: "center", padding: "4px" }}
+                                    onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                    onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <input 
+                                type="email" 
+                                placeholder="Add email..."
+                                value={newManagerEmailInput}
+                                onChange={(e) => setNewManagerEmailInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (newManagerEmailInput && newManagerEmailInput.includes('@')) {
+                                      setSettings({...settings, managerEmail: (settings.managerEmail || "") + (settings.managerEmail?.trim() ? "," : "") + newManagerEmailInput.trim()});
+                                      setNewManagerEmailInput("");
+                                    }
+                                  }
+                                }}
+                                style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem", outline: "none" }}
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const val = newManagerEmailInput.trim();
+                                  if (val && val.includes('@')) {
+                                    setSettings(prev => {
+                                      const current = prev.managerEmail || "";
+                                      return {...prev, managerEmail: current.trim() ? `${current},${val}` : val};
+                                    });
+                                    setNewManagerEmailInput("");
+                                  }
+                                }}
+                                style={{ background: "#2563eb", color: "white", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* LO Report Admins */}
+                        <div>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600, color: "#475569" }}>Primary LO Mails</label>
+                          <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                              {(settings.loReportEmail || "").split(',').filter(e => e.trim()).map((email, idx) => (
+                                <div key={`l-${idx}`} style={{ background: "#fdf4ff", color: "#701a75", padding: "8px 12px", borderRadius: "8px", fontSize: "0.875rem", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #fae8ff" }}>
+                                  <span style={{ fontFamily: "monospace" }}>{email.trim()}</span>
+                                  <button 
+                                    onClick={() => {
+                                      const emails = (settings.loReportEmail || "").split(',').filter((_, i) => i !== idx);
+                                      setSettings({...settings, loReportEmail: emails.join(',')});
+                                    }}
+                                    style={{ background: "transparent", border: "none", color: "#d8b4fe", cursor: "pointer", fontSize: "1.25rem", display: "flex", alignItems: "center", padding: "4px" }}
+                                    onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                    onMouseOut={e => e.currentTarget.style.color = "#d8b4fe"}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <input 
+                                type="email" 
+                                placeholder="Add email..."
+                                value={newLOEmailInput}
+                                onChange={(e) => setNewLOEmailInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (newLOEmailInput && newLOEmailInput.includes('@')) {
+                                      setSettings({...settings, loReportEmail: (settings.loReportEmail || "") + (settings.loReportEmail?.trim() ? "," : "") + newLOEmailInput.trim()});
+                                      setNewLOEmailInput("");
+                                    }
+                                  }
+                                }}
+                                style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem", outline: "none" }}
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const val = newLOEmailInput.trim();
+                                  if (val && val.includes('@')) {
+                                    setSettings(prev => {
+                                      const current = prev.loReportEmail || "";
+                                      return {...prev, loReportEmail: current.trim() ? `${current},${val}` : val};
+                                    });
+                                    setNewLOEmailInput("");
+                                  }
+                                }}
+                                style={{ background: "#7c3aed", color: "white", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  )}
-
-                  {activeOptionsTab === 'USERS' && isAdmin && (
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: t.text }}>User Management</h3>
-                        <button onClick={() => { setShowAddUserModal(true); setEditingUser(null); }} style={{ padding: "8px 16px", background: "#4f46e5", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <Plus size={16} /> Add User
-                        </button>
+                    {/* Reminders Schedule */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h4 style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 600 }}>Pending Reminders (Owners)</h4>
+                        <select 
+                          value={settings.reminderFrequency}
+                          onChange={(e) => setSettings({...settings, reminderFrequency: e.target.value})}
+                          style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
+                        >
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="CUSTOM">Custom</option>
+                          <option value="OFF">Turn Off</option>
+                        </select>
                       </div>
-                      <div style={{ background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+                      {settings.reminderFrequency !== 'OFF' && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                          {settings.reminderTimes.split(',').map((t, idx) => {
+                            const timeObj = convertTo12h(t.trim());
+                            return (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <select 
+                                  value={timeObj.h}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(e.target.value, timeObj.m, timeObj.s);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {hours12.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span>:</span>
+                                <select 
+                                  value={timeObj.m}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, e.target.value, timeObj.s);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <select 
+                                  value={timeObj.s}
+                                  onChange={(e) => {
+                                    const times = settings.reminderTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, timeObj.m, e.target.value);
+                                    setSettings({...settings, reminderTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", color: "#2563eb", fontWeight: 700 }}
+                                >
+                                  {ampm.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <button 
+                                  onClick={() => {
+                                    const times = settings.reminderTimes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, reminderTimes: times.join(',') || "09:00"});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: "4px", fontSize: "1.25rem", padding: "0 4px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button 
+                            onClick={() => setSettings({...settings, reminderTimes: settings.reminderTimes + ",09:00"})}
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.875rem" }}
+                          >
+                            + Add Time
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manager Report Schedule */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h4 style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 600 }}>Manager Report Summary</h4>
+                        <select 
+                          value={settings.managerReportFrequency}
+                          onChange={(e) => setSettings({...settings, managerReportFrequency: e.target.value})}
+                          style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
+                        >
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="OFF">Turn Off</option>
+                        </select>
+                      </div>
+
+                      {settings.managerReportFrequency !== 'OFF' && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                          {settings.managerReportTimes.split(',').map((t, idx) => {
+                            const timeObj = convertTo12h(t.trim());
+                            return (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <select 
+                                  value={timeObj.h}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(e.target.value, timeObj.m, timeObj.s);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {hours12.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span>:</span>
+                                <select 
+                                  value={timeObj.m}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, e.target.value, timeObj.s);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <select 
+                                  value={timeObj.s}
+                                  onChange={(e) => {
+                                    const times = settings.managerReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, timeObj.m, e.target.value);
+                                    setSettings({...settings, managerReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", color: "#2563eb", fontWeight: 700 }}
+                                >
+                                  {ampm.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <button 
+                                  onClick={() => {
+                                    const times = settings.managerReportTimes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, managerReportTimes: times.join(',') || "10:00"});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: "4px", fontSize: "1.25rem", padding: "0 4px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button 
+                            onClick={() => setSettings({...settings, managerReportTimes: settings.managerReportTimes + ",10:00"})}
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.875rem" }}
+                          >
+                            + Add Time
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LO Report Schedule */}
+                    <div style={{ marginBottom: "32px", padding: "20px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h4 style={{ margin: 0, fontSize: "1rem", color: "#0f172a", fontWeight: 600 }}>LO Report (Learning Opportunities)</h4>
+                        <select 
+                          value={settings.loReportFrequency}
+                          onChange={(e) => setSettings({...settings, loReportFrequency: e.target.value})}
+                          style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
+                        >
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="OFF">Turn Off</option>
+                        </select>
+                      </div>
+
+                      {settings.loReportFrequency !== 'OFF' && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
+                          {settings.loReportTimes.split(',').map((t, idx) => {
+                            const timeObj = convertTo12h(t.trim());
+                            return (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <select 
+                                  value={timeObj.h}
+                                  onChange={(e) => {
+                                    const times = settings.loReportTimes.split(',');
+                                    times[idx] = convertTo24h(e.target.value, timeObj.m, timeObj.s);
+                                    setSettings({...settings, loReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {hours12.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span>:</span>
+                                <select 
+                                  value={timeObj.m}
+                                  onChange={(e) => {
+                                    const times = settings.loReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, e.target.value, timeObj.s);
+                                    setSettings({...settings, loReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600 }}
+                                >
+                                  {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <select 
+                                  value={timeObj.s}
+                                  onChange={(e) => {
+                                    const times = settings.loReportTimes.split(',');
+                                    times[idx] = convertTo24h(timeObj.h, timeObj.m, e.target.value);
+                                    setSettings({...settings, loReportTimes: times.join(',')});
+                                  }}
+                                  style={{ border: "none", outline: "none", fontWeight: 600, color: "#2563eb" }}
+                                >
+                                  {ampm.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <button 
+                                  onClick={() => {
+                                    const times = settings.loReportTimes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, loReportTimes: times.join(',') || "10:00"});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: "4px", fontSize: "1.25rem", padding: "0 4px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button 
+                            onClick={() => setSettings({...settings, loReportTimes: settings.loReportTimes + ",10:00"})}
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.875rem" }}
+                          >
+                            + Add Time
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ background: "#2563eb", color: "white", padding: "12px 32px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 600, boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Automation Settings"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeOptionsTab === 'MAILS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Manual Triggers</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      <button onClick={() => handleTriggerEmail("users")} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                        <Mail size={24} color="#2563eb" />
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontWeight: 600 }}>Send Pending Reminders</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Instantly mail all owners about their pending tasks.</div>
+                        </div>
+                      </button>
+                      <button onClick={() => handleTriggerEmail("manager")} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                        <Mail size={24} color="#2563eb" />
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontWeight: 600 }}>Send Manager Report</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Instantly mail the consolidated summary to Admin.</div>
+                        </div>
+                      </button>
+                      <button onClick={() => handleTriggerEmail("lo")} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}>
+                        <Mail size={24} color="#2563eb" />
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontWeight: 600 }}>Send LO Report</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Instantly mail the Learning Opportunity summary to Admin.</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeOptionsTab === 'USERS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>User Management</h3>
+                    
+                    {/* Pending Access Requests Section */}
+                    <div style={{ marginBottom: "40px", padding: "24px", background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ padding: "8px", background: "#fef3c7", borderRadius: "10px" }}>
+                            <UserCheck size={20} color="#d97706" />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Pending Access Requests</h4>
+                        </div>
+                        <span style={{ background: "#fef3c7", color: "#92400e", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700 }}>
+                          {usersList.filter(u => (u as any).isApproved === false).length} WAITING
+                        </span>
+                      </div>
+
+                      {usersLoading ? (
+                        <p style={{ color: "#64748b", fontSize: "0.875rem" }}>Loading requests...</p>
+                      ) : usersList.filter(u => (u as any).isApproved === false).length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px", border: "1px dashed #e2e8f0", borderRadius: "12px", color: "#94a3b8" }}>
+                           No pending access requests at the moment.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "1px solid #f1f5f9", textAlign: "left" }}>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Name</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Email</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600 }}>Requested Dept</th>
+                                <th style={{ padding: "12px 16px", color: "#64748b", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {usersList.filter(u => (u as any).isApproved === false).map(u => (
+                                <tr key={u.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                                  <td style={{ padding: "16px", fontWeight: 500 }}>{u.name}</td>
+                                  <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
+                                  <td style={{ padding: "16px" }}>
+                                    <select 
+                                      value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
+                                      onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
+                                      style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                    >
+                                      <option value="">Select Dept</option>
+                                      {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                                        <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td style={{ padding: "16px", textAlign: "right" }}>
+                                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                      <button 
+                                        onClick={() => handleApproveUser(u.id)}
+                                        style={{ padding: "6px 12px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button 
+                                        onClick={() => handleRejectUser(u.id)}
+                                        style={{ padding: "6px 12px", background: "white", color: "#ef4444", borderRadius: "8px", border: "1px solid #fee2e2", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
+                            <Users size={20} color="#166534" />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
+                        </div>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          {Object.keys(pendingUserUpdates).length > 0 && (
+                            <button 
+                              onClick={handleSaveUserUpdates}
+                              disabled={isSavingUsers}
+                              style={{ padding: "8px 24px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: isSavingUsers ? "not-allowed" : "pointer", boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)" }}
+                            >
+                              {isSavingUsers ? "Saving..." : "Save Changes"}
+                            </button>
+                          )}
+                          <button 
+                            onClick={handleBulkAddUsers}
+                            style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <Users size={14} /> Import All Employees
+                          </button>
+                        </div>
+                    </div>
+
+                    {usersLoading ? (
+                      <p>Loading users...</p>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
                           <thead>
-                            <tr style={{ background: t.card, borderBottom: `1px solid ${t.border}` }}>
-                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>User</th>
-                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Department</th>
-                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Role</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Actions</th>
+                            <tr style={{ borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                               <th style={{ padding: "12px 8px" }}>Name</th>
+                               <th style={{ padding: "12px 8px" }}>Email</th>
+                               <th style={{ padding: "12px 8px" }}>Department</th>
+                               <th style={{ padding: "12px 8px" }}>Role</th>
+                               <th style={{ padding: "12px 8px" }}>Account Status</th>
+                               <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {usersList.map((u: any) => (
-                              <tr key={u.id} style={{ borderBottom: `1px solid ${t.border}` }}>
-                                <td style={{ padding: "12px 16px" }}>
-                                  <div style={{ fontWeight: 600, color: t.text }}>{u.name}</div>
-                                  <div style={{ fontSize: "0.75rem", color: t.textMuted }}>{u.email}</div>
+                            {usersList.filter(u => (u as any).isApproved !== false).map(u => (
+                              <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
+                                <td style={{ padding: "12px 8px" }}>{u.email}</td>
+                                 <td style={{ padding: "12px 8px" }}>
+                                  <select 
+                                    value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
+                                    onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                  >
+                                    <option value="">Select Dept</option>
+                                    {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                                      <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                                    ))}
+                                  </select>
                                 </td>
-                                <td style={{ padding: "12px 16px", color: t.text }}>{u.department}</td>
-                                <td style={{ padding: "12px 16px" }}>
-                                  <span style={{ padding: "4px 8px", background: u.role === 'ADMIN' ? "#fee2e2" : "#e0f2fe", color: u.role === 'ADMIN' ? "#ef4444" : "#0369a1", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>{u.role}</span>
+                                <td style={{ padding: "12px 8px" }}>
+                                  <select 
+                                    value={pendingUserUpdates[u.id]?.role !== undefined ? pendingUserUpdates[u.id].role : (u.role || "USER")}
+                                    onChange={(e) => handleUpdateUserRole(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.role !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1" }}
+                                  >
+                                    <option value="USER">USER</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                                  </select>
                                 </td>
-                                <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                                  <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                                    <button onClick={() => { setEditingUser(u); setShowAddUserModal(true); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDeleteUser(u.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                <td style={{ padding: "12px 8px" }}>
+                                  <div 
+                                    onClick={() => {
+                                      const currentVal = pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : ((u as any).isSuspended || false);
+                                      handleUpdateUserSuspension(u.id, !currentVal);
+                                    }}
+                                    style={{ 
+                                      width: "44px", 
+                                      height: "22px", 
+                                      background: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "#ef4444" : "#10b981", 
+                                      borderRadius: "11px", 
+                                      position: "relative", 
+                                      cursor: "pointer", 
+                                      transition: "all 0.2s ease",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      padding: "0 2px",
+                                      boxSizing: "border-box",
+                                      justifyContent: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "flex-end" : "flex-start"
+                                    }}
+                                  >
+                                    <div style={{ width: "18px", height: "18px", background: "white", borderRadius: "50%", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }}></div>
+                                    <span style={{ 
+                                      position: "absolute", 
+                                      left: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "6px" : "24px", 
+                                      fontSize: "8px", 
+                                      color: "white", 
+                                      fontWeight: 800,
+                                      pointerEvents: "none"
+                                    }}>
+                                      {(pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "HOLD" : "LIVE"}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleResetUserPassword(u.id, u.name)}
+                                      style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Reset Password"
+                                      onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
+                                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                      <Key size={18} />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleRemoveUser(u.id)}
+                                      style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Remove User"
+                                      onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                      onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
                                   </div>
                                 </td>
                               </tr>
@@ -3501,313 +4246,905 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           </tbody>
                         </table>
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {activeOptionsTab === 'EDIT_REQUESTS' && (
+                  <div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
+                      <button 
+                        onClick={() => setEditRequestSubTab('TASK_EDIT')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'TASK_EDIT' ? "#2563eb" : "#f1f5f9",
+                          color: editRequestSubTab === 'TASK_EDIT' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <LayoutDashboard size={16} /> Edit Task
+                        {tasks.filter(t => t.editRequested).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'TASK_EDIT' ? "white" : "#ef4444", color: editRequestSubTab === 'TASK_EDIT' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {tasks.filter(t => t.editRequested).length}
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => setEditRequestSubTab('TASK_DELETE')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'TASK_DELETE' ? "#ef4444" : "#f1f5f9",
+                          color: editRequestSubTab === 'TASK_DELETE' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <Trash2 size={16} /> Delete Task
+                        {tasks.filter(t => t.deleteRequested).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'TASK_DELETE' ? "white" : "#ef4444", color: editRequestSubTab === 'TASK_DELETE' ? "#ef4444" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {tasks.filter(t => t.deleteRequested).length}
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => setEditRequestSubTab('LO')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'LO' ? "#2563eb" : "#f1f5f9",
+                          color: editRequestSubTab === 'LO' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <BookOpen size={16} /> Edit LO
+                        {los.filter(l => l.editRequested).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'LO' ? "white" : "#ef4444", color: editRequestSubTab === 'LO' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {los.filter(l => l.editRequested).length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {editRequestSubTab === 'TASK_EDIT' ? (
+                      <div>
+                        <h3 style={{ margin: "0 0 16px 0", color: "#0f172a" }}>Pending Task Edit Requests</h3>
+                        <p style={{ color: "#64748b", marginBottom: "24px", fontSize: "0.875rem" }}>Review and manage requests from users to unlock and edit completed tasks.</p>
+                        
+                        {tasks.filter(t => t.editRequested).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: "#64748b", margin: 0 }}>No pending task edit requests.</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {tasks.filter(t => t.editRequested).map(task => (
+                              <div key={`task-edit-${task.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                  <div>
+                                    <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: "#0f172a" }}>Task #{task.id}: {task.taskName}</h4>
+                                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
+                                      Requested by: <strong style={{ color: "#0f172a" }}>{task.editRequestBy === "OWNER" ? task.ownerName : task.reviewerName}</strong> ({task.editRequestBy})
+                                    </p>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleApproveEdit(task.id, 'APPROVE')}
+                                      style={{ background: "#22c55e", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button 
+                                      onClick={() => handleApproveEdit(task.id, 'REJECT')}
+                                      style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </div>
+                                <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #cbd5e1" }}>
+                                  <strong>Reason:</strong> {task.editRequestReason}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : editRequestSubTab === 'TASK_DELETE' ? (
+                      <div>
+                        <h3 style={{ margin: "0 0 16px 0", color: "#0f172a" }}>Pending Task Deletion Requests</h3>
+                        <p style={{ color: "#64748b", marginBottom: "24px", fontSize: "0.875rem" }}>Review and manage requests from users to permanently delete tasks.</p>
+                        
+                        {tasks.filter(t => t.deleteRequested).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: "#64748b", margin: 0 }}>No pending task deletion requests.</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {tasks.filter(t => t.deleteRequested).map(task => (
+                              <div key={`task-del-${task.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                  <div>
+                                    <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: "#0f172a" }}>Task #{task.id}: {task.taskName}</h4>
+                                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
+                                      Requested by: <strong style={{ color: "#0f172a" }}>{task.ownerName}</strong>
+                                    </p>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleApproveDelete(task.id, 'APPROVE')}
+                                      style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Approve Delete
+                                    </button>
+                                    <button 
+                                      onClick={() => handleApproveDelete(task.id, 'REJECT')}
+                                      style={{ background: "#64748b", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </div>
+                                <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #ef4444" }}>
+                                  <strong>Reason:</strong> {task.deleteRequestReason}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                            <div>
+                              <h3 style={{ margin: "0 0 8px 0", color: "#0f172a" }}>Learning Opportunity (LO) Admin</h3>
+                              <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>Manage LO edit requests and view/export all records.</p>
+                            </div>
+                            <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                              <FileSpreadsheet size={18} /> Export All
+                            </button>
+                          </div>
+  
+                          {/* LO Edit Requests Section */}
+                          <div style={{ marginBottom: "32px" }}>
+                            <h4 style={{ fontSize: "0.9375rem", color: "#475569", marginBottom: "12px", fontWeight: 600 }}>Pending LO Edit Requests</h4>
+                            {los.filter(l => l.editRequested).length === 0 ? (
+                              <div style={{ padding: "24px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>No pending LO edit requests.</p>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                {los.filter(l => l.editRequested).map(lo => (
+                                  <div key={`lo-${lo.id}`} style={{ padding: "16px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                      <div>
+                                        <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9375rem", color: "#0f172a" }}>LO #{lo.id}: {lo.entity}</h5>
+                                        <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b" }}>Submitted by: <strong>{lo.identifiedBy}</strong></p>
+                                      </div>
+                                      <div style={{ display: "flex", gap: "8px" }}>
+                                        <button onClick={() => handleApproveEditLO(lo.id, 'APPROVE')} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Approve</button>
+                                        <button onClick={() => handleApproveEditLO(lo.id, 'REJECT')} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Reject</button>
+                                      </div>
+                                    </div>
+                                    <div style={{ padding: "10px", background: "#f8fafc", borderRadius: "6px", fontSize: "0.8125rem", borderLeft: "3px solid #cbd5e1" }}>
+                                      <strong>Reason:</strong> {lo.editRequestReason}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {activeOptionsTab === 'EDIT_REQUESTS' && isAdmin && (
-                    <div>
-                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Pending Edit Requests</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        {editRequests.length === 0 ? (
-                          <div style={{ padding: "40px", textAlign: "center", color: t.textMuted, background: t.bg, borderRadius: "16px", border: `1px dashed ${t.border}` }}>No pending edit requests.</div>
-                        ) : (
-                          editRequests.map((req: any) => (
-                            <div key={req.id} style={{ padding: "20px", borderRadius: "16px", background: t.card, border: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div>
-                                <div style={{ fontSize: "0.875rem", fontWeight: 700, color: t.text }}>Task ID #{req.taskId}</div>
-                                <div style={{ fontSize: "0.75rem", color: t.textMuted }}>Requested by: {req.requestBy} ({req.requesterEmail})</div>
-                                <div style={{ fontSize: "0.875rem", marginTop: "8px", color: t.text }}>Reason: <span style={{ fontStyle: "italic" }}>{req.reason || "No reason provided"}</span></div>
+                {activeOptionsTab === 'MASTER_DATA' && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                      <h3 style={{ margin: 0, color: "#0f172a" }}>Master Data Hub</h3>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ padding: "8px 24px", background: "#2563eb", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: isSavingSettings ? "not-allowed" : "pointer" }}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                    <p style={{ color: "#64748b", marginBottom: "32px", fontSize: "0.875rem" }}>
+                      Manage the global dropdown lists used across all forms (Task Submission, LO Identification, etc.). 
+                      Changes here will reflect instantly across the entire platform.
+                    </p>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+                      {/* Departments */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <Users size={18} color="#3b82f6" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Departments</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {settings.masterDepartments.split(',').filter(d => d.trim()).map((dept, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {dept.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterDepartments.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterDepartments: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
                               </div>
-                              <div style={{ display: "flex", gap: "12px" }}>
-                                <button onClick={() => handleApproveEditRequest(req.id, req.taskId)} style={{ padding: "8px 16px", borderRadius: "8px", background: "#10b981", color: "white", border: "none", fontWeight: 600, cursor: "pointer" }}>Approve</button>
-                                <button onClick={() => handleRejectEditRequest(req.id)} style={{ padding: "8px 16px", borderRadius: "8px", background: "#ef4444", color: "white", border: "none", fontWeight: 600, cursor: "pointer" }}>Reject</button>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add department..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterDepartments: (settings.masterDepartments || "") + (settings.masterDepartments?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Entities */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <Building2 size={18} color="#f59e0b" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Entities</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {settings.masterEntities.split(',').filter(e => e.trim()).map((ent, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {ent.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterEntities.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterEntities: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add entity..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterEntities: (settings.masterEntities || "") + (settings.masterEntities?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Task Types */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <Tag size={18} color="#10b981" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Task Type</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {settings.masterTaskTypes.split(',').filter(t => t.trim()).map((type, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {type.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterTaskTypes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterTaskTypes: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add task type..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterTaskTypes: (settings.masterTaskTypes || "") + (settings.masterTaskTypes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Communication Modes */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <Send size={18} color="#8b5cf6" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Communication Modes</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterCommunicationModes || "").split(',').filter(t => t.trim()).map((mode, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {mode.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterCommunicationModes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterCommunicationModes: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add mode..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterCommunicationModes: (settings.masterCommunicationModes || "") + (settings.masterCommunicationModes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Request Types */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <FileText size={18} color="#8b5cf6" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Finance Functions</h4>
+                        </div>
+                        <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 12px 0" }}>Used in Inter Department Request form.</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterRequestTypes || "").split(',').filter(t => t.trim()).map((type, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {type.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterRequestTypes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterRequestTypes: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add finance function..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    setSettings({...settings, masterRequestTypes: (settings.masterRequestTypes || "") + (settings.masterRequestTypes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+                
+                {activeOptionsTab === 'DATA' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Bulk Data Import</h3>
+                    <p style={{ color: "#64748b", marginBottom: "32px" }}>Download the template, fill it with your data, and upload it back. Alternatively, use the quick paste method.</p>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+                      
+                      {/* Task Import Section */}
+                      <div style={{ padding: "28px", background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px", color: "#0f172a" }}>
+                            <LayoutDashboard size={24} color="#2563eb" /> Task Bulk Import
+                          </h4>
+                          <button 
+                            onClick={() => downloadBulkTemplate('tasks')}
+                            style={{ background: "#f8fafc", color: "#2563eb", padding: "8px 16px", borderRadius: "8px", border: "1px solid #2563eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px" }}
+                          >
+                            <Download size={16} /> Download Template
+                          </button>
+                        </div>
+
+                        <div style={{ padding: "30px", background: "#f1f5f9", borderRadius: "12px", border: "2px dashed #cbd5e1", textAlign: "center" }}>
+                          <p style={{ fontWeight: 600, fontSize: "1rem", margin: "0 0 16px 0", color: "#475569" }}>Upload Excel File</p>
+                          <input 
+                            type="file" 
+                            accept=".xlsx" 
+                            onChange={(e) => handleExcelBulkUpload(e, 'tasks')}
+                            style={{ fontSize: "0.875rem" }}
+                          />
+                          <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "12px" }}>Ensure you use the template provided above.</p>
+                        </div>
+                      </div>
+
+                      {/* LO Import Section */}
+                      <div style={{ padding: "28px", background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                          <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px", color: "#0f172a" }}>
+                            <BookOpen size={24} color="#2563eb" /> LO Bulk Import
+                          </h4>
+                          <button 
+                            onClick={() => downloadBulkTemplate('lo')}
+                            style={{ background: "#f8fafc", color: "#2563eb", padding: "8px 16px", borderRadius: "8px", border: "1px solid #2563eb", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px" }}
+                          >
+                            <Download size={16} /> Download Template
+                          </button>
+                        </div>
+
+                        <div style={{ padding: "30px", background: "#f1f5f9", borderRadius: "12px", border: "2px dashed #cbd5e1", textAlign: "center" }}>
+                          <p style={{ fontWeight: 600, fontSize: "1rem", margin: "0 0 16px 0", color: "#475569" }}>Upload Excel File</p>
+                          <input 
+                            type="file" 
+                            accept=".xlsx" 
+                            onChange={(e) => handleExcelBulkUpload(e, 'lo')}
+                            style={{ fontSize: "0.875rem" }}
+                          />
+                          <p style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "12px" }}>Ensure you use the template provided above.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+
+                {activeOptionsTab === 'HOME_HUB' && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <h3 style={{ margin: 0 }}>Home Hub Management</h3>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ display: "flex", alignItems: "center", gap: "8px", background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", cursor: isSavingSettings ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                      >
+                        <ShieldCheck size={18} /> {isSavingSettings ? "Saving..." : "Save Home Content"}
+                      </button>
+                    </div>
+
+                    {/* Mission Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Building2 size={20} color="#2563eb" /> Edit Mission Statement</h4>
+                      <textarea 
+                        value={JSON.parse(settings.homeContent || '{}').mission || ""}
+                        onChange={(e) => {
+                          const content = JSON.parse(settings.homeContent || '{}');
+                          setSettings({ ...settings, homeContent: JSON.stringify({ ...content, mission: e.target.value }) });
+                        }}
+                        placeholder="Enter the implementation mission..."
+                        style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }}
+                      />
+                    </div>
+
+                    {/* Stories Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Quote size={20} color="#2563eb" /> Manage Success Stories</h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+                        {(JSON.parse(settings.homeContent || '{}').stories || []).map((s: any, idx: number) => (
+                          <div key={idx} style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", position: "relative" }}>
+                            <button 
+                              onClick={() => {
+                                const content = JSON.parse(settings.homeContent || '{}');
+                                const updated = content.stories.filter((_: any, i: number) => i !== idx);
+                                setSettings({ ...settings, homeContent: JSON.stringify({ ...content, stories: updated }) });
+                              }}
+                              style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <div style={{ fontWeight: 700, fontSize: "0.875rem" }}>{s.title}</div>
+                            <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>{s.text}</div>
+                            <div style={{ fontSize: "0.75rem", fontWeight: 600, marginTop: "4px" }}>- {s.author}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr auto", gap: "8px", alignItems: "end" }}>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Title</label>
+                          <input id="story-title" type="text" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Story Text</label>
+                          <input id="story-text" type="text" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Author</label>
+                          <input id="story-author" type="text" style={inputStyle} />
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const title = (document.getElementById('story-title') as HTMLInputElement).value;
+                            const text = (document.getElementById('story-text') as HTMLInputElement).value;
+                            const author = (document.getElementById('story-author') as HTMLInputElement).value;
+                            if (!title || !text || !author) return;
+                            const content = JSON.parse(settings.homeContent || '{}');
+                            const updated = [...(content.stories || []), { id: Date.now(), title, text, author }];
+                            setSettings({ ...settings, homeContent: JSON.stringify({ ...content, stories: updated }) });
+                            (document.getElementById('story-title') as HTMLInputElement).value = "";
+                            (document.getElementById('story-text') as HTMLInputElement).value = "";
+                            (document.getElementById('story-author') as HTMLInputElement).value = "";
+                          }}
+                          style={{ background: "#2563eb", color: "white", padding: "10px 16px", borderRadius: "10px", border: "none", cursor: "pointer" }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Achievements Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Tag size={20} color="#2563eb" /> Manage Achievements</h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                        {(JSON.parse(settings.homeContent || '{}').achievements || []).map((a: any, idx: number) => (
+                          <div key={idx} style={{ padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{a.title}</span>
+                              <span style={{ marginLeft: "8px", fontSize: "0.75rem", color: "#64748b" }}>({a.date})</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                const content = JSON.parse(settings.homeContent || '{}');
+                                const updated = content.achievements.filter((_: any, i: number) => i !== idx);
+                                setSettings({ ...settings, homeContent: JSON.stringify({ ...content, achievements: updated }) });
+                              }}
+                              style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: "8px", alignItems: "end" }}>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Achievement</label>
+                          <input id="ach-title" type="text" placeholder="e.g. 500 Tasks Milestone" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Date</label>
+                          <input id="ach-date" type="text" placeholder="e.g. May 2026" style={inputStyle} />
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const title = (document.getElementById('ach-title') as HTMLInputElement).value;
+                            const date = (document.getElementById('ach-date') as HTMLInputElement).value;
+                            if (!title || !date) return;
+                            const content = JSON.parse(settings.homeContent || '{}');
+                            const updated = [...(content.achievements || []), { id: Date.now(), title, date }];
+                            setSettings({ ...settings, homeContent: JSON.stringify({ ...content, achievements: updated }) });
+                            (document.getElementById('ach-title') as HTMLInputElement).value = "";
+                            (document.getElementById('ach-date') as HTMLInputElement).value = "";
+                          }}
+                          style={{ background: "#2563eb", color: "white", padding: "10px 16px", borderRadius: "10px", border: "none", cursor: "pointer" }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {activeOptionsTab === 'MATRICES' && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <h3 style={{ margin: 0 }}>Matrix Module</h3>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ display: "flex", alignItems: "center", gap: "8px", background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", cursor: isSavingSettings ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}
+                      >
+                        <ShieldCheck size={18} /> {isSavingSettings ? "Saving..." : "Save Matrix Changes"}
+                      </button>
+                    </div>
+
+                    {/* Finance Team Overview */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+                        <div style={{ padding: "8px", background: "#eff6ff", borderRadius: "10px" }}>
+                          <Users size={20} color="#2563eb" />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Finance Team Members</h4>
+                          <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b" }}>These users are available as Authorized Allocators.</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                        {usersList.filter(u => u.department === 'Finance' && (u as any).isApproved !== false).length === 0 ? (
+                          <p style={{ fontSize: "0.875rem", color: "#94a3b8", italic: "true" } as any}>No users found in Finance department.</p>
+                        ) : (
+                          usersList.filter(u => u.department === 'Finance' && (u as any).isApproved !== false).map(u => (
+                            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#2563eb", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.875rem" }}>
+                                {u.name ? u.name[0].toUpperCase() : u.email[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{u.name || "--"}</div>
+                                <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
                               </div>
                             </div>
                           ))
                         )}
                       </div>
                     </div>
-                  )}
 
-                  {activeOptionsTab === 'MASTER_DATA' && isAdmin && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-                      <div>
-                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Operational Entities</h3>
-                        <textarea rows={4} value={settings.masterEntities || ""} onChange={(e) => setSettings({ ...settings, masterEntities: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="Comma separated entities..." />
+                    {/* Matrix A: Module Access (Accordion) */}
+                    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'ACCESS' ? '' : 'ACCESS')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'ACCESS' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'ACCESS' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'ACCESS' ? "#2563eb" : "#0f172a" }}>
+                          <Shield size={20} /> Matrix A : Module Access
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'ACCESS' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: "#64748b" }} />
                       </div>
-                      <div>
-                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Departments</h3>
-                        <textarea rows={4} value={settings.masterDepartments || ""} onChange={(e) => setSettings({ ...settings, masterDepartments: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="Comma separated departments..." />
-                      </div>
-                      <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Save Master Data</button>
-                    </div>
-                  )}
-
-                  {activeOptionsTab === 'DATA' && isAdmin && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-                      <div>
-                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Bulk Import Tasks</h3>
-                        <div style={{ padding: "32px", border: `2px dashed ${t.border}`, borderRadius: "20px", textAlign: "center", background: t.bg }}>
-                          <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => handleBulkImport(e, 'task')} style={{ display: "none" }} id="bulk-task-import" />
-                          <label htmlFor="bulk-task-import" style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                            <FileSpreadsheet size={48} color="#94a3b8" />
-                            <span style={{ fontWeight: 600, color: t.text }}>Click to upload Excel File</span>
-                            <span style={{ fontSize: "0.75rem", color: t.textMuted }}>Make sure you use the standard template.</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeOptionsTab === 'HOME_HUB' && isAdmin && (() => {
-                    const homeContent = JSON.parse(settings.homeContent || '{}');
-                    const stories = homeContent.stories || [];
-                    const achievements = homeContent.achievements || [];
-
-                    const updateHomeContent = (newContent: any) => {
-                      setSettings({ ...settings, homeContent: JSON.stringify(newContent) });
-                    };
-
-                    return (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
-                        {/* Header */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: t.text }}>Home Hub Management</h2>
-                            <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: t.textMuted }}>Manage what your team sees on the Home screen.</p>
-                          </div>
-                          <button
-                            onClick={() => handleSaveSettings()}
-                            style={{ padding: "10px 20px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-                          >
-                            💾 Save Home Content
-                          </button>
-                        </div>
-
-                        {/* Edit Mission Statement */}
-                        <div style={{ background: t.card, borderRadius: "16px", padding: "24px", border: `1px solid ${t.border}` }}>
-                          <h3 style={{ margin: "0 0 12px 0", fontSize: "1rem", fontWeight: 700, color: t.text, display: "flex", alignItems: "center", gap: "8px" }}>
-                            🏛️ Edit Mission Statement
-                          </h3>
-                          <textarea
-                            rows={3}
-                            placeholder="Enter the team mission statement..."
-                            value={homeContent.mission || ""}
-                            onChange={(e) => {
-                              const newContent = { ...homeContent, mission: e.target.value };
-                              updateHomeContent(newContent);
-                            }}
-                            style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, width: "100%" }}
-                          />
-                        </div>
-
-                        {/* Manage Success Stories */}
-                        <div style={{ background: t.card, borderRadius: "16px", padding: "24px", border: `1px solid ${t.border}` }}>
-                          <h3 style={{ margin: "0 0 16px 0", fontSize: "1rem", fontWeight: 700, color: t.text, display: "flex", alignItems: "center", gap: "8px" }}>
-                            🏅 Manage Success Stories
-                          </h3>
-                          {/* Add New Story */}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr auto", gap: "12px", marginBottom: "20px", alignItems: "end" }}>
-                            <div>
-                              <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Title</label>
-                              <input
-                                id="new-story-title"
-                                type="text"
-                                placeholder="e.g. Efficiency Boost"
-                                style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Story Text</label>
-                              <input
-                                id="new-story-text"
-                                type="text"
-                                placeholder="Short description of the win..."
-                                style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Author</label>
-                              <input
-                                id="new-story-author"
-                                type="text"
-                                placeholder="Team Member"
-                                style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
-                              />
-                            </div>
-                            <button
-                              onClick={() => {
-                                const titleEl = document.getElementById('new-story-title') as HTMLInputElement;
-                                const textEl = document.getElementById('new-story-text') as HTMLInputElement;
-                                const authorEl = document.getElementById('new-story-author') as HTMLInputElement;
-                                if (!titleEl?.value || !textEl?.value) return;
-                                const newStory = { id: Date.now(), title: titleEl.value, text: textEl.value, author: authorEl?.value || "Team" };
-                                const newContent = { ...homeContent, stories: [...stories, newStory] };
-                                updateHomeContent(newContent);
-                                titleEl.value = ''; textEl.value = ''; if (authorEl) authorEl.value = '';
-                              }}
-                              style={{ padding: "10px 18px", background: "#4f46e5", color: "white", borderRadius: "8px", border: "none", fontWeight: 700, cursor: "pointer" }}
-                            >
-                              + Add
-                            </button>
-                          </div>
-                          {/* Existing Stories */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            {stories.length === 0 && (
-                              <p style={{ color: t.textMuted, fontSize: "0.875rem", textAlign: "center", padding: "16px", background: t.bg, borderRadius: "10px", border: `1px dashed ${t.border}` }}>
-                                No stories yet. Add one above.
-                              </p>
-                            )}
-                            {stories.map((s: any) => (
-                              <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: t.bg, borderRadius: "10px", border: `1px solid ${t.border}` }}>
-                                <div>
-                                  <span style={{ fontWeight: 700, color: t.text, fontSize: "0.875rem" }}>{s.title}</span>
-                                  <span style={{ color: t.textMuted, fontSize: "0.8rem", marginLeft: "12px" }}>by {s.author}</span>
-                                  <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: t.textMuted }}>{s.text}</p>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const newContent = { ...homeContent, stories: stories.filter((x: any) => x.id !== s.id) };
-                                    updateHomeContent(newContent);
-                                  }}
-                                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "#ef4444", fontWeight: 700, fontSize: "1.1rem", padding: "4px 8px" }}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Manage Achievements */}
-                        <div style={{ background: t.card, borderRadius: "16px", padding: "24px", border: `1px solid ${t.border}` }}>
-                          <h3 style={{ margin: "0 0 16px 0", fontSize: "1rem", fontWeight: 700, color: t.text, display: "flex", alignItems: "center", gap: "8px" }}>
-                            🏆 Manage Achievements
-                          </h3>
-                          {/* Add New Achievement */}
-                          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: "12px", marginBottom: "20px", alignItems: "end" }}>
-                            <div>
-                              <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Achievement Title</label>
-                              <input
-                                id="new-ach-title"
-                                type="text"
-                                placeholder="e.g. Platform Launch"
-                                style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Date / Period</label>
-                              <input
-                                id="new-ach-date"
-                                type="text"
-                                placeholder="e.g. Apr 2026"
-                                style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
-                              />
-                            </div>
-                            <button
-                              onClick={() => {
-                                const titleEl = document.getElementById('new-ach-title') as HTMLInputElement;
-                                const dateEl = document.getElementById('new-ach-date') as HTMLInputElement;
-                                if (!titleEl?.value) return;
-                                const newAch = { id: Date.now(), title: titleEl.value, date: dateEl?.value || "" };
-                                const newContent = { ...homeContent, achievements: [...achievements, newAch] };
-                                updateHomeContent(newContent);
-                                titleEl.value = ''; if (dateEl) dateEl.value = '';
-                              }}
-                              style={{ padding: "10px 18px", background: "#4f46e5", color: "white", borderRadius: "8px", border: "none", fontWeight: 700, cursor: "pointer" }}
-                            >
-                              + Add
-                            </button>
-                          </div>
-                          {/* Existing Achievements */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            {achievements.length === 0 && (
-                              <p style={{ color: t.textMuted, fontSize: "0.875rem", textAlign: "center", padding: "16px", background: t.bg, borderRadius: "10px", border: `1px dashed ${t.border}` }}>
-                                No achievements yet. Add one above.
-                              </p>
-                            )}
-                            {achievements.map((a: any) => (
-                              <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: t.bg, borderRadius: "10px", border: `1px solid ${t.border}` }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                  <span style={{ fontSize: "1.25rem" }}>🏅</span>
-                                  <div>
-                                    <span style={{ fontWeight: 700, color: t.text, fontSize: "0.875rem" }}>{a.title}</span>
-                                    {a.date && <span style={{ color: t.textMuted, fontSize: "0.8rem", marginLeft: "8px" }}>— {a.date}</span>}
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const newContent = { ...homeContent, achievements: achievements.filter((x: any) => x.id !== a.id) };
-                                    updateHomeContent(newContent);
-                                  }}
-                                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: 700, fontSize: "1.1rem", padding: "4px 8px" }}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Save Button at Bottom */}
-                        <button
-                          onClick={() => handleSaveSettings()}
-                          style={{ padding: "14px", background: "#10b981", color: "white", borderRadius: "12px", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "1rem" }}
-                        >
-                          💾 Save All Home Hub Changes
-                        </button>
-                      </div>
-                    );
-                  })()}
-
-                  {activeOptionsTab === 'MATRICES' && isAdmin && (
-                    <div>
-                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Module Access Matrix</h3>
-                      <div style={{ background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr style={{ background: t.card, borderBottom: `1px solid ${t.border}` }}>
-                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Department</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Home</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Tasks</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Recurring</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>LOs</th>
-                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Ext Req</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {settings.masterDepartments?.split(',').filter((d: string) => d.trim()).map((dept: string) => {
-                              const d = dept.trim();
-                              const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
-                              const access = matrix[d] || { HOME: true, TASKS: true, RECURRING: true, LOS: true, REQUESTS: false };
-                              
-                              const toggleAccess = (module: string) => {
-                                const newMatrix = { ...matrix };
-                                if (!newMatrix[d]) newMatrix[d] = { ...access };
-                                newMatrix[d][module] = !newMatrix[d][module];
-                                setSettings({ ...settings, moduleAccessMatrix: JSON.stringify(newMatrix) });
-                              };
-
-                              return (
-                                <tr key={d} style={{ borderBottom: `1px solid ${t.border}` }}>
-                                  <td style={{ padding: "12px 16px", fontWeight: 600, color: t.text }}>{d}</td>
-                                  {['HOME', 'TASKS', 'RECURRING', 'LOS', 'REQUESTS'].map(m => (
-                                    <td key={m} style={{ padding: "12px 16px", textAlign: "center" }}>
-                                      <input type="checkbox" checked={access[m]} onChange={() => toggleAccess(m)} />
-                                    </td>
+                      
+                      {activeMatrixTab === 'ACCESS' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#64748b" }}>Define which departments have access to specific modules.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#f8fafc" }}>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Department</th>
+                                  {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
+                                    <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
                                   ))}
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      <button onClick={() => handleSaveSettings()} style={{ marginTop: "20px", padding: "12px 24px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Matrix</button>
+                              </thead>
+                              <tbody>
+                                {settings.masterDepartments.split(',').filter(d => d.trim()).map((dept) => {
+                                  const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                                  return (
+                                    <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{dept}</td>
+                                      {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
+                                        <td key={module} style={{ padding: "12px", textAlign: "center" }}>
+                                          <input 
+                                            type="checkbox" 
+                                            checked={matrix[module]?.includes(dept)} 
+                                            onChange={(e) => {
+                                              const current = matrix[module] || [];
+                                              const updated = e.target.checked 
+                                                ? [...current, dept] 
+                                                : current.filter((d: string) => d !== dept);
+                                              setSettings({
+                                                ...settings, 
+                                                moduleAccessMatrix: JSON.stringify({ ...matrix, [module]: updated })
+                                              });
+                                            }}
+                                            style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                          />
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+
+                    {/* Matrix B: Request Allocation (Accordion) */}
+                    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'ALLOCATION' ? '' : 'ALLOCATION')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'ALLOCATION' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'ALLOCATION' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'ALLOCATION' ? "#2563eb" : "#0f172a" }}>
+                          <Users size={20} /> Matrix B : Request Allocation
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'ALLOCATION' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: "#64748b" }} />
+                      </div>
+
+                      {activeMatrixTab === 'ALLOCATION' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#64748b" }}>Assign authorized allocators for each type of inter-departmental request.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#f8fafc" }}>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Finance Function</th>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Authorized Allocator</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {settings.masterRequestTypes.split(',').filter(t => t.trim()).map((type) => {
+                                  const matrix = JSON.parse(settings.allocationMatrix || '{}');
+                                  return (
+                                    <tr key={type} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{type}</td>
+                                      <td style={{ padding: "12px" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                            {(() => {
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.length === 0) return <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No Allocators Assigned</span>;
+                                              return allocators.map((email: string) => (
+                                                <div key={email} style={{ 
+                                                  background: "#f0f9ff", border: "1px solid #bae6fd", 
+                                                  padding: "2px 8px", borderRadius: "6px", 
+                                                  fontSize: "0.75rem", color: "#0369a1", 
+                                                  display: "flex", alignItems: "center", gap: "6px" 
+                                                }}>
+                                                  {usersList.find(u => u.email === email)?.name || email}
+                                                  <button 
+                                                    onClick={() => {
+                                                      const updated = allocators.filter((e: string) => e !== email);
+                                                      setSettings({ ...settings, allocationMatrix: JSON.stringify({ ...matrix, [type]: updated }) });
+                                                    }}
+                                                    style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, display: "flex" }}
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                              ));
+                                            })()}
+                                          </div>
+                                          <select 
+                                            value=""
+                                            onChange={(e) => {
+                                              if (!e.target.value) return;
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.includes(e.target.value)) return;
+                                              setSettings({
+                                                ...settings,
+                                                allocationMatrix: JSON.stringify({ ...matrix, [type]: [...allocators, e.target.value] })
+                                              });
+                                            }}
+                                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem" }}
+                                          >
+                                            <option value="">+ Add Allocator</option>
+                                            {usersList
+                                              .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
+                                              .map(u => (
+                                                <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
+                                              ))
+                                            }
+                                          </select>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Matrix C: Entity Controls (Accordion) */}
+                    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'ENTITY' ? '' : 'ENTITY')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'ENTITY' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'ENTITY' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'ENTITY' ? "#2563eb" : "#0f172a" }}>
+                          <Briefcase size={20} /> Matrix C : Entity Controls
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'ENTITY' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: "#64748b" }} />
+                      </div>
+                      
+                      {activeMatrixTab === 'ENTITY' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#64748b" }}>Control which users have access to specific entities in Task and Request forms.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#f8fafc" }}>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>User Name / Email</th>
+                                  <th style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#2563eb", fontSize: "0.7rem", textTransform: "uppercase", background: "#eff6ff" }}>Consolidated (ALL)</th>
+                                  {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => (
+                                    <th key={entity} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{entity.trim()}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {usersList.filter(u => (u as any).isApproved !== false).map((u) => {
+                                  const matrix = JSON.parse(settings.entityMatrix || '{}');
+                                  const userEntities = matrix[u.id] || [];
+                                  const isConsolidated = userEntities.includes('ALL');
+                                  
+                                  return (
+                                    <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "12px", fontSize: "0.875rem" }}>
+                                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{u.name || "--"}</div>
+                                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
+                                      </td>
+                                      <td style={{ padding: "12px", textAlign: "center", background: "#f8fafc" }}>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={isConsolidated} 
+                                          onChange={(e) => {
+                                            const updated = e.target.checked ? ['ALL'] : [];
+                                            setSettings({
+                                              ...settings, 
+                                              entityMatrix: JSON.stringify({ ...matrix, [u.id]: updated })
+                                            });
+                                          }}
+                                          style={{ width: "20px", height: "20px", cursor: "pointer" }}
+                                        />
+                                      </td>
+                                      {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => {
+                                        const entityName = entity.trim();
+                                        return (
+                                          <td key={entityName} style={{ padding: "12px", textAlign: "center" }}>
+                                            <input 
+                                              type="checkbox" 
+                                              disabled={isConsolidated}
+                                              checked={isConsolidated || userEntities.includes(entityName)} 
+                                              onChange={(e) => {
+                                                const current = userEntities.filter((en: string) => en !== 'ALL');
+                                                const updated = e.target.checked 
+                                                  ? [...current, entityName] 
+                                                  : current.filter((en: string) => en !== entityName);
+                                                setSettings({
+                                                  ...settings, 
+                                                  entityMatrix: JSON.stringify({ ...matrix, [u.id]: updated })
+                                                });
+                                              }}
+                                              style={{ width: "18px", height: "18px", cursor: "pointer", opacity: isConsolidated ? 0.5 : 1 }}
+                                            />
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
         </div>
       )}
 
@@ -3835,27 +5172,27 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>CC (Optional)</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>CC (Optional)</label>
                 <input 
                   type="email" 
                   placeholder="manager@example.com"
                   value={shareData.ccEmail}
                   onChange={e => setShareData({...shareData, ccEmail: e.target.value})}
-                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} 
+                  style={inputStyle} 
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Subject</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Subject</label>
                 <input 
                   type="text" 
                   value={shareData.subject}
                   onChange={e => setShareData({...shareData, subject: e.target.value})}
-                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} 
+                  style={inputStyle} 
                 />
               </div>
 
-              <div style={{ padding: "16px", background: theme === 'DARK' ? 'rgba(3, 105, 161, 0.1)' : "#f0f9ff", borderRadius: "12px", border: `1px solid ${theme === 'DARK' ? 'rgba(3, 105, 161, 0.2)' : '#bae6fd'}`, display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ padding: "16px", background: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd", display: "flex", alignItems: "center", gap: "12px" }}>
                 <FileSpreadsheet size={24} color="#0369a1" />
                 <div>
                   <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>Attachment Info</p>
@@ -3868,16 +5205,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
                 <button 
                   onClick={() => setShowShareModal(false)}
-                  style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontWeight: 600, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleShareReport}
                   disabled={shareLoading}
-                  style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: shareLoading ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}
+                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: shareLoading ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
                 >
-                  {shareLoading ? "Sending..." : "Send Email Report"}
+                  {shareLoading ? "Sending..." : "Send Email"}
                 </button>
               </div>
             </div>
@@ -3885,42 +5222,42 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
       )}
 
-       {showRejectModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-          <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "450px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", border: `1px solid ${t.border}` }}>
-            <div style={{ padding: "24px", background: theme === 'DARK' ? "rgba(239, 68, 68, 0.1)" : "#fef2f2", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {showRejectModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "450px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px", background: "#fef2f2", borderBottom: "1px solid #fee2e2", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", padding: "10px", borderRadius: "12px" }}>
+                <div style={{ background: "#fee2e2", color: "#ef4444", padding: "10px", borderRadius: "12px" }}>
                   <AlertCircle size={24} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#ef4444" }}>Reject Request</h3>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: t.textMuted, opacity: 0.8 }}>Please provide a reason for rejection.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#991b1b" }}>Reject Request</h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#b91c1c", opacity: 0.8 }}>Please provide a reason for rejection.</p>
                 </div>
               </div>
-              <button onClick={() => setShowRejectModal(false)} style={{ background: t.bg, border: `1px solid ${t.border}`, color: "#ef4444", cursor: "pointer", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
+              <button onClick={() => setShowRejectModal(false)} style={{ background: "white", border: "1px solid #fee2e2", color: "#ef4444", cursor: "pointer", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
             </div>
             
             <div style={{ padding: "24px" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rejection Reason</label>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rejection Reason</label>
               <textarea 
                 placeholder="Explain why this request is being rejected..."
                 value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
-                style={{ ...inputStyle, minHeight: "120px", resize: "none", padding: "12px", background: t.bg }} 
+                style={{ ...inputStyle, minHeight: "120px", resize: "none", padding: "12px" }} 
               />
               
               <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
                 <button 
                   onClick={() => setShowRejectModal(false)}
-                  style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontWeight: 600, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleRejectExtRequest}
                   disabled={!rejectReason.trim()}
-                  style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", background: "#ef4444", color: "white", fontWeight: 600, cursor: !rejectReason.trim() ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)" }}
+                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#ef4444", color: "white", fontWeight: 600, cursor: !rejectReason.trim() ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.2)" }}
                 >
                   Confirm Rejection
                 </button>
@@ -3930,13 +5267,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
       )}
       <style dangerouslySetInnerHTML={{__html: `
-        .table-row:hover { background-color: ${theme === 'DARK' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'} !important; }
+        .table-row:hover { background-color: #f8fafc; }
         .btn-primary:hover { background-color: #1d4ed8 !important; }
-        .btn-logout:hover { color: ${theme === 'DARK' ? 'white' : '#0f172a'} !important; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: ${t.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${t.border}; borderRadius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${t.textMuted}; }
+        .btn-logout:hover { color: #0f172a !important; }
       `}} />
             </>
           )}
@@ -3944,82 +5277,111 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   </div>
 </div>
   );
+}
 
-  // Subcomponents (Defined inside to access t)
-  function MetricCard({ title, value, icon, bg, isActive, onClick }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void }) {
-    return (
-      <div 
-        onClick={onClick}
-        style={{ 
-          background: t.card, 
-          padding: "24px", 
-          borderRadius: "16px", 
-          border: isActive ? "2px solid #2563eb" : `1px solid ${t.border}`, 
-          boxShadow: isActive ? "0 4px 12px -1px rgba(37, 99, 235, 0.2)" : "0 4px 6px -1px rgba(0, 0, 0, 0.05)", 
-          display: "flex", 
-          alignItems: "center", 
-          gap: "20px",
-          cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          transform: isActive ? "translateY(-2px)" : "none"
-        }}
-      >
-        <div style={{ background: bg, padding: "16px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {icon}
-        </div>
-        <div>
-          <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 600 }}>{title}</p>
-          <p style={{ margin: 0, fontSize: "2rem", fontWeight: 800, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
-        </div>
+// Subcomponents
+
+function MetricCard({ title, value, icon, bg, isActive, onClick }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void }) {
+  return (
+    <div 
+      onClick={onClick}
+      style={{ 
+        background: "white", 
+        padding: "24px", 
+        borderRadius: "12px", 
+        border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
+        boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "16px",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.2s"
+      }}
+    >
+      <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {icon}
       </div>
+      <div>
+        <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: "#64748b", fontWeight: 500 }}>{title}</p>
+        <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.025em" }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatusPill({ status, type, taskId, onUpdate, disabled }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean }) {
+  let bg = "#f1f5f9";
+  let color = "#475569";
+
+  if (status === "Completed") {
+    bg = "#dcfce7";
+    color = "#166534";
+  } else if (status === "Pending" || status.includes("Pending")) {
+    bg = "#fef9c3";
+    color = "#854d0e";
+  } else if (status === "In Progress") {
+    bg = "#e0f2fe";
+    color = "#0369a1";
+  }
+
+  const pillStyle = {
+    background: bg,
+    color: color,
+    padding: "6px 12px",
+    borderRadius: "9999px",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    display: "inline-block",
+    border: "none",
+    outline: "none",
+    appearance: "none" as const,
+    cursor: type === "task" && !disabled ? "pointer" : disabled ? "not-allowed" : "default",
+  };
+
+  if (type === "task") {
+    return (
+      <select 
+        value={status} 
+        onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
+        style={pillStyle}
+        disabled={disabled}
+      >
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
     );
   }
 
-  function StatusPill({ status, type, taskId, onUpdate, disabled }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean }) {
-    let bg = t.bg;
-    let color = t.textMuted;
-
-    if (status === "Completed") {
-      bg = theme === 'DARK' ? "rgba(34, 197, 94, 0.15)" : "#dcfce7";
-      color = theme === 'DARK' ? "#4ade80" : "#166534";
-    } else if (status === "Pending" || status.includes("Pending")) {
-      bg = theme === 'DARK' ? "rgba(234, 179, 8, 0.15)" : "#fef9c3";
-      color = theme === 'DARK' ? "#facc15" : "#854d0e";
-    } else if (status === "In Progress") {
-      bg = theme === 'DARK' ? "rgba(59, 130, 246, 0.15)" : "#e0f2fe";
-      color = theme === 'DARK' ? "#60a5fa" : "#0369a1";
-    }
-
-    const pillStyle = {
-      background: bg,
-      color: color,
-      padding: "8px 16px",
-      borderRadius: "100px",
-      fontSize: "0.75rem",
-      fontWeight: 700,
-      display: "inline-block",
-      border: `1px solid ${theme === 'DARK' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
-      outline: "none",
-      appearance: "none" as const,
-      cursor: type === "task" && !disabled ? "pointer" : disabled ? "not-allowed" : "default",
-      transition: "all 0.2s"
-    };
-
-    if (type === "task") {
-      return (
-        <select 
-          value={status} 
-          onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
-          style={pillStyle}
-          disabled={disabled}
-        >
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-        </select>
-      );
-    }
-
-    return <span style={pillStyle}>{status}</span>;
-  }
+  return <span style={pillStyle}>{status}</span>;
 }
+
+// Styles
+
+const thStyle = {
+  background: "#f8fafc",
+  color: "#64748b",
+  padding: "16px 24px",
+  fontWeight: 600,
+  fontSize: "0.75rem",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em",
+  borderBottom: "1px solid #e2e8f0",
+  whiteSpace: "nowrap" as const,
+};
+
+const tdStyle = {
+  padding: "16px 24px",
+  verticalAlign: "middle" as const,
+};
+
+const inputStyle = {
+  width: "100%", 
+  border: "1px solid #cbd5e1", 
+  borderRadius: "6px", 
+  padding: "8px 12px", 
+  fontSize: "0.875rem", 
+  outline: "none", 
+  boxShadow: "0 0 0 2px rgba(59,130,246,0.2)",
+  fontFamily: "inherit"
+};
