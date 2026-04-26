@@ -40,6 +40,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
   const [loading, setLoading] = useState(false);
   const [bulkAssign, setBulkAssign] = useState({ owner: "", reviewer: "", dueDate: "" });
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<number[]>([]); // Indices of stagingTasks
   const [templateForm, setTemplateForm] = useState<Partial<RecurringTemplate>>({
     taskNamePattern: "",
     entityName: "",
