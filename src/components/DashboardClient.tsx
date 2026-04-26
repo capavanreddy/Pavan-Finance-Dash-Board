@@ -3315,7 +3315,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Primary Recipients (Comma separated)</label>
                           <textarea rows={3} value={settings.managerEmail || ""} onChange={(e) => setSettings({ ...settings, managerEmail: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="email1@example.com, email2@example.com" />
                         </div>
-                        <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Primary Settings</button>
+                        <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Primary Settings</button>
                       </div>
                     </div>
                   )}
@@ -3334,7 +3334,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>LO Report Recipients (Comma separated)</label>
                           <textarea rows={3} value={settings.loReportEmail || ""} onChange={(e) => setSettings({ ...settings, loReportEmail: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="email1@example.com, email2@example.com" />
                         </div>
-                        <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save LO Settings</button>
+                        <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save LO Settings</button>
                       </div>
                     </div>
                   )}
@@ -3439,7 +3439,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Departments</h3>
                         <textarea rows={4} value={settings.masterDepartments || ""} onChange={(e) => setSettings({ ...settings, masterDepartments: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="Comma separated departments..." />
                       </div>
-                      <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Save Master Data</button>
+                      <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Save Master Data</button>
                     </div>
                   )}
 
@@ -3501,7 +3501,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           </tbody>
                         </table>
                       </div>
-                      <button onClick={() => handleUpdateSettings(settings)} style={{ marginTop: "20px", padding: "12px 24px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Matrix</button>
+                      <button onClick={() => handleSaveSettings()} style={{ marginTop: "20px", padding: "12px 24px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Matrix</button>
                     </div>
                   )}
 
@@ -3520,7 +3520,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} 
                         />
                       </div>
-                      <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Update Home Hub</button>
+                      <button onClick={() => handleSaveSettings()} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Update Home Hub</button>
                     </div>
                   )}
                 </div>
