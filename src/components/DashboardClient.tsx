@@ -3528,9 +3528,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
                     >
                       Edit Request
-                      {(tasks.filter(t => t.editRequested).length + los.filter(l => l.editRequested).length) > 0 && (
+                      {(tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length) > 0 && (
                         <span style={{ marginLeft: "8px", background: "#ef4444", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
-                          {tasks.filter(t => t.editRequested).length + los.filter(l => l.editRequested).length}
+                          {tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length}
                         </span>
                       )}
                     </button>
@@ -4733,7 +4733,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 {activeOptionsTab === 'HOME_HUB' && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <h3 style={{ margin: 0 }}>Home Hub Management</h3>
+                      <h3 style={{ margin: 0 }}>Home Hub Management Hub</h3>
                       <button 
                         onClick={handleSaveSettings}
                         disabled={isSavingSettings}
@@ -4866,7 +4866,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 {activeOptionsTab === 'MATRICES' && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <h3 style={{ margin: 0 }}>Matrix Module</h3>
+                      <h3 style={{ margin: 0 }}>Matrix Control Module</h3>
                       <button 
                         onClick={handleSaveSettings}
                         disabled={isSavingSettings}
