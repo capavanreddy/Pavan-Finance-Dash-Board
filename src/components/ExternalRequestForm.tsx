@@ -20,6 +20,7 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
     natureOfRequest: "",
     departmentName: "",
     requestType: "",
+    entityName: "",
   });
 
   useEffect(() => {
@@ -100,6 +101,28 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
                 style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} 
               />
             </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Entity Name *</label>
+            <select 
+              name="entityName" 
+              required 
+              value={formData.entityName} 
+              onChange={handleChange} 
+              style={inputStyle}
+            >
+              <option value="">Select Entity</option>
+              {(() => {
+                const matrix = JSON.parse(settings.entityMatrix || '{}');
+                const allowedEntities = matrix[user.id] || [];
+                return settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => {
+                  const name = entity.trim();
+                  if (allowedEntities.length > 0 && !allowedEntities.includes(name)) return null;
+                  return <option key={name} value={name}>{name}</option>;
+                });
+              })()}
+            </select>
           </div>
 
           <div>

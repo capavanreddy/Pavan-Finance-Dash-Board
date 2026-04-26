@@ -9,9 +9,10 @@ type TaskFormProps = {
   settings: any;
   usersList?: any[];
   initialData?: any;
+  user: any;
 };
 
-export default function TaskForm({ onClose, onSuccess, settings, usersList = [], initialData }: TaskFormProps) {
+export default function TaskForm({ onClose, onSuccess, settings, usersList = [], initialData, user }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [changeRequestType, setChangeRequestType] = useState(false);
@@ -209,12 +210,18 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Entity Name *</label>
-                  <select name="entityName" required value={formData.entityName} onChange={handleChange} style={inputStyle}>
-                    <option value="">Choose</option>
-                    {settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => (
-                      <option key={entity.trim()} value={entity.trim()}>{entity.trim()}</option>
-                    ))}
-                  </select>
+                    <select name="entityName" required value={formData.entityName} onChange={handleChange} style={inputStyle}>
+                      <option value="">Choose</option>
+                      {(() => {
+                        const matrix = JSON.parse(settings.entityMatrix || '{}');
+                        const allowedEntities = matrix[user.id] || [];
+                        return settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => {
+                          const name = entity.trim();
+                          if (allowedEntities.length > 0 && !allowedEntities.includes(name)) return null;
+                          return <option key={name} value={name}>{name}</option>;
+                        });
+                      })()}
+                    </select>
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>Task Type *</label>

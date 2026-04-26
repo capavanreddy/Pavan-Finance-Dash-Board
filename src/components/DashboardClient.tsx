@@ -125,7 +125,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
   const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES'>('ACCOUNT');
-  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | ''>('ACCESS');
+  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | ''>('ACCESS');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(true);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
@@ -145,7 +145,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     masterRequestTypes: 'Accounts Receivable,Accounts Payable,General & Administration,Payroll',
     masterRequestStatuses: 'Under Process,Pending for Review,Processed',
     moduleAccessMatrix: '{}',
-    allocationMatrix: '{}'
+    allocationMatrix: '{}',
+    entityMatrix: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -3187,6 +3188,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           settings={settings}
           usersList={usersList}
           initialData={preFilledTask}
+          user={user}
           onClose={() => {
             setShowForm(false);
             setPreFilledTask(null);
@@ -4742,6 +4744,72 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                           </select>
                                         </div>
                                       </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Matrix C: Entity Controls (Accordion) */}
+                    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'ENTITY' ? '' : 'ENTITY')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'ENTITY' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'ENTITY' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'ENTITY' ? "#2563eb" : "#0f172a" }}>
+                          <Briefcase size={20} /> Matrix C : Entity Controls
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'ENTITY' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: "#64748b" }} />
+                      </div>
+                      
+                      {activeMatrixTab === 'ENTITY' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#64748b" }}>Control which users have access to specific entities in Task and Request forms.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#f8fafc" }}>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>User Name / Email</th>
+                                  {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => (
+                                    <th key={entity} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{entity.trim()}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {usersList.filter(u => (u as any).isApproved !== false).map((u) => {
+                                  const matrix = JSON.parse(settings.entityMatrix || '{}');
+                                  const userEntities = matrix[u.id] || [];
+                                  return (
+                                    <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "12px", fontSize: "0.875rem" }}>
+                                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{u.name || "--"}</div>
+                                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
+                                      </td>
+                                      {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => {
+                                        const entityName = entity.trim();
+                                        return (
+                                          <td key={entityName} style={{ padding: "12px", textAlign: "center" }}>
+                                            <input 
+                                              type="checkbox" 
+                                              checked={userEntities.includes(entityName)} 
+                                              onChange={(e) => {
+                                                const updated = e.target.checked 
+                                                  ? [...userEntities, entityName] 
+                                                  : userEntities.filter((en: string) => en !== entityName);
+                                                setSettings({
+                                                  ...settings, 
+                                                  entityMatrix: JSON.stringify({ ...matrix, [u.id]: updated })
+                                                });
+                                              }}
+                                              style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                            />
+                                          </td>
+                                        );
+                                      })}
                                     </tr>
                                   );
                                 })}

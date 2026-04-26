@@ -109,6 +109,12 @@ export async function authenticate(
       // Add Recurring Activities column to Settings
       await sql`ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "recurringMatrix" TEXT DEFAULT '{}'`;
 
+      // Add Entity Controls column to Settings
+      await sql`ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "entityMatrix" TEXT DEFAULT '{}'`;
+
+      // Add entityName to ExternalRequest
+      await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "entityName" TEXT`;
+
       // Add Recurring fields to Task table for tracking
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "periodKey" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "templateId" INTEGER`;

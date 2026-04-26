@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   try {
     const sql = getDb();
     const body = await request.json();
-    const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType } = body;
+    const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityName } = body;
 
     if (!requestFrom || !requesterEmail || !natureOfRequest || !departmentName || !requestType) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
@@ -54,11 +54,11 @@ export async function POST(request: Request) {
     const newRequests = await sql`
       INSERT INTO "ExternalRequest" (
         "requestFrom", "requesterEmail", "natureOfRequest", "departmentName", 
-        "requestType", "originalRequestType", "transferStatus", "status", "createdAt", "updatedAt"
+        "requestType", "originalRequestType", "transferStatus", "status", "entityName", "createdAt", "updatedAt"
       )
       VALUES (
         ${requestFrom}, ${requesterEmail}, ${natureOfRequest}, ${departmentName},
-        ${requestType}, ${requestType}, 'O', 'Pending', NOW(), NOW()
+        ${requestType}, ${requestType}, 'O', 'Pending', ${entityName}, NOW(), NOW()
       )
       RETURNING *
     `;
