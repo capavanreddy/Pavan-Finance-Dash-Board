@@ -343,6 +343,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
         </div>
       )}
 
+      {activeSubTab === 'MASTER' && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
             <div>
