@@ -3210,7 +3210,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <div style={{ width: "240px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "24px 16px", overflowY: "auto", transition: "all 0.3s ease" }}>
                   <button 
                     onClick={() => setActiveOptionsTab('ACCOUNT')} 
-                    style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                    style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'ACCOUNT' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                   >
                     Account
                   </button>
@@ -3218,53 +3218,285 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     <>
                       <button 
                         onClick={() => setActiveOptionsTab('SCHEDULE')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'SCHEDULE' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'SCHEDULE' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                       >
                         Email Trigger
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('MAILS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MAILS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MAILS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                       >
                         Manual Mails
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('USERS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'USERS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'USERS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                       >
                         User Management
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer" }}
                       >
                         Edit Request
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('MASTER_DATA')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                       >
                         Master Data
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('DATA')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'DATA' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                       >
                         Bulk Import
                       </button>
                       <button 
                         onClick={() => setActiveOptionsTab('MATRICES')} 
-                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'MATRICES' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                       >
-                          Matrix Module
-                        </button>
+                        Matrix Module
+                      </button>
+                      <button 
+                        onClick={() => setActiveOptionsTab('HOME_HUB')} 
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? (theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : "#e0f2fe") : "transparent", color: activeOptionsTab === 'HOME_HUB' ? (theme === 'DARK' ? "#60a5fa" : "#0369a1") : t.textMuted, fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                      >
+                        Home Hub
+                      </button>
                     </>
                   )}
                 </div>
 
                 {/* Tab Content */}
                 <div style={{ flex: 1, padding: "32px", overflow: "auto" }}>
-                  {/* ... (Tabs Content implementation remains) ... */}
+                  {activeOptionsTab === 'ACCOUNT' && (
+                    <div style={{ maxWidth: "500px" }}>
+                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>My Account</h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <div>
+                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Name</label>
+                          <input type="text" readOnly value={user.name || "Master Admin"} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Email</label>
+                          <input type="text" readOnly value={user.email} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Department</label>
+                          <input type="text" readOnly value={user.department || "Admin"} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'SCHEDULE' && isAdmin && (
+                    <div>
+                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Automated Email Schedule</h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "600px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                          <div>
+                            <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Report Time (24h Format)</label>
+                            <input type="time" value={settings.reportTime || "09:00"} onChange={(e) => setSettings({ ...settings, reportTime: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Escalation Buffer (Days)</label>
+                            <input type="number" value={settings.escalationBuffer || 2} onChange={(e) => setSettings({ ...settings, escalationBuffer: Number(e.target.value) })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>Primary Recipients (Comma separated)</label>
+                          <textarea rows={3} value={settings.primaryEmails || ""} onChange={(e) => setSettings({ ...settings, primaryEmails: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="email1@example.com, email2@example.com" />
+                        </div>
+                        <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Schedule</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'MAILS' && isAdmin && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Trigger Manual Report</h3>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                          <button onClick={() => triggerManualMail('DASHBOARD')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                            <FileSpreadsheet size={24} color="#3b82f6" />
+                            <span style={{ fontWeight: 600 }}>Task Dashboard</span>
+                          </button>
+                          <button onClick={() => triggerManualMail('EXTERNAL')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                            <Users size={24} color="#f59e0b" />
+                            <span style={{ fontWeight: 600 }}>Inter-Dept Requests</span>
+                          </button>
+                          <button onClick={() => triggerManualMail('LO')} style={{ padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                            <Lightbulb size={24} color="#10b981" />
+                            <span style={{ fontWeight: 600 }}>Learning Opportunities</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'USERS' && isAdmin && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: t.text }}>User Management</h3>
+                        <button onClick={() => { setShowAddUserModal(true); setEditingUser(null); }} style={{ padding: "8px 16px", background: "#4f46e5", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Plus size={16} /> Add User
+                        </button>
+                      </div>
+                      <div style={{ background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ background: t.card, borderBottom: `1px solid ${t.border}` }}>
+                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>User</th>
+                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Department</th>
+                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Role</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {usersList.map((u: any) => (
+                              <tr key={u.id} style={{ borderBottom: `1px solid ${t.border}` }}>
+                                <td style={{ padding: "12px 16px" }}>
+                                  <div style={{ fontWeight: 600, color: t.text }}>{u.name}</div>
+                                  <div style={{ fontSize: "0.75rem", color: t.textMuted }}>{u.email}</div>
+                                </td>
+                                <td style={{ padding: "12px 16px", color: t.text }}>{u.department}</td>
+                                <td style={{ padding: "12px 16px" }}>
+                                  <span style={{ padding: "4px 8px", background: u.role === 'ADMIN' ? "#fee2e2" : "#e0f2fe", color: u.role === 'ADMIN' ? "#ef4444" : "#0369a1", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>{u.role}</span>
+                                </td>
+                                <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                                  <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                                    <button onClick={() => { setEditingUser(u); setShowAddUserModal(true); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}><Edit2 size={16} /></button>
+                                    <button onClick={() => handleDeleteUser(u.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'EDIT_REQUESTS' && isAdmin && (
+                    <div>
+                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Pending Edit Requests</h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        {editRequests.length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", color: t.textMuted, background: t.bg, borderRadius: "16px", border: `1px dashed ${t.border}` }}>No pending edit requests.</div>
+                        ) : (
+                          editRequests.map((req: any) => (
+                            <div key={req.id} style={{ padding: "20px", borderRadius: "16px", background: t.card, border: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ fontSize: "0.875rem", fontWeight: 700, color: t.text }}>Task ID #{req.taskId}</div>
+                                <div style={{ fontSize: "0.75rem", color: t.textMuted }}>Requested by: {req.requestBy} ({req.requesterEmail})</div>
+                                <div style={{ fontSize: "0.875rem", marginTop: "8px", color: t.text }}>Reason: <span style={{ fontStyle: "italic" }}>{req.reason || "No reason provided"}</span></div>
+                              </div>
+                              <div style={{ display: "flex", gap: "12px" }}>
+                                <button onClick={() => handleApproveEditRequest(req.id, req.taskId)} style={{ padding: "8px 16px", borderRadius: "8px", background: "#10b981", color: "white", border: "none", fontWeight: 600, cursor: "pointer" }}>Approve</button>
+                                <button onClick={() => handleRejectEditRequest(req.id)} style={{ padding: "8px 16px", borderRadius: "8px", background: "#ef4444", color: "white", border: "none", fontWeight: 600, cursor: "pointer" }}>Reject</button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'MASTER_DATA' && isAdmin && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Operational Entities</h3>
+                        <textarea rows={4} value={settings.masterEntities || ""} onChange={(e) => setSettings({ ...settings, masterEntities: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="Comma separated entities..." />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Departments</h3>
+                        <textarea rows={4} value={settings.masterDepartments || ""} onChange={(e) => setSettings({ ...settings, masterDepartments: e.target.value })} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} placeholder="Comma separated departments..." />
+                      </div>
+                      <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Save Master Data</button>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'DATA' && isAdmin && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Bulk Import Tasks</h3>
+                        <div style={{ padding: "32px", border: `2px dashed ${t.border}`, borderRadius: "20px", textAlign: "center", background: t.bg }}>
+                          <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => handleBulkImport(e, 'task')} style={{ display: "none" }} id="bulk-task-import" />
+                          <label htmlFor="bulk-task-import" style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                            <FileSpreadsheet size={48} color="#94a3b8" />
+                            <span style={{ fontWeight: 600, color: t.text }}>Click to upload Excel File</span>
+                            <span style={{ fontSize: "0.75rem", color: t.textMuted }}>Make sure you use the standard template.</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'MATRICES' && isAdmin && (
+                    <div>
+                      <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Module Access Matrix</h3>
+                      <div style={{ background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ background: t.card, borderBottom: `1px solid ${t.border}` }}>
+                              <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "0.75rem", color: t.textMuted }}>Department</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Home</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Tasks</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Recurring</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>LOs</th>
+                              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted }}>Ext Req</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {settings.masterDepartments?.split(',').filter((d: string) => d.trim()).map((dept: string) => {
+                              const d = dept.trim();
+                              const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                              const access = matrix[d] || { HOME: true, TASKS: true, RECURRING: true, LOS: true, REQUESTS: false };
+                              
+                              const toggleAccess = (module: string) => {
+                                const newMatrix = { ...matrix };
+                                if (!newMatrix[d]) newMatrix[d] = { ...access };
+                                newMatrix[d][module] = !newMatrix[d][module];
+                                setSettings({ ...settings, moduleAccessMatrix: JSON.stringify(newMatrix) });
+                              };
+
+                              return (
+                                <tr key={d} style={{ borderBottom: `1px solid ${t.border}` }}>
+                                  <td style={{ padding: "12px 16px", fontWeight: 600, color: t.text }}>{d}</td>
+                                  {['HOME', 'TASKS', 'RECURRING', 'LOS', 'REQUESTS'].map(m => (
+                                    <td key={m} style={{ padding: "12px 16px", textAlign: "center" }}>
+                                      <input type="checkbox" checked={access[m]} onChange={() => toggleAccess(m)} />
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button onClick={() => handleUpdateSettings(settings)} style={{ marginTop: "20px", padding: "12px 24px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer" }}>Save Matrix</button>
+                    </div>
+                  )}
+
+                  {activeOptionsTab === 'HOME_HUB' && isAdmin && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                      <div>
+                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.125rem", fontWeight: 700, color: t.text }}>Mission Statement</h3>
+                        <textarea 
+                          rows={3} 
+                          value={JSON.parse(settings.homeContent || '{}').mission || ""} 
+                          onChange={(e) => {
+                            const content = JSON.parse(settings.homeContent || '{}');
+                            content.mission = e.target.value;
+                            setSettings({ ...settings, homeContent: JSON.stringify(content) });
+                          }} 
+                          style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }} 
+                        />
+                      </div>
+                      <button onClick={() => handleUpdateSettings(settings)} style={{ padding: "12px", background: "#4f46e5", color: "white", borderRadius: "10px", border: "none", fontWeight: 700, cursor: "pointer", width: "200px" }}>Update Home Hub</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
