@@ -1097,10 +1097,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     // 1. Metric Filter (My Reports / My Learnings)
     let typeMatch = true;
     if (loActiveFilter === 'REPORTS') {
-      const myName = EMAIL_TO_NAME[user?.email || ''] || user?.name;
+      const myName = user?.name;
       typeMatch = lo.identifiedBy === myName;
     } else if (loActiveFilter === 'LEARNINGS') {
-      const myName = EMAIL_TO_NAME[user?.email || ''] || user?.name;
+      const myName = user?.name;
       typeMatch = lo.committedBy === myName;
     }
 
@@ -2236,7 +2236,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
-                    const currentUserName = EMAIL_TO_NAME[user?.email || ""];
+                    const currentUserName = user?.name || user?.email;
                     const isCurrentUserOwner = task.ownerName === currentUserName;
                     const isCurrentUserReviewer = task.reviewerName === currentUserName;
 
