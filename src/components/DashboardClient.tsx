@@ -222,6 +222,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [rejectReason, setRejectReason] = useState("");
   const [hoveredRejectId, setHoveredRejectId] = useState<number | null>(null);
 
+  // User Management State
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editRequests, setEditRequests] = useState<any[]>([]);
+
   // Dropdown Refs
   const taskDropdownRef = useState<HTMLDivElement | null>(null)[0]; // Actually I should use useRef
   // Wait, I'll use a simpler approach since I can't easily add refs everywhere without more edits.
@@ -517,6 +522,81 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const [preFilledTask, setPreFilledTask] = useState<any>(null);
+
+  const handleDeleteUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchUsersList();
+        alert('User deleted successfully.');
+      } else {
+        alert('Failed to delete user.');
+      }
+    } catch (err) {
+      console.error('Delete user error:', err);
+    }
+  };
+
+  const handleApproveEditRequest = async (requestId: number, taskId: number) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/approve-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId })
+      });
+      if (res.ok) {
+        setEditRequests(prev => prev.filter((r: any) => r.id !== requestId));
+        fetchTasks();
+        alert('Edit request approved.');
+      } else {
+        alert('Failed to approve edit request.');
+      }
+    } catch (err) {
+      console.error('Approve edit request error:', err);
+    }
+  };
+
+  const handleRejectEditRequest = async (requestId: number) => {
+    try {
+      const res = await fetch(`/api/tasks/edit-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'REJECTED' })
+      });
+      if (res.ok) {
+        setEditRequests(prev => prev.filter((r: any) => r.id !== requestId));
+        alert('Edit request rejected.');
+      } else {
+        alert('Failed to reject edit request.');
+      }
+    } catch (err) {
+      console.error('Reject edit request error:', err);
+    }
+  };
+
+  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>, type: 'task' | 'lo') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    try {
+      const res = await fetch('/api/admin/bulk-import', { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`✅ Bulk import successful: ${data.count || 0} records imported.`);
+        if (type === 'task') fetchTasks(); else fetchLOs();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`❌ Bulk import failed: ${err.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Bulk import error:', err);
+      alert('❌ Error during bulk import.');
+    }
+    e.target.value = '';
+  };
 
   const handleConvertToTask = (req: ExternalRequest) => {
     setPreFilledTask({
