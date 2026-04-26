@@ -102,11 +102,38 @@ export async function authenticate(
     const sql = getDb();
     
     // --- Self-healing Migration ---
-    // Add isSuspended column if it doesn't exist (Runs here because users can't login to trigger the User Management one)
     try {
+      // Add isSuspended column
       await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT FALSE`;
+      
+      // Add Recurring Activities column to Settings
+      await sql`ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "recurringMatrix" TEXT DEFAULT '{}'`;
+
+      // Add Recurring fields to Task table for tracking
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "periodKey" TEXT`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "templateId" INTEGER`;
+
+      // Create RecurringTemplate table
+      await sql`
+        CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
+          id SERIAL PRIMARY KEY,
+          "taskNamePattern" TEXT NOT NULL,
+          "entityName" TEXT NOT NULL,
+          "taskType" TEXT NOT NULL,
+          "departmentName" TEXT NOT NULL,
+          frequency TEXT NOT NULL,
+          "dayOffset" INTEGER DEFAULT 0,
+          "monthOffset" INTEGER DEFAULT 0,
+          "defaultOwner" TEXT,
+          "defaultReviewer" TEXT,
+          "isActive" BOOLEAN DEFAULT TRUE,
+          "lastGeneratedPeriod" TEXT,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `;
     } catch (e) {
-      console.log("Migration check done");
+      console.log("Migration check done/failed gracefully");
     }
 
     const users = await sql`

@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
+import RecurringActivities from "@/components/RecurringActivities";
 
 type Task = {
   id: number;
@@ -117,7 +118,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
-  const [activeView, setActiveView] = useState<'TASKS' | 'LOS'>('TASKS');
+  const [activeView, setActiveView] = useState<'TASKS' | 'RECURRING' | 'LOS'>('TASKS');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
@@ -1793,6 +1794,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           >
                             Task Dashboard
                           </button>
+                          {(() => {
+                            // Check Matrix for Recurring Activities access
+                            const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                            const canSeeRecurring = isAdmin || (matrix['Recurring Activities'] && matrix['Recurring Activities'].includes(user?.department));
+                            if (!canSeeRecurring) return null;
+                            return (
+                              <button 
+                                onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                                style={{ 
+                                  padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                  background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                  color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
+                                  cursor: "pointer", transition: "all 0.2s"
+                                }}
+                              >
+                                Recurring Activities
+                              </button>
+                            );
+                          })()}
                           {canSeeRequests && (
                             <button 
                               onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
@@ -1851,7 +1871,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </nav>
 
         {/* Content Area */}
-        <main style={{ flex: 1, overflow: "auto", padding: "32px", background: "#f8fafc" }}>
+        <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: "#f8fafc" }}>
+          {activeView === 'RECURRING' && (
+            <RecurringActivities settings={settings} usersList={usersList} />
+          )}
+
+          {activeView !== 'RECURRING' && (
+            <>
           {/* Active View Title/Context Area */}
           <div style={{ 
             marginBottom: "32px", 
@@ -4597,7 +4623,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Department</th>
-                                  {['Tasks', 'Requests', 'Learning'].map(module => (
+                                  {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                     <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
                                   ))}
                                 </tr>
@@ -4608,7 +4634,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   return (
                                     <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{dept}</td>
-                                      {['Tasks', 'Requests', 'Learning'].map(module => (
+                                      {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                         <td key={module} style={{ padding: "12px", textAlign: "center" }}>
                                           <input 
                                             type="checkbox" 
@@ -4856,7 +4882,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         .btn-primary:hover { background-color: #1d4ed8 !important; }
         .btn-logout:hover { color: #0f172a !important; }
       `}} />
-    </main>
+            </>
+          )}
+        </main>
   </div>
 </div>
   );
