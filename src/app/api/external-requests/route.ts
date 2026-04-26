@@ -42,11 +42,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const body = await request.json();
+  const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityNames } = body;
+
   try {
     const sql = getDb();
-    const body = await request.json();
-    const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityNames } = body;
-
     if (!requestFrom || !requesterEmail || !natureOfRequest || !departmentName || !requestType || !entityNames || !entityNames.length) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
@@ -68,8 +68,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(createdRequests, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating external request:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    console.error('External Request Full Data:', { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityNames });
+    console.error('Error Details:', error);
+    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
   }
 }

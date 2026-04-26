@@ -54,16 +54,18 @@ export async function GET(req: NextRequest) {
 
 // POST /api/tasks
 export async function POST(req: NextRequest) {
+  const sql = getDb();
+  const session = await getServerSession();
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const data = await req.json();
+  let taskName: string = "", taskType: string = "", assignments: any[] = [], dueDate: string = "";
+  let departmentName: string = "", requestFrom: string = "", mailLink: string = "", linkedRequestId: any = null;
+
   try {
-    const sql = getDb();
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    const data = await req.json();
-
-    const {
+    ({
       taskName,
       taskType,
       departmentName,
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
       mailLink,
       linkedRequestId,
       assignments, // New: Array of { entityName, ownerName, reviewerName }
-    } = data;
+    } = data);
 
     if (!taskName || !taskType || !departmentName || !requestFrom || !assignments || !assignments.length) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
