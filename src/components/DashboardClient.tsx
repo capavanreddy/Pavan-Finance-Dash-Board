@@ -246,15 +246,46 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     accent: '#2563eb'
   };
 
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // If clicking a download button or inside a dropdown, don't close immediately here
       // or better: only close if target is NOT part of the dropdown logic
-      };
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showTaskDownloadDropdown, showLODownloadDropdown]);
+
+  // Styles (Defined inside component to access theme t)
+  const inputStyle = {
+    width: "100%", 
+    border: `1px solid ${t.border}`, 
+    borderRadius: "10px", 
+    padding: "10px 14px", 
+    fontSize: "0.875rem", 
+    outline: "none", 
+    background: t.card,
+    color: t.text,
+    transition: "all 0.2s",
+    fontFamily: "inherit"
+  };
+
+  const tdStyle = {
+    padding: "16px 20px",
+    verticalAlign: "middle" as const,
+    color: t.text
+  };
+
+  const thStyle = {
+    background: t.bg,
+    color: t.textMuted,
+    padding: "16px 20px",
+    fontWeight: 700,
+    fontSize: "0.75rem",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.05em",
+    borderBottom: `2px solid ${t.border}`,
+    whiteSpace: "nowrap" as const,
+  };
 
 
 
@@ -2847,10 +2878,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   <tbody>
                     {extReqLoading ? (
                       <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading...</td></tr>
-                    ) : filteredExtReqs.length === 0 ? (
+                    ) : sortedExternalRequests.length === 0 ? (
                       <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No requests found.</td></tr>
                     ) : (
-                      filteredExtReqs.map((req) => (
+                      sortedExternalRequests.map((req) => (
                         <tr key={req.id} style={{ borderBottom: `1px solid ${t.border}`, transition: "background 0.2s" }} className="table-row">
                           <td style={tdStyle}><span style={{ color: t.textMuted }}>#{req.id}</span></td>
                           <td style={tdStyle}>{formatDate(req.createdAt)}</td>
@@ -3062,8 +3093,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         />
       )}
       {showLOCaptureModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "600px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "600px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", border: `1px solid ${t.border}` }}>
             <div style={{ padding: "24px", background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Capture Learning Opportunity</h3>
@@ -3075,46 +3106,40 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Entity</label>
-                  <input type="text" readOnly value={loCaptureForm.entity} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Entity</label>
+                  <input type="text" readOnly value={loCaptureForm.entity} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Date of Identification</label>
-                  <input type="text" readOnly value={formatDate(loCaptureForm.dateOfIdentification)} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Date of Identification</label>
+                  <input type="text" readOnly value={formatDate(loCaptureForm.dateOfIdentification)} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Identified By</label>
-                  <input type="text" readOnly value={loCaptureForm.identifiedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Identified By</label>
+                  <input type="text" readOnly value={loCaptureForm.identifiedBy} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Committed By</label>
-                  <input type="text" readOnly value={loCaptureForm.committedBy} style={{ ...inputStyle, background: "#f8fafc", cursor: "not-allowed" }} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Committed By</label>
+                  <input type="text" readOnly value={loCaptureForm.committedBy} style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "not-allowed" }} />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mistake / Learning Opportunity</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Mistake / Learning Opportunity</label>
                 <textarea 
                   rows={3} 
                   placeholder="Describe the learning opportunity..."
                   value={loCaptureForm.learningOpportunity}
-                  onChange={e => setLOCaptureForm({...loCaptureForm, learningOpportunity: e.target.value})}
-                  style={{ ...inputStyle, resize: "none" }}
+                  onChange={(e) => setLOCaptureForm({ ...loCaptureForm, learningOpportunity: e.target.value })}
+                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Resolution Provided</label>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Resolution Provided</label>
                 <textarea 
                   rows={3} 
-                  placeholder="Describe the resolution/correction..."
+                  placeholder="What was the resolution or fix?"
                   value={loCaptureForm.resolutionProvided}
-                  onChange={e => setLOCaptureForm({...loCaptureForm, resolutionProvided: e.target.value})}
-                  style={{ ...inputStyle, resize: "none" }}
-                />
-              </div>
-
-              <div>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mode of Communication</label>
                 <select 
                   value={loCaptureForm.modeOfCommunication}
@@ -3306,42 +3331,42 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
       )}
 
-      {showRejectModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "450px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
-            <div style={{ padding: "24px", background: "#fef2f2", borderBottom: "1px solid #fee2e2", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+       {showRejectModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "450px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", border: `1px solid ${t.border}` }}>
+            <div style={{ padding: "24px", background: theme === 'DARK' ? "rgba(239, 68, 68, 0.1)" : "#fef2f2", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ background: "#fee2e2", color: "#ef4444", padding: "10px", borderRadius: "12px" }}>
+                <div style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", padding: "10px", borderRadius: "12px" }}>
                   <AlertCircle size={24} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#991b1b" }}>Reject Request</h3>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#b91c1c", opacity: 0.8 }}>Please provide a reason for rejection.</p>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#ef4444" }}>Reject Request</h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: t.textMuted, opacity: 0.8 }}>Please provide a reason for rejection.</p>
                 </div>
               </div>
-              <button onClick={() => setShowRejectModal(false)} style={{ background: "white", border: "1px solid #fee2e2", color: "#ef4444", cursor: "pointer", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
+              <button onClick={() => setShowRejectModal(false)} style={{ background: t.bg, border: `1px solid ${t.border}`, color: "#ef4444", cursor: "pointer", width: "32px", height: "32px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
             </div>
             
             <div style={{ padding: "24px" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rejection Reason</label>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rejection Reason</label>
               <textarea 
                 placeholder="Explain why this request is being rejected..."
                 value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
-                style={{ ...inputStyle, minHeight: "120px", resize: "none", padding: "12px" }} 
+                style={{ ...inputStyle, minHeight: "120px", resize: "none", padding: "12px", background: t.bg }} 
               />
               
               <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
                 <button 
                   onClick={() => setShowRejectModal(false)}
-                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontWeight: 600, cursor: "pointer" }}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleRejectExtRequest}
                   disabled={!rejectReason.trim()}
-                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#ef4444", color: "white", fontWeight: 600, cursor: !rejectReason.trim() ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.2)" }}
+                  style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", background: "#ef4444", color: "white", fontWeight: 600, cursor: !rejectReason.trim() ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)" }}
                 >
                   Confirm Rejection
                 </button>
@@ -3351,9 +3376,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
       )}
       <style dangerouslySetInnerHTML={{__html: `
-        .table-row:hover { background-color: #f8fafc; }
+        .table-row:hover { background-color: ${theme === 'DARK' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'} !important; }
         .btn-primary:hover { background-color: #1d4ed8 !important; }
-        .btn-logout:hover { color: #0f172a !important; }
+        .btn-logout:hover { color: ${theme === 'DARK' ? 'white' : '#0f172a'} !important; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: ${t.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${t.border}; borderRadius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${t.textMuted}; }
       `}} />
             </>
           )}
@@ -3363,109 +3392,80 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   );
 }
 
-// Subcomponents
-
-function MetricCard({ title, value, icon, bg, isActive, onClick }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void }) {
-  return (
-    <div 
-      onClick={onClick}
-      style={{ 
-        background: "white", 
-        padding: "24px", 
-        borderRadius: "12px", 
-        border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
-        boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
-        display: "flex", 
-        alignItems: "center", 
-        gap: "16px",
-        cursor: onClick ? "pointer" : "default",
-        transition: "all 0.2s"
-      }}
-    >
-      <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {icon}
-      </div>
-      <div>
-        <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: "#64748b", fontWeight: 500 }}>{title}</p>
-        <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.025em" }}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function StatusPill({ status, type, taskId, onUpdate, disabled }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean }) {
-  let bg = "#f1f5f9";
-  let color = "#475569";
-
-  if (status === "Completed") {
-    bg = "#dcfce7";
-    color = "#166534";
-  } else if (status === "Pending" || status.includes("Pending")) {
-    bg = "#fef9c3";
-    color = "#854d0e";
-  } else if (status === "In Progress") {
-    bg = "#e0f2fe";
-    color = "#0369a1";
-  }
-
-  const pillStyle = {
-    background: bg,
-    color: color,
-    padding: "6px 12px",
-    borderRadius: "9999px",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    display: "inline-block",
-    border: "none",
-    outline: "none",
-    appearance: "none" as const,
-    cursor: type === "task" && !disabled ? "pointer" : disabled ? "not-allowed" : "default",
-  };
-
-  if (type === "task") {
+  // Subcomponents (Defined inside to access t)
+  function MetricCard({ title, value, icon, bg, isActive, onClick }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void }) {
     return (
-      <select 
-        value={status} 
-        onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
-        style={pillStyle}
-        disabled={disabled}
+      <div 
+        onClick={onClick}
+        style={{ 
+          background: t.card, 
+          padding: "24px", 
+          borderRadius: "16px", 
+          border: isActive ? "2px solid #2563eb" : `1px solid ${t.border}`, 
+          boxShadow: isActive ? "0 4px 12px -1px rgba(37, 99, 235, 0.2)" : "0 4px 6px -1px rgba(0, 0, 0, 0.05)", 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "20px",
+          cursor: onClick ? "pointer" : "default",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: isActive ? "translateY(-2px)" : "none"
+        }}
       >
-        <option value="Pending">Pending</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Completed">Completed</option>
-      </select>
+        <div style={{ background: bg, padding: "16px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {icon}
+        </div>
+        <div>
+          <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 600 }}>{title}</p>
+          <p style={{ margin: 0, fontSize: "2rem", fontWeight: 800, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
+        </div>
+      </div>
     );
   }
 
-  return <span style={pillStyle}>{status}</span>;
-}
+  function StatusPill({ status, type, taskId, onUpdate, disabled }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean }) {
+    let bg = t.bg;
+    let color = t.textMuted;
 
-// Styles
+    if (status === "Completed") {
+      bg = theme === 'DARK' ? "rgba(34, 197, 94, 0.15)" : "#dcfce7";
+      color = theme === 'DARK' ? "#4ade80" : "#166534";
+    } else if (status === "Pending" || status.includes("Pending")) {
+      bg = theme === 'DARK' ? "rgba(234, 179, 8, 0.15)" : "#fef9c3";
+      color = theme === 'DARK' ? "#facc15" : "#854d0e";
+    } else if (status === "In Progress") {
+      bg = theme === 'DARK' ? "rgba(59, 130, 246, 0.15)" : "#e0f2fe";
+      color = theme === 'DARK' ? "#60a5fa" : "#0369a1";
+    }
 
-const thStyle = {
-  background: "#f8fafc",
-  color: "#64748b",
-  padding: "16px 24px",
-  fontWeight: 600,
-  fontSize: "0.75rem",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.05em",
-  borderBottom: "1px solid #e2e8f0",
-  whiteSpace: "nowrap" as const,
-};
+    const pillStyle = {
+      background: bg,
+      color: color,
+      padding: "8px 16px",
+      borderRadius: "100px",
+      fontSize: "0.75rem",
+      fontWeight: 700,
+      display: "inline-block",
+      border: `1px solid ${theme === 'DARK' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+      outline: "none",
+      appearance: "none" as const,
+      cursor: type === "task" && !disabled ? "pointer" : disabled ? "not-allowed" : "default",
+      transition: "all 0.2s"
+    };
 
-const tdStyle = {
-  padding: "16px 24px",
-  verticalAlign: "middle" as const,
-};
+    if (type === "task") {
+      return (
+        <select 
+          value={status} 
+          onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
+          style={pillStyle}
+          disabled={disabled}
+        >
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      );
+    }
 
-const inputStyle = {
-  width: "100%", 
-  border: "1px solid #cbd5e1", 
-  borderRadius: "6px", 
-  padding: "8px 12px", 
-  fontSize: "0.875rem", 
-  outline: "none", 
-  boxShadow: "0 0 0 2px rgba(59,130,246,0.2)",
-  fontFamily: "inherit"
-};
+    return <span style={pillStyle}>{status}</span>;
+  }
