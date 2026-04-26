@@ -7,23 +7,24 @@ type LOFormProps = {
   onClose: () => void;
   onSuccess: () => void;
   settings: any;
+  usersList: any[];
+  user: any;
   initialData?: any;
 };
 
-const EMPLOYEES = [
-  "Venkat", "Pavan", "Sharath", "Sami", "Sreenivas", 
-  "Siddharth", "Nikhat", "Chandana", "Saikath", "Hanusha"
-];
-
-export default function LOForm({ onClose, onSuccess, settings, initialData }: LOFormProps) {
+export default function LOForm({ onClose, onSuccess, settings, usersList = [], user, initialData }: LOFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const finalEmployees = usersList
+    .filter(u => u.department === 'Finance' && u.isApproved !== false && !u.isSuspended)
+    .map(u => u.name || u.email);
 
   const [formData, setFormData] = useState({
     entity: "",
     dateOfIdentification: new Date().toISOString().split('T')[0],
     learningOpportunity: "",
-    identifiedBy: "",
+    identifiedBy: (user?.department === 'Finance' ? (user.name || user.email) : ""),
     committedBy: "",
     resolutionProvided: "",
     modeOfCommunication: "",
@@ -136,28 +137,30 @@ export default function LOForm({ onClose, onSuccess, settings, initialData }: LO
               <label style={labelStyle}>Identified By *</label>
               <select name="identifiedBy" required value={formData.identifiedBy} onChange={handleChange} style={inputStyle}>
                 <option value="">Choose</option>
-                {EMPLOYEES.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+                {finalEmployees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
               </select>
             </div>
             <div>
               <label style={labelStyle}>Committed By *</label>
               <select name="committedBy" required value={formData.committedBy} onChange={handleChange} style={inputStyle}>
                 <option value="">Choose</option>
-                {EMPLOYEES.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+                {finalEmployees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
               </select>
             </div>
           </div>
 
-          <div>
-            <label style={labelStyle}>Resolution Provided *</label>
-            <textarea 
-              name="resolutionProvided" 
-              required 
-              value={formData.resolutionProvided} 
-              onChange={handleChange} 
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
-              placeholder="Describe the resolution provided"
-            />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
+            <div>
+              <label style={labelStyle}>Resolution Provided *</label>
+              <textarea 
+                name="resolutionProvided" 
+                required 
+                value={formData.resolutionProvided} 
+                onChange={handleChange} 
+                style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
+                placeholder="Describe the resolution provided"
+              />
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>

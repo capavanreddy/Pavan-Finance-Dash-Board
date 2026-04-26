@@ -96,18 +96,7 @@ const convertTo24h = (h12: string, m: string, suffix: string) => {
   return `${String(h).padStart(2, '0')}:${m}`;
 };
 
-const EMAIL_TO_NAME: Record<string, string> = {
-  "pavanreddy@intellicar.in": "Pavan",
-  "saikatdas@intellicar.in": "Saikath",
-  "sami@intellicar.in": "Sami",
-  "hanusha@intellicar.in": "Hanusha",
-  "sreenivasulu.t@intellicar.in": "Sreenivas",
-  "sharath.shetty@intellicar.in": "Sharath",
-  "chandanak@intellicar.in": "Chandana",
-  "nikhat@intellicar.in": "Nikhat",
-  "venkata.g@intellicar.in": "Venkat",
-  "saneja@intellicar.in": "Siddharth"
-};
+// Dynamic lookup from User Management list
 
 export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [user, setUser] = useState(initialUser);
@@ -415,6 +404,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   }, [settingsLoading, activeView, activeSubView]);
 
+  useEffect(() => {
+    if (showLOForm || editingLO) {
+      fetchUsersList();
+    }
+  }, [showLOForm, editingLO]);
+
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
@@ -437,6 +432,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const [preFilledTask, setPreFilledTask] = useState<any>(null);
+
+  useEffect(() => {
+    if (showLOForm || editingLO) {
+      fetchUsersList();
+    }
+  }, [showLOForm, editingLO]);
 
   const handleConvertToTask = (req: ExternalRequest) => {
     setPreFilledTask({
@@ -3122,7 +3123,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <td style={tdStyle}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {lo.identifiedBy}
-                              {lo.identifiedBy === (EMAIL_TO_NAME[user?.email || ''] || user?.name) && (
+                              {lo.identifiedBy === user?.name && (
                                 <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Reported</span>
                               )}
                             </div>
@@ -3130,7 +3131,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <td style={tdStyle}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {lo.committedBy}
-                              {lo.committedBy === (EMAIL_TO_NAME[user?.email || ''] || user?.name) && (
+                              {lo.committedBy === user?.name && (
                                 <span style={{ background: "#fef2f2", color: "#ef4444", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Learning</span>
                               )}
                             </div>
@@ -3202,6 +3203,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {showLOForm && (
         <LOForm 
           settings={settings}
+          usersList={usersList}
+          user={user}
           onClose={() => setShowLOForm(false)} 
           onSuccess={() => {
             setShowLOForm(false);
@@ -3213,6 +3216,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {editingLO && (
         <LOForm 
           settings={settings}
+          usersList={usersList}
+          user={user}
           initialData={editingLO}
           onClose={() => setEditingLO(null)} 
           onSuccess={() => {
