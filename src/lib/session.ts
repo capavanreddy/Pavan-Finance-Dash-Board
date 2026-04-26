@@ -101,41 +101,9 @@ export async function authenticate(
     // Find user in database using Neon serverless
     const sql = getDb();
     
-    // --- Self-healing Migration ---
-    try {
-      // Add isSuspended column
-      await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT FALSE`;
-      
-      // Add Recurring Activities column to Settings
-      await sql`ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "recurringMatrix" TEXT DEFAULT '{}'`;
-
-      // Add Recurring fields to Task table for tracking
-      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "periodKey" TEXT`;
-      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "templateId" INTEGER`;
-
-      // Create RecurringTemplate table
-      await sql`
-        CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
-          id SERIAL PRIMARY KEY,
-          "taskNamePattern" TEXT NOT NULL,
-          "entityName" TEXT NOT NULL,
-          "taskType" TEXT NOT NULL,
-          "departmentName" TEXT NOT NULL,
-          frequency TEXT NOT NULL,
-          "dayOffset" INTEGER DEFAULT 0,
-          "monthOffset" INTEGER DEFAULT 0,
-          "defaultOwner" TEXT,
-          "defaultReviewer" TEXT,
-          "isActive" BOOLEAN DEFAULT TRUE,
-          "lastGeneratedPeriod" TEXT,
-          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-      `;
-    } catch (e) {
-      console.log("Migration check done/failed gracefully");
-    }
-
+    // Skip migrations during auth to avoid delays and errors
+    // All tables should already exist from initial setup
+    
     const users = await sql`
       SELECT id, email, name, password, role, department, "isApproved", "isSuspended"
       FROM "User"
@@ -145,9 +113,15 @@ export async function authenticate(
     
     const user = users[0];
     
+    console.log("[v0] Auth debug - User found:", !!user, user?.email);
+    
     if (!user) {
       return { success: false, error: "Invalid email address" };
     }
+    
+    console.log("[v0] Auth debug - Password exists:", !!user.password);
+    console.log("[v0] Auth debug - Is suspended:", user.isSuspended);
+    console.log("[v0] Auth debug - Is approved:", user.isApproved);
     
     if (!user.password) {
       return { success: false, error: "Account error: No password set" };
@@ -164,7 +138,9 @@ export async function authenticate(
     }
     
     // Verify password
+    console.log("[v0] Auth debug - Comparing passwords...");
     const isValid = await bcrypt.compare(password, user.password);
+    console.log("[v0] Auth debug - Password valid:", isValid);
     if (!isValid) {
       return { success: false, error: "Invalid password" };
     }
@@ -181,7 +157,8 @@ export async function authenticate(
       }
     };
   } catch (error: any) {
-    console.error("[Session] Auth error:", error);
+    console.error("[Session] Auth error:", error.message, error);
+    console.error("[v0] Auth error full:", JSON.stringify(error, null, 2));
     return { success: false, error: "Authentication failed" };
   }
 }
