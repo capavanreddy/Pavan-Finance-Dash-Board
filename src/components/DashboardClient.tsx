@@ -2679,7 +2679,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             >
                               {task.editRequested ? "Requested" : "Edit Req"}
                             </button>
-                          )}               )}
+                          )}
                         </div>
                       </td>
                     </tr>
