@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat } from "lucide-react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
+import RecurringActivities from "@/components/RecurringActivities";
 
 type Task = {
   id: number;
@@ -35,6 +36,8 @@ type Task = {
   deleteRequestReason?: string | null;
   linkedRequestId?: number | null;
   requestStatus?: string | null;
+  transferStatus: string | null;
+  originalRequestType: string | null;
 };
 
 type ExternalRequest = {
@@ -48,6 +51,8 @@ type ExternalRequest = {
   status: string;
   assignedAllocatorEmail: string | null;
   convertedTaskId: number | null;
+  originalRequestType: string | null;
+  transferStatus: string | null;
   createdAt: string;
 };
 
@@ -113,7 +118,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
-  const [activeView, setActiveView] = useState<'TASKS' | 'LOS'>('TASKS');
+  const [activeView, setActiveView] = useState<'TASKS' | 'RECURRING' | 'LOS'>('TASKS');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
@@ -182,7 +187,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [externalRequests, setExternalRequests] = useState<ExternalRequest[]>([]);
   const [extReqLoading, setExtReqLoading] = useState(false);
   const [showExtReqForm, setShowExtReqForm] = useState(false);
-  const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED' | 'REJECTED'>('ALL');
+  const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED' | 'REJECTED' | 'CONVERT_PENDING'>('ALL');
   const [extReqSearch, setExtReqSearch] = useState("");
   const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
@@ -191,6 +196,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
   const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
   const [showExtReqDownloadDropdown, setShowExtReqDownloadDropdown] = useState(false);
+  const [extReqSortConfig, setExtReqSortConfig] = useState<{ key: keyof ExternalRequest; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [showLOCaptureModal, setShowLOCaptureModal] = useState(false);
   const [loCaptureForm, setLOCaptureForm] = useState({
     taskId: 0,
@@ -230,7 +236,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   // Smart Permission Helpers
   const matrixAllocators = JSON.parse(settings.allocationMatrix || '{}');
   const userAllocatedDepts = Object.entries(matrixAllocators)
-    .filter(([_, email]) => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim())
+    .filter(([_, allocators]) => {
+      const emailList = Array.isArray(allocators) ? allocators : [allocators];
+      return emailList.some(email => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim());
+    })
     .map(([dept, _]) => dept.trim());
   
   const canAllocateAnything = isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0;
@@ -280,6 +289,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     setEndDate(toIsoDate(end));
   };
 
+
+  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string; isSuspended?: boolean }>>({});
+  const [isSavingUsers, setIsSavingUsers] = useState(false);
+  
+  // New Filters
+  const [taskTypeFilter, setTaskTypeFilter] = useState<'ALL' | 'INTERNAL' | 'EXTERNAL'>('ALL');
+  const [requestTypeFilter, setRequestTypeFilter] = useState<'ALL' | 'ORIGINAL' | 'TRANSFERRED'>('ALL');
 
   const fetchTasks = async () => {
     try {
@@ -346,9 +362,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchLOs();
     fetchExternalRequests();
     fetchSettings();
-    if (isAdmin) {
-      fetchUsersList();
-    }
+    fetchUsersList();
   }, [isAdmin]);
 
   // SMART REDIRECTION LOGIC
@@ -412,7 +426,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         alert("Matrix settings saved successfully!");
       } else {
-        alert("Failed to save matrix settings.");
+        const errData = await res.json();
+        alert(`Failed to save matrix settings: ${errData.details || errData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Failed to save settings", error);
@@ -428,7 +443,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       taskName: req.natureOfRequest,
       departmentName: req.departmentName,
       requestFrom: req.requestFrom,
-      linkedRequestId: req.id
+      linkedRequestId: req.id,
+      transferStatus: req.transferStatus,
+      originalRequestType: req.originalRequestType
     });
     setShowForm(true);
   };
@@ -570,7 +587,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const fetchUsersList = async () => {
-    if (!isAdmin) return;
     setUsersLoading(true);
     try {
       const res = await fetch("/api/users");
@@ -632,6 +648,32 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
+  const handleResetUserPassword = async (userId: number, userName: string) => {
+    const newPassword = prompt(`Enter new password for ${userName}:`);
+    if (!newPassword || newPassword.trim().length < 6) {
+      if (newPassword !== null) alert("Password must be at least 6 characters.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPassword.trim() })
+      });
+
+      if (res.ok) {
+        alert(`Password for ${userName} has been reset successfully!`);
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.error || "Failed to reset password"}`);
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      alert("Network error. Failed to reset password.");
+    }
+  };
+
   const handleApproveUser = async (id: string) => {
     if (!window.confirm("Approve this user for access?")) return;
     try {
@@ -648,9 +690,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const handleRejectUser = async (id: string) => {
-    if (!window.confirm("Reject and delete this access request?")) return;
+    const comment = window.prompt("Please provide a reason for rejecting this access request (this will be emailed to the user):");
+    if (comment === null) return; // User cancelled
+    
     try {
-      const res = await fetch(`/api/admin/users/${id}/reject`, { method: "POST" });
+      const res = await fetch(`/api/admin/users/${id}/reject`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment })
+      });
       if (res.ok) {
         alert("Request rejected.");
         fetchUsersList();
@@ -695,21 +743,56 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const handleUpdateUserDepartment = async (userId: string, newDept: string) => {
+  const handleSaveUserUpdates = async () => {
+    if (Object.keys(pendingUserUpdates).length === 0) return;
+    setIsSavingUsers(true);
     try {
-      const res = await fetch("/api/users", {
+      const updates = Object.entries(pendingUserUpdates).map(([userId, fields]) => ({
+        userId,
+        ...fields
+      }));
+
+      const res = await fetch("/api/users/bulk", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, department: newDept }),
+        body: JSON.stringify({ updates }),
       });
+
       if (res.ok) {
-        fetchUsersList(); // Refresh
+        setPendingUserUpdates({});
+        fetchUsersList();
+        alert("User updates saved successfully!");
       } else {
-        alert("Failed to update user department.");
+        const data = await res.json();
+        alert(data.message || "Failed to save user updates.");
       }
     } catch (error) {
-      console.error("Failed to update department", error);
+      console.error("Save users error", error);
+      alert("An error occurred while saving user updates.");
+    } finally {
+      setIsSavingUsers(false);
     }
+  };
+
+  const handleUpdateUserDepartment = (userId: string, newDept: string) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], department: newDept }
+    }));
+  };
+
+  const handleUpdateUserRole = (userId: string, newRole: string) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], role: newRole }
+    }));
+  };
+
+  const handleUpdateUserSuspension = (userId: string, isSuspended: boolean) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], isSuspended }
+    }));
   };
 
   const handleUpdate = async (taskId: number, field: string, value: string) => {
@@ -900,7 +983,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         alert("Emails sent successfully!");
       } else {
-        alert("Failed to send emails.");
+        const data = await res.json();
+        alert(`Failed to send emails: ${data.error || data.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Failed to trigger emails", error);
@@ -977,6 +1061,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (taskEntityFilter !== "ALL" && t.entityName !== taskEntityFilter) dropdownMatch = false;
     if (taskOwnerFilter !== "ALL" && t.ownerName !== taskOwnerFilter) dropdownMatch = false;
     if (taskStatusFilter !== "ALL" && t.taskStatus !== taskStatusFilter) dropdownMatch = false;
+    
+    // 5. Task Type Filter
+    const isActuallyExternal = !!t.linkedRequestId && t.departmentName !== "Finance";
+    
+    if (taskTypeFilter === "INTERNAL" && isActuallyExternal) dropdownMatch = false;
+    if (taskTypeFilter === "EXTERNAL" && !isActuallyExternal) dropdownMatch = false;
 
     return statusMatch && dateMatch && searchMatch && dropdownMatch;
   });
@@ -1065,6 +1155,77 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       return { key, direction: 'asc' };
     });
   };
+
+  const handleExtReqSort = (key: keyof ExternalRequest) => {
+    setExtReqSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  // Base visibility filter for External Requests
+  const visibleExternalRequests = externalRequests.filter(r => {
+    // Admins and Super Admins see everything
+    if (isAdmin || user?.role === 'SUPER_ADMIN') return true;
+    
+    // Show if user is the requester
+    const isRequester = r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim();
+    if (isRequester) return true;
+    
+    // Show if user is an allocator for this specific Finance Function (requestType)
+    const isAllocatorForThis = userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
+    if (isAllocatorForThis) return true;
+    
+    return false;
+  });
+
+  // External Requests Filtering and Sorting
+  const filteredExternalRequests = visibleExternalRequests.filter(r => {
+    if (extReqSearch) {
+      const q = extReqSearch.toLowerCase();
+      if (!r.natureOfRequest.toLowerCase().includes(q) && !r.requestFrom.toLowerCase().includes(q)) return false;
+    }
+    
+    if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
+
+    if (extReqFilter === 'ALLOCATION') {
+      return r.status === 'Pending' || !r.status || r.status === 'New';
+    }
+    if (extReqFilter === 'PROCESS') {
+      return r.status === 'Under Process';
+    }
+    if (extReqFilter === 'PROCESSED') {
+      return r.status === 'Processed';
+    }
+    if (extReqFilter === 'REJECTED') {
+      return r.status === 'Rejected';
+    }
+    if (extReqFilter === 'CONVERT_PENDING') {
+      return (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId;
+    }
+
+    // New Request Type Filter (Original vs Transferred)
+    if (requestTypeFilter === 'ORIGINAL' && r.transferStatus === 'T') return false;
+    if (requestTypeFilter === 'TRANSFERRED' && r.transferStatus !== 'T') return false;
+
+    return true;
+  });
+
+  const sortedExternalRequests = [...filteredExternalRequests].sort((a, b) => {
+    if (!extReqSortConfig) return 0;
+    const { key, direction } = extReqSortConfig;
+    let valA = a[key];
+    let valB = b[key];
+
+    if (valA === null || valA === undefined) valA = "";
+    if (valB === null || valB === undefined) valB = "";
+
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   // Pagination Logic
   const totalPages = Math.ceil(sortedTasks.length / itemsPerPage);
@@ -1633,6 +1794,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           >
                             Task Dashboard
                           </button>
+                          {(() => {
+                            // Check Matrix for Recurring Activities access
+                            const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                            const canSeeRecurring = isAdmin || (matrix['Recurring Activities'] && matrix['Recurring Activities'].includes(user?.department));
+                            if (!canSeeRecurring) return null;
+                            return (
+                              <button 
+                                onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                                style={{ 
+                                  padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                  background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                  color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
+                                  cursor: "pointer", transition: "all 0.2s"
+                                }}
+                              >
+                                Recurring Activities
+                              </button>
+                            );
+                          })()}
                           {canSeeRequests && (
                             <button 
                               onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
@@ -1691,7 +1871,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </nav>
 
         {/* Content Area */}
-        <main style={{ flex: 1, overflow: "auto", padding: "32px", background: "#f8fafc" }}>
+        <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: "#f8fafc" }}>
+          {activeView === 'RECURRING' && (
+            <RecurringActivities settings={settings} usersList={usersList} />
+          )}
+
+          {activeView !== 'RECURRING' && (
+            <>
           {/* Active View Title/Context Area */}
           <div style={{ 
             marginBottom: "32px", 
@@ -1867,6 +2053,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 {uniqueTaskStatuses.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
 
+              <select 
+                value={taskTypeFilter} 
+                onChange={e => setTaskTypeFilter(e.target.value as any)}
+                style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "#f8fafc", color: "#475569", fontWeight: 600 }}
+              >
+                <option value="ALL">All Task Types</option>
+                <option value="INTERNAL">Internal Only</option>
+                <option value="EXTERNAL">External Only</option>
+              </select>
+
               <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: "1px solid #e2e8f0" }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rows:</span>
                 <select 
@@ -1966,14 +2162,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       Created At {taskSortConfig?.key === 'createdAt' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
-                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('entityName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Entity {taskSortConfig?.key === 'entityName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('taskType')}>
@@ -2006,13 +2202,29 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
-                  <th style={thStyle}>Reviewer</th>
-                  <th style={thStyle}>Review Date</th>
-                  <th style={thStyle}>Review Status</th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('reviewerName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Reviewer {taskSortConfig?.key === 'reviewerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('reviewCompletionDate')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Review Date {taskSortConfig?.key === 'reviewCompletionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('reviewStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Review Status {taskSortConfig?.key === 'reviewStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={thStyle}>Capture LO?</th>
                   <th style={thStyle}>Owner Comments</th>
                   <th style={thStyle}>Reviewer Comments</th>
-                  <th style={thStyle}>Request Status</th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleTaskSort('requestStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Request Status {taskSortConfig?.key === 'requestStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
@@ -2041,9 +2253,32 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
                       <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
-                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>{task.entityName}</td>
-                      <td style={tdStyle}><span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>{task.taskType}</span></td>
+                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={tdStyle}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
+                            {task.taskType}
+                          </span>
+                          {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && task.linkedRequestId && (
+                            task.transferStatus === 'T' ? (
+                              <span 
+                                title={`Transferred Request (Original: ${task.originalRequestType || 'Unknown'})`}
+                                style={{ cursor: "help", fontSize: "1rem" }}
+                              >
+                                🔴
+                              </span>
+                            ) : (
+                              <span 
+                                title="Original Request"
+                                style={{ cursor: "help", fontSize: "1rem" }}
+                              >
+                                🟢
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </td>
                       <td style={tdStyle}>{task.requestFrom}</td>
                       <td style={tdStyle}>{task.ownerName}</td>
                       <td style={tdStyle}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
@@ -2125,7 +2360,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       </td>
 
                       <td style={tdStyle}>
-                        {(isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required') ? (
+                        {task.reviewerName === "Not Applicable" ? (
+                          <span style={{ color: "#94a3b8", fontWeight: 500 }}>N/A</span>
+                        ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
                           <select 
                             onChange={(e) => {
                               if (e.target.value === 'YES') {
@@ -2327,83 +2564,61 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         )}
 
 
-        {/* Other Dept View (Requests Module) */}
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
           <div className="other-dept-view">
             <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
               <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
-                  <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
-                    {/* All Tab */}
-                    <button 
-                      onClick={() => setExtReqFilter('ALL')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'ALL' ? "#475569" : "white",
-                        borderColor: extReqFilter === 'ALL' ? "#475569" : "#e2e8f0",
-                        color: extReqFilter === 'ALL' ? "white" : "#64748b"
-                      }}
-                    >
-                      All
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('ALLOCATION')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "white",
-                        borderColor: extReqFilter === 'ALLOCATION' ? "#f59e0b" : "#e2e8f0",
-                        color: extReqFilter === 'ALLOCATION' ? "white" : "#64748b"
-                      }}
-                    >
-                      Pending
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('PROCESS')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'PROCESS' ? "#3b82f6" : "white",
-                        borderColor: extReqFilter === 'PROCESS' ? "#3b82f6" : "#e2e8f0",
-                        color: extReqFilter === 'PROCESS' ? "white" : "#64748b"
-                      }}
-                    >
-                      Under Process
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('PROCESSED')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'PROCESSED' ? "#10b981" : "white",
-                        borderColor: extReqFilter === 'PROCESSED' ? "#10b981" : "#e2e8f0",
-                        color: extReqFilter === 'PROCESSED' ? "white" : "#64748b"
-                      }}
-                    >
-                      Processed
-                    </button>
-                    <button 
-                      onClick={() => setExtReqFilter('REJECTED')}
-                      style={{ 
-                        padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, 
-                        border: "1px solid", cursor: "pointer",
-                        background: extReqFilter === 'REJECTED' ? "#ef4444" : "white",
-                        borderColor: extReqFilter === 'REJECTED' ? "#ef4444" : "#e2e8f0",
-                        color: extReqFilter === 'REJECTED' ? "white" : "#64748b"
-                      }}
-                    >
-                      Rejected
-                    </button>
-                  </div>
-                </div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>Inter Dept Request</h3>
                 <button 
                   onClick={() => setShowExtReqForm(true)}
                   style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
                 >
                   <Plus size={18} /> Submit New Request
                 </button>
+              </div>
+              
+              {/* Metric Cards for Inter-Dept */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: "white" }}>
+                <MetricCard 
+                  title="All Requests" 
+                  value={visibleExternalRequests.length} 
+                  icon={<FileText size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #475569 0%, #1e293b 100%)" 
+                  isActive={extReqFilter === 'ALL'} 
+                  onClick={() => setExtReqFilter('ALL')} 
+                />
+                <MetricCard 
+                  title="Pending" 
+                  value={visibleExternalRequests.filter(r => r.status === 'Pending' || !r.status || r.status === 'New' || r.status === '').length} 
+                  icon={<Clock size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
+                  isActive={extReqFilter === 'ALLOCATION'} 
+                  onClick={() => setExtReqFilter('ALLOCATION')} 
+                />
+                <MetricCard 
+                  title="Under Process" 
+                  value={visibleExternalRequests.filter(r => r.status === 'Under Process').length} 
+                  icon={<AlertCircle size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" 
+                  isActive={extReqFilter === 'PROCESS'} 
+                  onClick={() => setExtReqFilter('PROCESS')} 
+                />
+                <MetricCard 
+                  title="Processed" 
+                  value={visibleExternalRequests.filter(r => r.status === 'Processed').length} 
+                  icon={<CheckCircle2 size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                  isActive={extReqFilter === 'PROCESSED'} 
+                  onClick={() => setExtReqFilter('PROCESSED')} 
+                />
+                <MetricCard 
+                  title="Rejected" 
+                  value={visibleExternalRequests.filter(r => r.status === 'Rejected').length} 
+                  icon={<Trash2 size={20} color="#ffffff" />} 
+                  bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
+                  isActive={extReqFilter === 'REJECTED'} 
+                  onClick={() => setExtReqFilter('REJECTED')} 
+                />
               </div>
 
               {/* Enhanced Filter Bar */}
@@ -2418,27 +2633,47 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", width: "100%", background: "white" }} 
                   />
                 </div>
-                <select 
-                    value={extReqStatusFilter}
-                    onChange={(e) => setExtReqStatusFilter(e.target.value)}
-                    style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "10px 16px", fontSize: "0.875rem", color: "#64748b", cursor: "pointer", outline: "none" }}
-                  >
-                    <option value="ALL">All Statuses</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Under Process">Under Process</option>
-                    <option value="Processed">Processed</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                {canAllocateAnything && (
+                
+                {/* Pending to Convert Dynamic Button */}
+                <button 
+                  onClick={() => setExtReqFilter(extReqFilter === 'CONVERT_PENDING' ? 'ALL' : 'CONVERT_PENDING')}
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "rgba(79, 70, 229, 0.1)" : "white", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#64748b", 
+                    border: extReqFilter === 'CONVERT_PENDING' ? "2px solid #4f46e5" : "1px solid #e2e8f0", 
+                    padding: "8px 16px", 
+                    borderRadius: "10px", 
+                    fontSize: "0.875rem", 
+                    fontWeight: 600, 
+                    cursor: "pointer", 
+                    transition: "all 0.2s" 
+                  }}
+                >
+                  <ListFilter size={18} />
+                  Pending to Convert
+                  <span style={{ 
+                    background: extReqFilter === 'CONVERT_PENDING' ? "#4f46e5" : "#f1f5f9", 
+                    color: extReqFilter === 'CONVERT_PENDING' ? "white" : "#64748b", 
+                    padding: "2px 8px", 
+                    borderRadius: "999px", 
+                    fontSize: "0.75rem" 
+                  }}>
+                    {visibleExternalRequests.filter(r => (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId).length}
+                  </span>
+                </button>
+
+                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
                   <select 
-                    onChange={e => {
-                      if (e.target.value === 'ACTION') setExtReqFilter('ALLOCATION');
-                      else setExtReqFilter('ALL');
-                    }}
-                    style={{ padding: "8px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", fontSize: "0.8125rem", background: "white", color: "#475569", minWidth: "150px" }}
+                    value={requestTypeFilter} 
+                    onChange={e => setRequestTypeFilter(e.target.value as any)}
+                    style={{ padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "0.875rem", background: "white", color: "#475569", fontWeight: 600 }}
                   >
-                    <option value="ALL">All Actions</option>
-                    <option value="ACTION">Needs My Allocation</option>
+                    <option value="ALL">All Request Origins</option>
+                    <option value="ORIGINAL">Original Only</option>
+                    <option value="TRANSFERRED">Transferred Only</option>
                   </select>
                 )}
 
@@ -2495,11 +2730,31 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   <thead>
                     <tr style={{ background: "#f8fafc" }}>
                       <th style={{ ...thStyle, width: "50px" }}>Sl No.</th>
-                      <th style={thStyle}>Request From</th>
-                      <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Finance Function</th>
-                      <th style={thStyle}>Nature of Request</th>
-                      <th style={thStyle}>Request Status</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('requestFrom')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request From {extReqSortConfig?.key === 'requestFrom' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('createdAt')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Date {extReqSortConfig?.key === 'createdAt' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('requestType')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Finance Function {extReqSortConfig?.key === 'requestType' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('natureOfRequest')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Nature of Request {extReqSortConfig?.key === 'natureOfRequest' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleExtReqSort('status')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request Status {extReqSortConfig?.key === 'status' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       {canAllocateAnything && <th style={thStyle}>Action</th>}
                       <th style={thStyle}>Remarks</th>
                     </tr>
@@ -2507,53 +2762,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   <tbody>
                     {extReqLoading ? (
                       <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading requests...</td></tr>
-                    ) : externalRequests.filter(r => {
-                      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-                      const isRelevantToUser = r.requesterEmail === user?.email || userAllocatedDepts.includes(r.requestType);
-                      if (!isPrimaryAdmin && !isRelevantToUser) return false;
-                      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
-                      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
-
-                        if (extReqFilter === 'ALLOCATION') {
-                          return r.status === 'Pending' || !r.status || r.status === 'New';
-                        }
-                        if (extReqFilter === 'PROCESS') {
-                          return r.status === 'Under Process';
-                        }
-                        if (extReqFilter === 'PROCESSED') {
-                          return r.status === 'Processed';
-                        }
-                        if (extReqFilter === 'REJECTED') {
-                          return r.status === 'Rejected';
-                        }
-                        return true;
-                    }).length === 0 ? (
+                    ) : sortedExternalRequests.length === 0 ? (
                       <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No requests found.</td></tr>
                     ) : (
-                      externalRequests.filter(r => {
-                        const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-                        const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
-                          userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
-                        if (!isPrimaryAdmin && !isRelevantToUser) return false;
-                        if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
-                        if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
-
-                        if (extReqFilter === 'ALLOCATION') {
-                          return r.status === 'Pending' || !r.status || r.status === 'New';
-                        }
-                        if (extReqFilter === 'PROCESS') {
-                          return r.status === 'Under Process';
-                        }
-                        if (extReqFilter === 'PROCESSED') {
-                          return r.status === 'Processed';
-                        }
-                        if (extReqFilter === 'REJECTED') {
-                          return r.status === 'Rejected';
-                        }
-                        return true;
-                      }).map((req, idx) => {
+                      sortedExternalRequests.map((req, idx) => {
                         const matrix = JSON.parse(settings.allocationMatrix || '{}');
-                        const isAuthorizedAllocator = matrix[req.requestType] === user?.email || isAdmin || (user as any).isAllocator;
+                        const allocators = Array.isArray(matrix[req.requestType]) ? matrix[req.requestType] : (matrix[req.requestType] ? [matrix[req.requestType]] : []);
+                        const isAuthorizedAllocator = allocators.includes(user?.email) || isAdmin || (user as any).isAllocator;
                         
                         return (
                           <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -2564,9 +2779,28 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             </td>
                             <td style={tdStyle}>{new Date(req.createdAt).toLocaleDateString()}</td>
                             <td style={tdStyle}>
-                              <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
-                                {req.requestType}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
+                                  {req.requestType}
+                                </span>
+                                {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
+                                  req.transferStatus === 'T' ? (
+                                    <span 
+                                      title={`Transferred Request (Original: ${req.originalRequestType || 'Unknown'})`}
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🔴
+                                    </span>
+                                  ) : (
+                                    <span 
+                                      title="Original Request"
+                                      style={{ cursor: "help", fontSize: "1rem" }}
+                                    >
+                                      🟢
+                                    </span>
+                                  )
+                                )}
+                              </div>
                             </td>
                             <td style={{ ...tdStyle, maxWidth: "300px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
                             <td style={tdStyle}>
@@ -2845,7 +3079,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           Entity {loSortConfig?.key === 'entity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
-                      <th style={thStyle}>Mistake / LO</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('learningOpportunity')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Learning Opportunity {loSortConfig?.key === 'learningOpportunity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('identifiedBy')}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                           Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -2856,8 +3094,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
-                      <th style={thStyle}>Resolution</th>
-                      <th style={thStyle}>Communication Mode</th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('resolutionProvided')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Resolution {loSortConfig?.key === 'resolutionProvided' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleLOSort('modeOfCommunication')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Communication Mode {loSortConfig?.key === 'modeOfCommunication' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
@@ -2939,6 +3185,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {showForm && (
         <TaskForm 
           settings={settings}
+          usersList={usersList}
           initialData={preFilledTask}
           onClose={() => {
             setShowForm(false);
@@ -3664,9 +3911,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   <td style={{ padding: "16px", fontWeight: 500 }}>{u.name}</td>
                                   <td style={{ padding: "16px", color: "#64748b" }}>{u.email}</td>
                                   <td style={{ padding: "16px" }}>
-                                    <span style={{ padding: "4px 10px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>
-                                      {u.department}
-                                    </span>
+                                    <select 
+                                      value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
+                                      onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
+                                      style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                    >
+                                      <option value="">Select Dept</option>
+                                      {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                                        <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                                      ))}
+                                    </select>
                                   </td>
                                   <td style={{ padding: "16px", textAlign: "right" }}>
                                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
@@ -3693,18 +3947,29 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
-                          <Users size={20} color="#166534" />
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
+                            <Users size={20} color="#166534" />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Active Employees</h4>
-                      </div>
-                      <button 
-                        onClick={handleBulkAddUsers}
-                        style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <Users size={14} /> Import All Employees
-                      </button>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          {Object.keys(pendingUserUpdates).length > 0 && (
+                            <button 
+                              onClick={handleSaveUserUpdates}
+                              disabled={isSavingUsers}
+                              style={{ padding: "8px 24px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: 600, cursor: isSavingUsers ? "not-allowed" : "pointer", boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)" }}
+                            >
+                              {isSavingUsers ? "Saving..." : "Save Changes"}
+                            </button>
+                          )}
+                          <button 
+                            onClick={handleBulkAddUsers}
+                            style={{ background: "#f1f5f9", color: "#475569", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e2e8f0", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <Users size={14} /> Import All Employees
+                          </button>
+                        </div>
                     </div>
 
                     {usersLoading ? (
@@ -3718,6 +3983,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                <th style={{ padding: "12px 8px" }}>Email</th>
                                <th style={{ padding: "12px 8px" }}>Department</th>
                                <th style={{ padding: "12px 8px" }}>Role</th>
+                               <th style={{ padding: "12px 8px" }}>Account Status</th>
                                <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                             </tr>
                           </thead>
@@ -3728,9 +3994,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 <td style={{ padding: "12px 8px" }}>{u.email}</td>
                                  <td style={{ padding: "12px 8px" }}>
                                   <select 
-                                    value={u.department || ""}
+                                    value={pendingUserUpdates[u.id]?.department !== undefined ? pendingUserUpdates[u.id].department : (u.department || "")}
                                     onChange={(e) => handleUpdateUserDepartment(u.id, e.target.value)}
-                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
                                   >
                                     <option value="">Select Dept</option>
                                     {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
@@ -3740,24 +4006,70 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 </td>
                                 <td style={{ padding: "12px 8px" }}>
                                   <select 
-                                    value={u.role}
-                                    onChange={(e) => handleUpdateRole(u.id, e.target.value)}
-                                    style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                                    value={pendingUserUpdates[u.id]?.role !== undefined ? pendingUserUpdates[u.id].role : (u.role || "USER")}
+                                    onChange={(e) => handleUpdateUserRole(u.id, e.target.value)}
+                                    style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.role !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1" }}
                                   >
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                                   </select>
                                 </td>
-                                <td style={{ padding: "12px 8px", textAlign: "right" }}>
-                                  <button 
-                                    onClick={() => handleRemoveUser(u.id)}
-                                    style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
-                                    title="Remove User"
-                                    onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
-                                    onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                <td style={{ padding: "12px 8px" }}>
+                                  <div 
+                                    onClick={() => {
+                                      const currentVal = pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : ((u as any).isSuspended || false);
+                                      handleUpdateUserSuspension(u.id, !currentVal);
+                                    }}
+                                    style={{ 
+                                      width: "44px", 
+                                      height: "22px", 
+                                      background: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "#ef4444" : "#10b981", 
+                                      borderRadius: "11px", 
+                                      position: "relative", 
+                                      cursor: "pointer", 
+                                      transition: "all 0.2s ease",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      padding: "0 2px",
+                                      boxSizing: "border-box",
+                                      justifyContent: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "flex-end" : "flex-start"
+                                    }}
                                   >
-                                    <Trash2 size={16} />
-                                  </button>
+                                    <div style={{ width: "18px", height: "18px", background: "white", borderRadius: "50%", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }}></div>
+                                    <span style={{ 
+                                      position: "absolute", 
+                                      left: (pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "6px" : "24px", 
+                                      fontSize: "8px", 
+                                      color: "white", 
+                                      fontWeight: 800,
+                                      pointerEvents: "none"
+                                    }}>
+                                      {(pendingUserUpdates[u.id]?.isSuspended !== undefined ? pendingUserUpdates[u.id].isSuspended : (u as any).isSuspended) ? "HOLD" : "LIVE"}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                    <button 
+                                      onClick={() => handleResetUserPassword(u.id, u.name)}
+                                      style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Reset Password"
+                                      onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
+                                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                      <Key size={18} />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleRemoveUser(u.id)}
+                                      style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                      title="Remove User"
+                                      onMouseOver={e => e.currentTarget.style.color = "#ef4444"}
+                                      onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -4260,6 +4572,37 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       </button>
                     </div>
 
+                    {/* Finance Team Overview */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+                        <div style={{ padding: "8px", background: "#eff6ff", borderRadius: "10px" }}>
+                          <Users size={20} color="#2563eb" />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: "1.125rem", color: "#1e293b" }}>Finance Team Members</h4>
+                          <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b" }}>These users are available as Authorized Allocators.</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                        {usersList.filter(u => u.department === 'Finance' && (u as any).isApproved !== false).length === 0 ? (
+                          <p style={{ fontSize: "0.875rem", color: "#94a3b8", italic: "true" } as any}>No users found in Finance department.</p>
+                        ) : (
+                          usersList.filter(u => u.department === 'Finance' && (u as any).isApproved !== false).map(u => (
+                            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#2563eb", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.875rem" }}>
+                                {u.name ? u.name[0].toUpperCase() : u.email[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{u.name || "--"}</div>
+                                <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
                     {/* Matrix A: Module Access (Accordion) */}
                     <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
                       <div 
@@ -4280,7 +4623,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Department</th>
-                                  {['Tasks', 'Requests', 'Learning'].map(module => (
+                                  {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                     <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
                                   ))}
                                 </tr>
@@ -4291,7 +4634,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   return (
                                     <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{dept}</td>
-                                      {['Tasks', 'Requests', 'Learning'].map(module => (
+                                      {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                         <td key={module} style={{ padding: "12px", textAlign: "center" }}>
                                           <input 
                                             type="checkbox" 
@@ -4350,21 +4693,54 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     <tr key={type} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{type}</td>
                                       <td style={{ padding: "12px" }}>
-                                        <select 
-                                          value={matrix[type] || ""}
-                                          onChange={(e) => {
-                                            setSettings({
-                                              ...settings,
-                                              allocationMatrix: JSON.stringify({ ...matrix, [type]: e.target.value })
-                                            });
-                                          }}
-                                          style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.875rem" }}
-                                        >
-                                          <option value="">No Allocator Assigned</option>
-                                          {Object.entries(EMAIL_TO_NAME).map(([email, name]) => (
-                                            <option key={email} value={email}>{name} ({email})</option>
-                                          ))}
-                                        </select>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                            {(() => {
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.length === 0) return <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No Allocators Assigned</span>;
+                                              return allocators.map((email: string) => (
+                                                <div key={email} style={{ 
+                                                  background: "#f0f9ff", border: "1px solid #bae6fd", 
+                                                  padding: "2px 8px", borderRadius: "6px", 
+                                                  fontSize: "0.75rem", color: "#0369a1", 
+                                                  display: "flex", alignItems: "center", gap: "6px" 
+                                                }}>
+                                                  {usersList.find(u => u.email === email)?.name || email}
+                                                  <button 
+                                                    onClick={() => {
+                                                      const updated = allocators.filter((e: string) => e !== email);
+                                                      setSettings({ ...settings, allocationMatrix: JSON.stringify({ ...matrix, [type]: updated }) });
+                                                    }}
+                                                    style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, display: "flex" }}
+                                                  >
+                                                    <X size={12} />
+                                                  </button>
+                                                </div>
+                                              ));
+                                            })()}
+                                          </div>
+                                          <select 
+                                            value=""
+                                            onChange={(e) => {
+                                              if (!e.target.value) return;
+                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
+                                              if (allocators.includes(e.target.value)) return;
+                                              setSettings({
+                                                ...settings,
+                                                allocationMatrix: JSON.stringify({ ...matrix, [type]: [...allocators, e.target.value] })
+                                              });
+                                            }}
+                                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem" }}
+                                          >
+                                            <option value="">+ Add Allocator</option>
+                                            {usersList
+                                              .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
+                                              .map(u => (
+                                                <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
+                                              ))
+                                            }
+                                          </select>
+                                        </div>
                                       </td>
                                     </tr>
                                   );
@@ -4506,7 +4882,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         .btn-primary:hover { background-color: #1d4ed8 !important; }
         .btn-logout:hover { color: #0f172a !important; }
       `}} />
-    </main>
+            </>
+          )}
+        </main>
   </div>
 </div>
   );

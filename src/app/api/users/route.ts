@@ -1,22 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
 
 
 // GET all users
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();
-    const userRole = (session?.user as any)?.role;
     
-    // Allow if ADMIN or if email matches superadmin
-    if (userRole !== "ADMIN" && session?.user?.email !== "pavanreddy@intellicar.in") {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    if (!session?.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // --- Self-healing Migration ---
+    // Add isSuspended column if it doesn't exist
+    try {
+      await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT FALSE`;
+    } catch (e) {
+      // Ignore errors if column already exists (though IF NOT EXISTS handles it)
+      console.log("Migration check done or skipped");
     }
 
     const users = await sql`
-      SELECT id, name, email, role, department, "isApproved", "isAllocator", "createdAt"
+      SELECT id, name, email, role, department, "isApproved", "isAllocator", "isSuspended", "createdAt"
       FROM "User"
       ORDER BY "createdAt" DESC
     `;
@@ -29,7 +36,7 @@ export async function GET(req: Request) {
 }
 
 // PUT (update user role)
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();
@@ -88,7 +95,7 @@ export async function PUT(req: Request) {
 }
 
 // PATCH (update specific user fields like isAllocator)
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const sql = getDb();
     const session = await getServerSession();

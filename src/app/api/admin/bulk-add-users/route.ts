@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 
 const EMPLOYEES = [
@@ -17,7 +17,7 @@ const EMPLOYEES = [
   { name: "Pavan Reddy", email: "pavanreddy@intellicar.in" }
 ];
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession();
   const isAdmin = session?.user?.email === "pavanreddy@intellicar.in" || (session?.user as any)?.role === "ADMIN";
 
@@ -39,9 +39,10 @@ export async function POST(req: Request) {
       `;
 
       if (existing.length === 0) {
+        const userId = crypto.randomUUID();
         await sql`
           INSERT INTO "User" (id, name, email, password, role, "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${emp.name}, ${emp.email}, ${hashedPassword}, 'USER', NOW(), NOW())
+          VALUES (${userId}, ${emp.name}, ${emp.email}, ${hashedPassword}, 'USER', NOW(), NOW())
         `;
         createdCount++;
       } else {

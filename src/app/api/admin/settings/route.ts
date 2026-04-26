@@ -17,27 +17,48 @@ export async function PATCH(request: Request) {
   try {
     const sql = getDb();
     const body = await request.json();
+    console.log('PATCH /api/admin/settings - Body:', JSON.stringify(body));
+
     const existingSettings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
+    console.log('PATCH /api/admin/settings - Existing settings found:', existingSettings.length);
 
     if (!existingSettings || existingSettings.length === 0) {
-      // Create new settings
-      const columns = Object.keys(body);
-      const values = Object.values(body);
-      
-      // Build dynamic insert
+      console.log('PATCH /api/admin/settings - No existing settings, creating new row');
       const newSettings = await sql`
         INSERT INTO "SystemSettings" (
-          "masterDepartments", "masterEntities", "masterTaskTypes", 
-          "masterCommunicationModes", "masterRequestTypes",
-          "matrixModuleAccess", "matrixAllocation"
+          "id", 
+          "masterDepartments", 
+          "masterEntities", 
+          "masterTaskTypes", 
+          "masterCommunicationModes", 
+          "masterRequestTypes",
+          "moduleAccessMatrix", 
+          "allocationMatrix",
+          "reminderFrequency",
+          "reminderTimes",
+          "managerReportFrequency",
+          "managerReportTimes",
+          "loReportFrequency",
+          "loReportTimes",
+          "managerEmail",
+          "loReportEmail"
         ) VALUES (
+          'singleton',
           ${body.masterDepartments || ''},
           ${body.masterEntities || ''},
           ${body.masterTaskTypes || ''},
           ${body.masterCommunicationModes || ''},
           ${body.masterRequestTypes || ''},
-          ${body.matrixModuleAccess || '{}'},
-          ${body.matrixAllocation || '{}'}
+          ${body.moduleAccessMatrix || '{}'},
+          ${body.allocationMatrix || '{}'},
+          ${body.reminderFrequency || 'DAILY'},
+          ${body.reminderTimes || '09:00,18:00'},
+          ${body.managerReportFrequency || 'DAILY'},
+          ${body.managerReportTimes || '10:00'},
+          ${body.loReportFrequency || 'WEEKLY'},
+          ${body.loReportTimes || '10:00'},
+          ${body.managerEmail || ''},
+          ${body.loReportEmail || ''}
         )
         RETURNING *
       `;
@@ -45,26 +66,38 @@ export async function PATCH(request: Request) {
     }
 
     const settingsId = existingSettings[0].id;
+    console.log('PATCH /api/admin/settings - Updating settings with ID:', settingsId);
     
-    // Update existing settings
+    // Update existing settings - ONLY columns we are 100% sure exist
     const updatedSettings = await sql`
       UPDATE "SystemSettings"
       SET 
-        "masterDepartments" = COALESCE(${body.masterDepartments}, "masterDepartments"),
-        "masterEntities" = COALESCE(${body.masterEntities}, "masterEntities"),
-        "masterTaskTypes" = COALESCE(${body.masterTaskTypes}, "masterTaskTypes"),
-        "masterCommunicationModes" = COALESCE(${body.masterCommunicationModes}, "masterCommunicationModes"),
-        "masterRequestTypes" = COALESCE(${body.masterRequestTypes}, "masterRequestTypes"),
-        "matrixModuleAccess" = COALESCE(${body.matrixModuleAccess}, "matrixModuleAccess"),
-        "matrixAllocation" = COALESCE(${body.matrixAllocation}, "matrixAllocation"),
-        "updatedAt" = NOW()
+        "masterDepartments" = ${body.masterDepartments ?? existingSettings[0].masterDepartments},
+        "masterEntities" = ${body.masterEntities ?? existingSettings[0].masterEntities},
+        "masterTaskTypes" = ${body.masterTaskTypes ?? existingSettings[0].masterTaskTypes},
+        "masterCommunicationModes" = ${body.masterCommunicationModes ?? existingSettings[0].masterCommunicationModes},
+        "masterRequestTypes" = ${body.masterRequestTypes ?? existingSettings[0].masterRequestTypes},
+        "moduleAccessMatrix" = ${body.moduleAccessMatrix ?? existingSettings[0].moduleAccessMatrix},
+        "allocationMatrix" = ${body.allocationMatrix ?? existingSettings[0].allocationMatrix},
+        "reminderFrequency" = ${body.reminderFrequency ?? existingSettings[0].reminderFrequency},
+        "reminderTimes" = ${body.reminderTimes ?? existingSettings[0].reminderTimes},
+        "managerReportFrequency" = ${body.managerReportFrequency ?? existingSettings[0].managerReportFrequency},
+        "managerReportTimes" = ${body.managerReportTimes ?? existingSettings[0].managerReportTimes},
+        "loReportFrequency" = ${body.loReportFrequency ?? existingSettings[0].loReportFrequency},
+        "loReportTimes" = ${body.loReportTimes ?? existingSettings[0].loReportTimes},
+        "managerEmail" = ${body.managerEmail ?? existingSettings[0].managerEmail},
+        "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail}
       WHERE id = ${settingsId}
       RETURNING *
     `;
 
+    console.log('PATCH /api/admin/settings - Successfully updated');
     return NextResponse.json(updatedSettings[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating system settings:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      message: 'Internal Server Error', 
+      details: error.message
+    }, { status: 500 });
   }
 }

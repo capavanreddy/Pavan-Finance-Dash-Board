@@ -5,21 +5,35 @@ const SECRET_KEY = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret-key-change-in-production"
 );
 
-async function verifyToken(token) {
+async function verifyToken(token: string) {
   try {
-    const verified = await jwtVerify(token, SECRET_KEY);
-    return verified.payload;
+    const { payload } = await jwtVerify(token, SECRET_KEY);
+    return payload;
   } catch (error) {
     return null;
   }
 }
 
-export async function proxy(request) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
-  const publicRoutes = ["/login", "/api/login"];
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
+  const publicRoutes = [
+    "/login", 
+    "/register", 
+    "/api/login", 
+    "/api/auth/register",
+    "/api/auth", // NextAuth endpoints
+    "/api/public-settings"
+  ];
+  
+  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // Allow static images and common files to bypass middleware
+  const staticFileExtensions = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp"];
+  if (staticFileExtensions.some(ext => pathname.endsWith(ext))) {
     return NextResponse.next();
   }
 

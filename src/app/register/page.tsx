@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function Register() {
   const router = useRouter();
@@ -10,12 +12,30 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
+  const [departments, setDepartments] = useState(["Finance", "HR", "IT", "Operations", "Sales", "Marketing", "Admin"]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Default departments as defined in SystemSettings
-  const departments = ["Finance", "HR", "IT", "Operations", "Sales", "Marketing", "Admin", "Logistics", "Procurement"];
+  useEffect(() => {
+    async function fetchDepartments() {
+      try {
+        const res = await fetch("/api/public-settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.masterDepartments) {
+            const list = data.masterDepartments.split(',').map((s: string) => s.trim()).filter(Boolean);
+            if (list.length > 0) {
+              setDepartments(list);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch departments", err);
+      }
+    }
+    fetchDepartments();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,9 +115,12 @@ export default function Register() {
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-             <img src="/logo.png" alt="Intellicar Logo" style={{ height: "56px", marginBottom: '16px' }} />
+            <img
+              src="/logo.png"
+              alt="Intellicar Logo"
+              style={{ width: '180px', height: 'auto', objectFit: 'contain', marginBottom: '16px' }}
+            />
           </div>
-
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Request Access</h1>
             <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Fill in your details and select your department.</p>
@@ -206,7 +229,7 @@ export default function Register() {
 
           <div style={{ textAlign: "center", marginTop: "32px", borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
             <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-              Already have an account? <a href="/login" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Sign In</a>
+              Already have an account? <Link href="/login" style={{ color: "#2563eb", fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
             </p>
           </div>
         </div>
