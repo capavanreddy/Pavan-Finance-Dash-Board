@@ -21,6 +21,7 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     "/login", 
     "/register", 
+    "/test-login",
     "/api/login",
     "/api/debug-login", 
     "/api/auth/register",

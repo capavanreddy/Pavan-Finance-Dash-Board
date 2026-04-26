@@ -72,6 +72,8 @@ export default function Login() {
     setError("");
 
     try {
+      console.log("[v0] Login form submitted with email:", email);
+      
       // Call custom login API
       const response = await fetch("/api/login", {
         method: "POST",
@@ -80,9 +82,13 @@ export default function Login() {
         credentials: "include", // Include cookies in request
       });
       
+      console.log("[v0] Response received, status:", response.status);
+      
       const data = await response.json();
+      console.log("[v0] Response data:", data);
       
       if (!response.ok) {
+        console.log("[v0] Response not OK, error:", data.error);
         setError(data.error || "Login failed");
         setLoading(false);
         return;
@@ -90,15 +96,21 @@ export default function Login() {
       
       // Success! Redirect to dashboard
       if (data.success) {
-        // Use window.location for full page reload to ensure cookie is sent
+        console.log("[v0] Login successful, attempting redirect to /");
+        // Use router.push for better reliability
+        router.push("/");
+        // Also set a timeout with window.location as fallback
         setTimeout(() => {
+          console.log("[v0] Fallback redirect if router.push didn't work");
           window.location.href = "/";
-        }, 200);
+        }, 1000);
       } else {
+        console.log("[v0] Success was false in response");
         setError(data.error || "Login failed");
         setLoading(false);
       }
     } catch (err) {
+      console.error("[v0] Error in login:", err);
       setError("An unexpected error occurred. Please try again later.");
       setLoading(false);
     }
