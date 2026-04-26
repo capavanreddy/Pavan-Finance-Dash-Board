@@ -146,6 +146,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Tasks created", count: createdTasks.length }, { status: 201 });
   } catch (error: any) {
     console.error("Task creation error:", error);
+    console.error("Task creation error - Full Data:", { taskName, assignments, dueDate });
+    console.error("Error details:", error);
     return NextResponse.json({ message: "Failed to create task", error: error.message }, { status: 500 });
   }
 }
