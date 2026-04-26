@@ -1785,7 +1785,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             }}
             title={`Switch to ${theme === 'DARK' ? 'Light' : 'Dark'} Mode`}
           >
-            {theme === 'DARK' ? <Sun size={20} color="#fbbf24" /> : <Moon size={20} color="#6366f1" />}
+            {theme === 'DARK' ? <Clock size={20} color="#fbbf24" /> : <Clock size={20} color="#6366f1" />}
           </button>
 
           <div style={{ textAlign: "right" }}>
@@ -1972,8 +1972,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
           {activeView !== 'RECURRING' && (
             <>
-          {/* Active View Title/Context Area - Hidden on HOME for a cleaner mission focus */}
-          {activeView !== 'HOME' && (
+          {/* Active View Title/Context Area */}
+          {true && (
             <div style={{ 
               marginBottom: "32px", 
               paddingBottom: "24px", 
@@ -1988,16 +1988,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
                   <span style={{ color: t.textMuted, opacity: 0.5 }}>/</span>
                   <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
-                    {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
+                    {activeView === 'HOME' ? "Development" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development")}
                   </span>
                 </div>
                 <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
-                  {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
+                  {activeView === 'HOME' ? "Finance Home Hub" : (activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities")}
                 </h2>
                 <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
-                  {activeView === 'TASKS' ? 
+                  {activeView === 'HOME' ? "Your central space for team mission, stories, and achievements." : (activeView === 'TASKS' ? 
                     (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
-                    : "Turning challenges into structured growth opportunities."}
+                    : "Turning challenges into structured growth opportunities.")}
                 </p>
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
