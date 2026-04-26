@@ -3141,13 +3141,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   rows={3} 
                   placeholder="What was the resolution or fix?"
                   value={loCaptureForm.resolutionProvided}
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Mode of Communication</label>
+                  onChange={(e) => setLOCaptureForm({ ...loCaptureForm, resolutionProvided: e.target.value })}
+                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Mode of Communication</label>
                 <select 
                   value={loCaptureForm.modeOfCommunication}
                   onChange={e => setLOCaptureForm({...loCaptureForm, modeOfCommunication: e.target.value})}
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
                 >
-                  <option value="">Choose</option>
+                  <option value="">Choose Mode</option>
                   {settings?.masterCommunicationModes?.split(',').filter((m: string) => m.trim()).map((mode: string) => (
                     <option key={mode.trim()} value={mode.trim()}>{mode.trim()}</option>
                   ))}
@@ -3155,18 +3161,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               </div>
 
               <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                <button 
-                  onClick={() => setShowLOCaptureModal(false)}
-                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSubmitLOCapture}
-                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.2)" }}
-                >
-                  Submit LO to Tracker
-                </button>
+                <button onClick={() => setShowLOCaptureModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={handleSubmitLOCapture} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)" }}>Save LO Entry</button>
               </div>
             </div>
           </div>
