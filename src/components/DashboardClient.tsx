@@ -118,13 +118,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
-  const [activeView, setActiveView] = useState<'TASKS' | 'RECURRING' | 'LOS'>('TASKS');
+  const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS'>('HOME');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES'>('ACCOUNT');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB'>('ACCOUNT');
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | ''>('ACCESS');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(true);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
@@ -146,7 +146,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     masterRequestStatuses: 'Under Process,Pending for Review,Processed',
     moduleAccessMatrix: '{}',
     allocationMatrix: '{}',
-    entityMatrix: '{}'
+    entityMatrix: '{}',
+    homeContent: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1759,6 +1760,28 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
               return (
                 <>
+                  {/* Home Module */}
+                  {(() => {
+                    const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                    const canSeeHome = isAdmin || (matrix['Home'] && matrix['Home'].includes(user?.department));
+                    if (!canSeeHome) return null;
+                    return (
+                      <button 
+                        onClick={() => { setActiveView('HOME'); setActiveMainView('DASHBOARD'); }}
+                        style={{ 
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                          background: activeView === 'HOME' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                          border: "none", color: activeView === 'HOME' ? "#60a5fa" : "#94a3b8", 
+                          cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                          width: "100%", borderRadius: "16px"
+                        }}
+                      >
+                        <Home size={24} color={activeView === 'HOME' ? "#60a5fa" : "#94a3b8"} />
+                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Home Hub</span>
+                      </button>
+                    );
+                  })()}
+
                   {canSeeTasks && (
                     <div style={{ width: "100%" }}>
                       <button 
@@ -1897,10 +1920,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 </span>
               </div>
               <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
-                {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
+                {activeView === 'HOME' ? "Finance Home Hub" : 
+                 activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
               </h2>
               <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
-                {activeView === 'TASKS' ? 
+                {activeView === 'HOME' ? "Your central space for team mission, stories, and achievements." : 
+                 activeView === 'TASKS' ? 
                   (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
                   : "Turning challenges into structured growth opportunities."}
               </p>
@@ -1918,8 +1943,105 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             </div>
           </div>
 
-        {/* Metric Cards / Motivational Quote */}
-        {activeView === 'TASKS' ? (
+        {/* Metric Cards / Motivational Quote / Home Content */}
+        {activeView === 'HOME' ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "32px", marginBottom: "40px" }}>
+            {/* Hero Mission Card */}
+            {(() => {
+              const content = JSON.parse(settings.homeContent || '{}');
+              const mission = content.mission || "Empowering the Finance Team through transparency, real-time collaboration, and operational excellence.";
+              return (
+                <div style={{ 
+                  padding: "48px", borderRadius: "24px", 
+                  background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", 
+                  color: "white", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+                  position: "relative", overflow: "hidden"
+                }}>
+                  <div style={{ position: "absolute", top: -50, right: -50, opacity: 0.1 }}>
+                    <Building2 size={240} />
+                  </div>
+                  <div style={{ position: "relative", zIndex: 1, maxWidth: "800px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                      <div style={{ width: "32px", height: "4px", background: "#3b82f6", borderRadius: "2px" }}></div>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#60a5fa" }}>Our Mission</span>
+                    </div>
+                    <h2 style={{ fontSize: "2.5rem", fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: "-0.02em" }}>{mission}</h2>
+                    <p style={{ marginTop: "24px", fontSize: "1.125rem", color: "#94a3b8", lineHeight: 1.6 }}>This platform is implemented to drive efficiency and ensure every team member has the data they need to succeed.</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "32px" }}>
+              {/* Success Stories */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Quote size={20} color="#3b82f6" /> Team Success Stories
+                  </h3>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+                  {(() => {
+                    const content = JSON.parse(settings.homeContent || '{}');
+                    const stories = content.stories || [
+                      { id: 1, title: "Efficiency Boost", text: "The new matrix system has cut down our task allocation time by 40%!", author: "Finance Admin" },
+                      { id: 2, title: "Better Collaboration", text: "Sharing requests between departments is now seamless and tracked.", author: "Operations Lead" }
+                    ];
+                    return stories.map((s: any) => (
+                      <div key={s.id} style={{ 
+                        padding: "24px", borderRadius: "20px", background: "white", 
+                        border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                        transition: "transform 0.2s", cursor: "default"
+                      }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-4px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                        <div style={{ background: "#eff6ff", width: "40px", height: "40px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+                          <CheckCircle2 size={20} color="#3b82f6" />
+                        </div>
+                        <h4 style={{ margin: "0 0 8px 0", fontSize: "1rem", fontWeight: 700 }}>{s.title}</h4>
+                        <p style={{ margin: "0 0 16px 0", fontSize: "0.875rem", color: "#64748b", lineHeight: 1.5 }}>"{s.text}"</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#3b82f6", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 700 }}>
+                            {s.author[0]}
+                          </div>
+                          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b" }}>{s.author}</span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Major Achievements */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Tag size={20} color="#3b82f6" /> Major Achievements
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {(() => {
+                    const content = JSON.parse(settings.homeContent || '{}');
+                    const achievements = content.achievements || [
+                      { id: 1, title: "Platform Launch", date: "Apr 2026" },
+                      { id: 2, title: "100+ Tasks Completed", date: "May 2026" }
+                    ];
+                    return achievements.map((a: any) => (
+                      <div key={a.id} style={{ 
+                        padding: "16px", borderRadius: "16px", background: "white", 
+                        border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "16px" 
+                      }}>
+                        <div style={{ background: "#f0fdf4", padding: "8px", borderRadius: "10px" }}>
+                          <ShieldCheck size={20} color="#10b981" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#1e293b" }}>{a.title}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{a.date}</div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeView === 'TASKS' ? (
           activeSubView === 'MAIN' ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px", marginBottom: "32px" }}>
               <MetricCard title="Total Tasks" value={tasks.length} icon={<LayoutDashboard size={24} color="#ffffff" />} bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" isActive={activeFilter === 'ALL'} onClick={() => setActiveFilter('ALL')} />
@@ -3388,8 +3510,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       onClick={() => setActiveOptionsTab('MATRICES')} 
                       style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                     >
-                      Matrix Module
-                    </button>
+                        Matrix Module
+                      </button>
+                      <button 
+                        onClick={() => setActiveOptionsTab('HOME_HUB')} 
+                        style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'HOME_HUB' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                      >
+                        Home Hub
+                      </button>
                   </>
                 )}
               </div>
@@ -4562,6 +4690,145 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 )}
 
                 {activeOptionsTab === 'MATRICES' && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <h3 style={{ margin: 0 }}>Home Hub Management</h3>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ display: "flex", alignItems: "center", gap: "8px", background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", cursor: isSavingSettings ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.875rem" }}
+                      >
+                        <ShieldCheck size={18} /> {isSavingSettings ? "Saving..." : "Save Home Content"}
+                      </button>
+                    </div>
+
+                    {/* Mission Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Building2 size={20} color="#2563eb" /> Edit Mission Statement</h4>
+                      <textarea 
+                        value={JSON.parse(settings.homeContent || '{}').mission || ""}
+                        onChange={(e) => {
+                          const content = JSON.parse(settings.homeContent || '{}');
+                          setSettings({ ...settings, homeContent: JSON.stringify({ ...content, mission: e.target.value }) });
+                        }}
+                        placeholder="Enter the implementation mission..."
+                        style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }}
+                      />
+                    </div>
+
+                    {/* Stories Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Quote size={20} color="#2563eb" /> Manage Success Stories</h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+                        {(JSON.parse(settings.homeContent || '{}').stories || []).map((s: any, idx: number) => (
+                          <div key={idx} style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", position: "relative" }}>
+                            <button 
+                              onClick={() => {
+                                const content = JSON.parse(settings.homeContent || '{}');
+                                const updated = content.stories.filter((_: any, i: number) => i !== idx);
+                                setSettings({ ...settings, homeContent: JSON.stringify({ ...content, stories: updated }) });
+                              }}
+                              style={{ position: "absolute", top: "12px", right: "12px", background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <div style={{ fontWeight: 700, fontSize: "0.875rem" }}>{s.title}</div>
+                            <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>{s.text}</div>
+                            <div style={{ fontSize: "0.75rem", fontWeight: 600, marginTop: "4px" }}>- {s.author}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr auto", gap: "8px", alignItems: "end" }}>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Title</label>
+                          <input id="story-title" type="text" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Story Text</label>
+                          <input id="story-text" type="text" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Author</label>
+                          <input id="story-author" type="text" style={inputStyle} />
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const title = (document.getElementById('story-title') as HTMLInputElement).value;
+                            const text = (document.getElementById('story-text') as HTMLInputElement).value;
+                            const author = (document.getElementById('story-author') as HTMLInputElement).value;
+                            if (!title || !text || !author) return;
+                            const content = JSON.parse(settings.homeContent || '{}');
+                            const updated = [...(content.stories || []), { id: Date.now(), title, text, author }];
+                            setSettings({ ...settings, homeContent: JSON.stringify({ ...content, stories: updated }) });
+                            (document.getElementById('story-title') as HTMLInputElement).value = "";
+                            (document.getElementById('story-text') as HTMLInputElement).value = "";
+                            (document.getElementById('story-author') as HTMLInputElement).value = "";
+                          }}
+                          style={{ background: "#2563eb", color: "white", padding: "10px 16px", borderRadius: "10px", border: "none", cursor: "pointer" }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Achievements Editor */}
+                    <div style={{ background: "white", padding: "24px", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                      <h4 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "10px" }}><Tag size={20} color="#2563eb" /> Manage Achievements</h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                        {(JSON.parse(settings.homeContent || '{}').achievements || []).map((a: any, idx: number) => (
+                          <div key={idx} style={{ padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{a.title}</span>
+                              <span style={{ marginLeft: "8px", fontSize: "0.75rem", color: "#64748b" }}>({a.date})</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                const content = JSON.parse(settings.homeContent || '{}');
+                                const updated = content.achievements.filter((_: any, i: number) => i !== idx);
+                                setSettings({ ...settings, homeContent: JSON.stringify({ ...content, achievements: updated }) });
+                              }}
+                              style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: "8px", alignItems: "end" }}>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Achievement</label>
+                          <input id="ach-title" type="text" placeholder="e.g. 500 Tasks Milestone" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>Date</label>
+                          <input id="ach-date" type="text" placeholder="e.g. May 2026" style={inputStyle} />
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const title = (document.getElementById('ach-title') as HTMLInputElement).value;
+                            const date = (document.getElementById('ach-date') as HTMLInputElement).value;
+                            if (!title || !date) return;
+                            const content = JSON.parse(settings.homeContent || '{}');
+                            const updated = [...(content.achievements || []), { id: Date.now(), title, date }];
+                            setSettings({ ...settings, homeContent: JSON.stringify({ ...content, achievements: updated }) });
+                            (document.getElementById('ach-title') as HTMLInputElement).value = "";
+                            (document.getElementById('ach-date') as HTMLInputElement).value = "";
+                          }}
+                          style={{ background: "#2563eb", color: "white", padding: "10px 16px", borderRadius: "10px", border: "none", cursor: "pointer" }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {activeOptionsTab === 'HOME_HUB' && (
+                  <div style={{ padding: "20px" }}>
+                    {/* Placeholder to prevent error if logic above has issues */}
+                    <p style={{ color: "#64748b" }}>Select a section above to manage Home Hub content.</p>
+                  </div>
+                )}
+                {activeOptionsTab === 'MATRICES' && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                       <h3 style={{ margin: 0 }}>Matrix Module</h3>
@@ -4625,7 +4892,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Department</th>
-                                  {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
+                                  {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                     <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
                                   ))}
                                 </tr>
@@ -4636,7 +4903,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   return (
                                     <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{dept}</td>
-                                      {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
+                                      {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
                                         <td key={module} style={{ padding: "12px", textAlign: "center" }}>
                                           <input 
                                             type="checkbox" 

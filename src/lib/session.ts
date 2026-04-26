@@ -112,6 +112,9 @@ export async function authenticate(
       // Add Entity Controls column to SystemSettings
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "entityMatrix" TEXT DEFAULT '{}'`;
 
+      // Add Home Content column to SystemSettings
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "homeContent" TEXT DEFAULT '{}'`;
+
       // Add missing columns to ExternalRequest
       await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "entityName" TEXT`;
       await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "originalRequestType" TEXT`;
