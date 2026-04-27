@@ -3,8 +3,9 @@ import { getDb } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
 // POST /api/payments/tracker/[id]/pay
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const sql = getDb();
     const session = await getSession();
     if (!session) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         "amountPaid" = ${Number(amountPaid)},
         "isPaid" = TRUE,
         "updatedAt" = NOW()
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *
     `;
 
