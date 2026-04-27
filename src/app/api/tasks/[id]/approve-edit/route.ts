@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (existingTask.editRequestBy === "OWNER") {
         updatedTask = await sql`
           UPDATE "Task"
-          SET "editRequested" = false, "editRequestBy" = null, "editRequestReason" = null,
+          SET "editRequested" = false, "editApproved" = true, "editRequestBy" = null, "editRequestReason" = null,
               "taskStatus" = 'Pending', "completionDate" = null, 
               "reviewStatus" = 'Task Pending From Owner', "reviewCompletionDate" = null
           WHERE id = ${taskId}
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } else if (existingTask.editRequestBy === "REVIEWER") {
         updatedTask = await sql`
           UPDATE "Task"
-          SET "editRequested" = false, "editRequestBy" = null, "editRequestReason" = null,
+          SET "editRequested" = false, "editApproved" = true, "editRequestBy" = null, "editRequestReason" = null,
               "reviewStatus" = 'Pending', "reviewCompletionDate" = null
           WHERE id = ${taskId}
           RETURNING *
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } else {
         updatedTask = await sql`
           UPDATE "Task"
-          SET "editRequested" = false, "editRequestBy" = null, "editRequestReason" = null
+          SET "editRequested" = false, "editApproved" = true, "editRequestBy" = null, "editRequestReason" = null
           WHERE id = ${taskId}
           RETURNING *
         `;
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     } else {
       updatedTask = await sql`
         UPDATE "Task"
-        SET "editRequested" = false, "editRequestBy" = null, "editRequestReason" = null
+        SET "editRequested" = false, "editApproved" = false, "editRequestBy" = null, "editRequestReason" = null
         WHERE id = ${taskId}
         RETURNING *
       `;

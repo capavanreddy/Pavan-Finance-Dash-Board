@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "templateId" INTEGER`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "periodKey" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "frequency" TEXT`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "editApproved" BOOLEAN DEFAULT FALSE`;
     } catch (e) {
       console.log("Task migration check failed in GET");
     }
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "originalRequestType" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "transferStatus" TEXT DEFAULT 'O'`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "frequency" TEXT`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "editApproved" BOOLEAN DEFAULT FALSE`;
     } catch (e) {
       console.log("Task migration check skipped/failed");
     }

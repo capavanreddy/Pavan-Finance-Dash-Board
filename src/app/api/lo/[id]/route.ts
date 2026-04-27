@@ -44,6 +44,7 @@ export async function PATCH(
           "emailSub" = ${data.emailSub !== undefined ? data.emailSub : existingLO.emailSub},
           "comments" = ${data.comments !== undefined ? data.comments : existingLO.comments},
           "editApproved" = ${editApproved},
+          "editRequested" = ${isAdmin ? existingLO.editRequested : false},
           "updatedAt" = NOW()
       WHERE id = ${loId}
       RETURNING *
