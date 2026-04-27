@@ -658,7 +658,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           committedBy: values[5],
           resolutionProvided: values[6],
         });
-      } else {
+      } else if (type === 'recurring') {
         // Recurring Template
         rows.push({
           taskNamePattern: values[1],
