@@ -30,7 +30,8 @@ export async function middleware(request: NextRequest) {
     "/api/auth/forgot-password",
     "/api/auth/verify-otp",
     "/api/auth/reset-password",
-    "/api/public-settings"
+    "/api/public-settings",
+    "/api/admin/migrate-audit"
   ];
   
   if (publicRoutes.some(route => pathname === route || pathname.startsWith(route))) {

@@ -12,6 +12,13 @@ export async function PATCH(
     const id = parseInt(resolvedParams.id);
     const body = await request.json();
     
+    // Self-healing migration: Ensure column exists without crashing the request
+    try {
+      await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "transferredBy" TEXT`;
+    } catch (e) {
+      console.log("Migration check skipped or already exists");
+    }
+    
     // Fetch current state first if we need to check for transfers
     let currentRequest = null;
     if (body.requestType !== undefined) {
