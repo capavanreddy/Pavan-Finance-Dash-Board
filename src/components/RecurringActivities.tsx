@@ -79,6 +79,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
   const [freqFilter, setFreqFilter] = useState<string>("ALL");
   const [showConverted, setShowConverted] = useState(true);
   const [searchStaging, setSearchStaging] = useState("");
+  const [entityFilterStaging, setEntityFilterStaging] = useState("ALL");
   const [searchMaster, setSearchMaster] = useState("");
   const [stagingSortConfig, setStagingSortConfig] = useState<{ key: keyof StagingTask; direction: 'asc' | 'desc' } | null>(null);
 
@@ -415,7 +416,9 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
         (task.financeFunction || "").toLowerCase().includes(search) ||
         task.periodKey.toLowerCase().includes(search);
       
-      return matchesSearch;
+      const matchesEntity = entityFilterStaging === "ALL" || task.entityName === entityFilterStaging;
+      
+      return matchesSearch && matchesEntity;
     })
     .sort((a, b) => {
       if (!stagingSortConfig) return 0;
@@ -488,6 +491,19 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                   onChange={e => setSearchStaging(e.target.value)}
                   style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", width: "100%", color: "#334155" }}
                 />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <select 
+                  value={entityFilterStaging} 
+                  onChange={e => setEntityFilterStaging(e.target.value)} 
+                  style={{ ...inputStyle, width: "150px" }}
+                >
+                  <option value="ALL">All Entities</option>
+                  {Array.from(new Set(stagingTasks.map(t => t.entityName))).sort().map(entity => (
+                    <option key={entity} value={entity}>{entity}</option>
+                  ))}
+                </select>
               </div>
 
              <div style={{ flex: 1 }}></div>
