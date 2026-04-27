@@ -702,24 +702,24 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
 
                 <div>
                   <label style={labelStyle}>Frequency</label>
-                  <select value={templateForm.frequency} onChange={e => setTemplateForm({...templateForm, frequency: e.target.value as any})} style={inputStyle}>
+                  <select value={templateForm.frequency || "MONTHLY"} onChange={e => setTemplateForm({...templateForm, frequency: e.target.value as any})} style={inputStyle}>
                     {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
 
                 <div>
                   <label style={labelStyle}>Start Date (Anchor)</label>
-                  <input type="date" value={templateForm.startDate} onChange={e => setTemplateForm({...templateForm, startDate: e.target.value})} style={inputStyle} />
+                  <input type="date" value={templateForm.startDate || ""} onChange={e => setTemplateForm({...templateForm, startDate: e.target.value})} style={inputStyle} />
                 </div>
 
                 <div>
                   <label style={labelStyle}>End Date (Optional)</label>
-                  <input type="date" value={templateForm.endDate} onChange={e => setTemplateForm({...templateForm, endDate: e.target.value})} style={inputStyle} />
+                  <input type="date" value={templateForm.endDate || ""} onChange={e => setTemplateForm({...templateForm, endDate: e.target.value})} style={inputStyle} />
                 </div>
 
                 <div>
                   <label style={labelStyle}>Day of Month (Due Date)</label>
-                  <input type="number" min="1" max="31" value={templateForm.dayOffset} onChange={e => setTemplateForm({...templateForm, dayOffset: parseInt(e.target.value)})} style={inputStyle} />
+                  <input type="number" min="1" max="31" value={templateForm.dayOffset || 1} onChange={e => setTemplateForm({...templateForm, dayOffset: parseInt(e.target.value)})} style={inputStyle} />
                 </div>
 
                 <div>
