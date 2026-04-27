@@ -118,7 +118,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
     const searchStart = new Date(dateFilter.from);
     const searchEnd = new Date(dateFilter.to);
     
-    allTemplates.filter(t => t.isActive && !t.isStopped && t.frequency !== 'DAILY').forEach(t => {
+    allTemplates.filter(t => t.isActive && !t.isStopped && t.frequency !== 'D').forEach(t => {
       // Apply frequency filter
       if (freqFilter !== "ALL" && t.frequency !== freqFilter) return;
 
@@ -786,7 +786,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                   />
                 </div>
 
-                {templateForm.frequency === 'WEEKLY' && (
+                {templateForm.frequency === 'W' && (
                     <div>
                         <label style={labelStyle}>Day of Week</label>
                         <select 
@@ -851,7 +851,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-             {templates.filter(t => t.frequency === 'DAILY' && t.isActive).map(t => (
+             {templates.filter(t => t.frequency === 'D' && t.isActive).map(t => (
                <div key={t.id} style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "16px", transition: "transform 0.2s" }} className="hover-scale">
                   <input type="checkbox" style={{ width: "24px", height: "24px", cursor: "pointer" }} />
                   <div style={{ flex: 1 }}>
@@ -861,7 +861,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                   <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>Ready for Daily Checklist</div>
                </div>
              ))}
-             {templates.filter(t => t.frequency === 'DAILY' && t.isActive).length === 0 && (
+             {templates.filter(t => t.frequency === 'D' && t.isActive).length === 0 && (
                 <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No daily templates defined.</div>
              )}
           </div>
