@@ -409,13 +409,13 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
           onClick={() => setActiveSubTab('MASTER')}
           style={{ padding: "12px 4px", fontSize: "0.875rem", fontWeight: 600, color: activeSubTab === 'MASTER' ? "#2563eb" : "#64748b", borderBottom: activeSubTab === 'MASTER' ? "2px solid #2563eb" : "none", background: "none", cursor: "pointer" }}
         >
-          Master Template Registry
+          Recurring Tasks-Master Data
         </button>
         <button 
           onClick={() => setActiveSubTab('D')}
           style={{ padding: "12px 4px", fontSize: "0.875rem", fontWeight: 600, color: activeSubTab === 'D' ? "#2563eb" : "#64748b", borderBottom: activeSubTab === 'D' ? "2px solid #2563eb" : "none", background: "none", cursor: "pointer" }}
         >
-          Daily Checklist Module
+          Daily Tasks
         </button>
       </div>
 
