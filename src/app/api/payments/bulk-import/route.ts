@@ -35,8 +35,7 @@ export async function POST(req: NextRequest) {
           defaultOwner,
           defaultReviewer,
           startDate,
-          endDate,
-          leadTime
+          endDate
         } = item;
 
         if (!entityName || !paymentDescription || !vendorName || !frequency) {
@@ -49,14 +48,14 @@ export async function POST(req: NextRequest) {
             "entityName", "paymentDescription", "vendorName", "paymentType",
             "departmentName", "financeFunction", "frequency", "dueDay", "weeklyDay",
             "vendorEmail", "prodEmail", "defaultOwner", "defaultReviewer",
-            "startDate", "endDate", "leadTime", "isActive", "createdAt", "updatedAt"
+            "startDate", "endDate", "isActive", "createdAt", "updatedAt"
           )
           VALUES (
             ${entityName}, ${paymentDescription}, ${vendorName}, ${paymentType},
             ${departmentName}, ${financeFunction}, ${frequency}, ${dueDay ? Number(dueDay) : null}, ${weeklyDay || null},
             ${vendorEmail}, ${prodEmail}, ${defaultOwner}, ${defaultReviewer},
             ${startDate ? new Date(startDate) : null}, ${endDate ? new Date(endDate) : null},
-            ${Number(leadTime) || 7}, TRUE, NOW(), NOW()
+            TRUE, NOW(), NOW()
           )
           RETURNING id
         `;

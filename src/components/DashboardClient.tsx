@@ -614,10 +614,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Reviewer', key: 'defaultReviewer', width: 20 },
         { header: 'Start Date (YYYY-MM-DD)', key: 'startDate', width: 25 },
         { header: 'End Date (YYYY-MM-DD)', key: 'endDate', width: 25 },
-        { header: 'Gen Window (Days)', key: 'leadTime', width: 20 },
       ];
       worksheet.addRow([
-        'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '2026-04-01', '', '7'
+        'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '2026-04-01', ''
       ]);
     }
 
@@ -693,7 +692,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           defaultReviewer: values[13],
           startDate: values[14],
           endDate: values[15],
-          leadTime: values[16],
         });
       }
     });

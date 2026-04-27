@@ -20,7 +20,6 @@ interface PaymentTemplate {
   prodEmail: string;
   defaultOwner: string;
   defaultReviewer: string;
-  leadTime: number;
   dueDay?: number;
   weeklyDay?: string;
   startDate: string;
@@ -74,7 +73,6 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
     prodEmail: "production@intellicar.in",
     defaultOwner: user?.name || "",
     defaultReviewer: "",
-    leadTime: 7,
     dueDay: 1,
     weeklyDay: "Monday",
     startDate: "",
@@ -116,18 +114,14 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
         if (t.isStopped) return;
         const potential = getOccurrencesBetween(t, new Date(t.startDate), nextMonth);
         potential.forEach(p => {
-          // Check if within lead time (using template's custom leadTime)
-          const diffDays = Math.ceil((new Date(p.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (diffDays <= (t.leadTime || 7)) {
-            // Check if already exists
-            const exists = allOccurrences.find(o => o.templateId === t.id && getPeriodKey(t.frequency as any, new Date(o.dueDate)) === p.periodKey);
-            if (!exists) {
-              staging.push({
-                templateId: t.id,
-                dueDate: p.date.toISOString().split('T')[0],
-                periodKey: p.periodKey
-              });
-            }
+          // Check if already exists
+          const exists = allOccurrences.find(o => o.templateId === t.id && getPeriodKey(t.frequency as any, new Date(o.dueDate)) === p.periodKey);
+          if (!exists) {
+            staging.push({
+              templateId: t.id,
+              dueDate: p.date.toISOString().split('T')[0],
+              periodKey: p.periodKey
+            });
           }
         });
       });
@@ -559,23 +553,6 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
                   </select>
                 </div>
               )}
-
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <label style={labelStyle}>Generation Window (Days)</label>
-                  <div title="How many days before the due date this payment should appear in the tracker." style={{ cursor: "help" }}>
-                    <AlertTriangle size={14} color="#94a3b8" />
-                  </div>
-                </div>
-                <input 
-                  type="number" 
-                  value={formData.leadTime}
-                  onChange={e => setFormData({...formData, leadTime: Number(e.target.value)})}
-                  style={inputStyle}
-                  min={0}
-                />
-                <p style={{ fontSize: "0.65rem", color: "#64748b", marginTop: "4px" }}>Replaced "Lead Time". Sets when entry appears in tracker.</p>
-              </div>
 
               <div>
                 <label style={labelStyle}>Vendor Email ID</label>

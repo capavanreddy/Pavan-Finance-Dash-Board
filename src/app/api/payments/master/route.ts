@@ -27,7 +27,6 @@ export async function GET() {
           "prodEmail" TEXT,
           "defaultOwner" TEXT,
           "defaultReviewer" TEXT,
-          "leadTime" INTEGER DEFAULT 0,
           "dueDay" INTEGER,
           "weeklyDay" TEXT,
           "startDate" DATE,
@@ -95,7 +94,6 @@ export async function POST(req: NextRequest) {
       prodEmail,
       defaultOwner,
       defaultReviewer,
-      leadTime,
       dueDay,
       weeklyDay,
       startDate,
@@ -122,7 +120,6 @@ export async function POST(req: NextRequest) {
           "prodEmail" = ${prodEmail},
           "defaultOwner" = ${defaultOwner},
           "defaultReviewer" = ${defaultReviewer},
-          "leadTime" = ${Number(leadTime) || 0},
           "dueDay" = ${dueDay ? Number(dueDay) : null},
           "weeklyDay" = ${weeklyDay || null},
           "startDate" = ${startDate ? new Date(startDate) : null},
@@ -138,14 +135,14 @@ export async function POST(req: NextRequest) {
         INSERT INTO "PaymentTemplate" (
           "entityName", "paymentDescription", "vendorName", "paymentType",
           "departmentName", "financeFunction", "frequency", "vendorEmail",
-          "prodEmail", "defaultOwner", "defaultReviewer", "leadTime",
+          "prodEmail", "defaultOwner", "defaultReviewer",
           "dueDay", "weeklyDay",
           "startDate", "endDate", "isActive", "createdAt", "updatedAt"
         )
         VALUES (
           ${entityName}, ${paymentDescription}, ${vendorName}, ${paymentType},
           ${departmentName}, ${financeFunction}, ${frequency}, ${vendorEmail},
-          ${prodEmail}, ${defaultOwner}, ${defaultReviewer}, ${Number(leadTime) || 0},
+          ${prodEmail}, ${defaultOwner}, ${defaultReviewer},
           ${dueDay ? Number(dueDay) : null}, ${weeklyDay || null},
           ${startDate ? new Date(startDate) : null}, ${endDate ? new Date(endDate) : null},
           TRUE, NOW(), NOW()
