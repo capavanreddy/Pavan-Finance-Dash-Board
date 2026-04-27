@@ -95,7 +95,11 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
       const res = await fetch(`/api/external-requests/${initialData.linkedRequestId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestType: newRequestType, status: "Pending" }),
+        body: JSON.stringify({ 
+          requestType: newRequestType, 
+          status: "Pending",
+          transferredBy: user.name || user.email
+        }),
       });
       if (!res.ok) throw new Error("Failed to transfer request");
       alert(`Request transferred successfully!`);

@@ -11,6 +11,9 @@ export async function PATCH(
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
     const body = await request.json();
+
+    // Ensure the column exists
+    await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "transferredBy" TEXT`;
     
     // Fetch current state first if we need to check for transfers
     let currentRequest = null;
@@ -36,6 +39,10 @@ export async function PATCH(
       if (currentRequest && body.requestType !== currentRequest.originalRequestType) {
         updates.push(`"transferStatus" = 'T'`);
       }
+    }
+    
+    if (body.transferredBy !== undefined) {
+      updates.push(`"transferredBy" = '${body.transferredBy}'`);
     }
     
     if (updates.length === 0) {

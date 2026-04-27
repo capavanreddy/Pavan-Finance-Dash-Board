@@ -53,6 +53,7 @@ type ExternalRequest = {
   convertedTaskId: number | null;
   originalRequestType: string | null;
   transferStatus: string | null;
+  transferredBy: string | null;
   createdAt: string;
 };
 
@@ -1539,16 +1540,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Inter-Dept Requests");
     
-    worksheet.columns = [
+    const columns = [
       { header: 'Sl No.', key: 'sl', width: 10 },
       { header: 'Request From', key: 'requestFrom', width: 25 },
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Finance Function', key: 'type', width: 20 },
-      { header: 'Request From', key: 'requestFrom', width: 25 },
       { header: 'Nature of Request', key: 'nature', width: 40 },
       { header: 'Status', key: 'status', width: 15 }
     ];
+
+    if (isAdmin) {
+      columns.push(
+        { header: 'Request Origin', key: 'origin', width: 20 },
+        { header: 'Original Category', key: 'originalType', width: 20 },
+        { header: 'Transferred By', key: 'transferredBy', width: 20 }
+      );
+    }
+
+    worksheet.columns = columns;
 
     const filteredReqs = externalRequests.filter(r => {
       const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
@@ -1570,7 +1580,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         date: new Date(r.createdAt).toLocaleDateString(),
         type: r.requestType,
         nature: r.natureOfRequest,
-        status: r.status || "New"
+        status: r.status || "New",
+        ...(isAdmin ? {
+          origin: r.transferStatus === 'T' ? 'Transferred' : 'Original',
+          originalType: r.originalRequestType || 'N/A',
+          transferredBy: r.transferredBy || 'N/A'
+        } : {})
       });
     });
 
@@ -1598,14 +1613,26 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     });
 
     const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
-    const tableRows = filteredReqs.map((r, idx) => [
-      idx + 1,
-      r.requestFrom,
-      new Date(r.createdAt).toLocaleDateString(),
-      r.requestType,
-      r.natureOfRequest,
-      r.status || "New"
-    ]);
+    if (isAdmin) tableColumn.push("Origin", "Original Function", "Transferred By");
+
+    const tableRows = filteredReqs.map((r, idx) => {
+      const row = [
+        idx + 1,
+        r.requestFrom,
+        new Date(r.createdAt).toLocaleDateString(),
+        r.requestType,
+        r.natureOfRequest,
+        r.status || "New"
+      ];
+      if (isAdmin) {
+        row.push(
+          r.transferStatus === 'T' ? 'Transferred' : 'Original',
+          r.originalRequestType || 'N/A',
+          r.transferredBy || 'N/A'
+        );
+      }
+      return row;
+    });
 
     autoTable(doc, {
       head: [tableColumn],
@@ -1709,16 +1736,43 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           const workbook = new ExcelJS.Workbook();
           const worksheet = workbook.addWorksheet("Requests");
           worksheet.addRow(['Shared Inter-Dept Requests Report']);
-          externalRequests.forEach((r, i) => worksheet.addRow([i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status]));
+          const headers = ['Sl No.', 'Request From', 'Finance Function', 'Nature', 'Status'];
+          if (isAdmin) headers.push('Origin', 'Original Function', 'Transferred By');
+          worksheet.addRow(headers);
+          
+          externalRequests.forEach((r, i) => {
+            const row = [i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status];
+            if (isAdmin) {
+              row.push(
+                r.transferStatus === 'T' ? 'Transferred' : 'Original',
+                r.originalRequestType || 'N/A',
+                r.transferredBy || 'N/A'
+              );
+            }
+            worksheet.addRow(row);
+          });
           buffer = await workbook.xlsx.writeBuffer();
           contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
           attachmentName = `Requests_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
         } else {
           const doc = new jsPDF('landscape');
           doc.text("Shared Inter-Dept Requests Report", 14, 15);
+          const headers = [["ID", "From", "Type", "Nature", "Status"]];
+          if (isAdmin) headers[0].push("Origin", "Original Function", "Transferred By");
+
           autoTable(doc, {
-            head: [["ID", "From", "Type", "Nature", "Status"]],
-            body: externalRequests.map(r => [r.id, r.requestFrom, r.requestType, r.natureOfRequest, r.status]),
+            head: headers,
+            body: externalRequests.map(r => {
+              const row = [r.id, r.requestFrom, r.requestType, r.natureOfRequest, r.status];
+              if (isAdmin) {
+                row.push(
+                  r.transferStatus === 'T' ? 'Transferred' : 'Original',
+                  r.originalRequestType || 'N/A',
+                  r.transferredBy || 'N/A'
+                );
+              }
+              return row;
+            }),
             startY: 20
           });
           buffer = doc.output('arraybuffer');
