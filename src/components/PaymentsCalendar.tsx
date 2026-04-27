@@ -113,6 +113,26 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
   const [stoppingTemplate, setStoppingTemplate] = useState<PaymentTemplate | null>(null);
   const [stopDate, setStopDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Report Export & Share State
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [recipientInput, setRecipientInput] = useState("");
+  const [recipientTags, setRecipientTags] = useState<string[]>([]);
+  const [ccInput, setCcInput] = useState("");
+  const [ccTags, setCcTags] = useState<string[]>([]);
+  const [shareData, setShareData] = useState({
+    subject: "Finance Payment Tracker Report",
+    format: "excel" as 'excel' | 'pdf',
+    type: 'payments'
+  });
+  const [isSharing, setIsSharing] = useState(false);
+
+  useEffect(() => {
+    if (settings?.paymentReportEmail) {
+      setRecipientTags(settings.paymentReportEmail.split(',').map((e: string) => e.trim()).filter(Boolean));
+    }
+  }, [settings]);
+
   useEffect(() => {
     fetchData();
   }, [trackerToDate]);
@@ -315,6 +335,172 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
     setSortConfig({ key, direction });
   };
 
+  const handleDownloadExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Payments");
+
+    worksheet.columns = [
+      { header: "Entity", key: "entity", width: 20 },
+      { header: "Vendor", key: "vendor", width: 25 },
+      { header: "Description", key: "desc", width: 35 },
+      { header: "Type", key: "type", width: 15 },
+      { header: "Frequency", key: "freq", width: 15 },
+      { header: "Due Date", key: "due", width: 15 },
+      { header: "Actual Date", key: "actual", width: 15 },
+      { header: "Amount", key: "amount", width: 15 },
+      { header: "Status", key: "status", width: 20 }
+    ];
+
+    filteredOccurrences.forEach(occ => {
+      worksheet.addRow({
+        entity: occ.entityName,
+        vendor: occ.vendorName,
+        desc: occ.paymentDescription,
+        type: occ.paymentType,
+        freq: occ.frequency,
+        due: new Date(occ.dueDate).toLocaleDateString('en-GB'),
+        actual: occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+        amount: occ.amountPaid || 0,
+        status: getStatus(occ)
+      });
+    });
+
+    // Formatting
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Payments_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setShowDownloadMenu(false);
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    doc.text("Finance Payments Tracker Report", 14, 15);
+    
+    const tableData = filteredOccurrences.map(occ => [
+      occ.entityName,
+      occ.vendorName,
+      occ.paymentDescription,
+      occ.paymentType,
+      occ.frequency,
+      new Date(occ.dueDate).toLocaleDateString('en-GB'),
+      occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+      occ.amountPaid ? formatCurrency(occ.amountPaid) : "--",
+      getStatus(occ)
+    ]);
+
+    autoTable(doc, {
+      head: [['Entity', 'Vendor', 'Description', 'Type', 'Freq', 'Due Date', 'Actual Date', 'Amount', 'Status']],
+      body: tableData,
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+
+    doc.save(`Payments_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    setShowDownloadMenu(false);
+  };
+
+  const handleShareReport = async () => {
+    if (recipientTags.length === 0) {
+      alert("Please add at least one recipient email");
+      return;
+    }
+    setIsSharing(true);
+    try {
+      let buffer: ArrayBuffer | Uint8Array;
+      let contentType = "";
+      let attachmentName = "";
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      if (shareData.format === 'excel') {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Payments");
+        worksheet.columns = [
+          { header: "Entity", key: "entity", width: 20 },
+          { header: "Vendor", key: "vendor", width: 25 },
+          { header: "Description", key: "desc", width: 35 },
+          { header: "Type", key: "type", width: 15 },
+          { header: "Frequency", key: "freq", width: 15 },
+          { header: "Due Date", key: "due", width: 15 },
+          { header: "Actual Date", key: "actual", width: 15 },
+          { header: "Amount", key: "amount", width: 15 },
+          { header: "Status", key: "status", width: 20 }
+        ];
+        filteredOccurrences.forEach(occ => {
+          worksheet.addRow({
+            entity: occ.entityName,
+            vendor: occ.vendorName,
+            desc: occ.paymentDescription,
+            type: occ.paymentType,
+            freq: occ.frequency,
+            due: new Date(occ.dueDate).toLocaleDateString('en-GB'),
+            actual: occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+            amount: occ.amountPaid || 0,
+            status: getStatus(occ)
+          });
+        });
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        buffer = await workbook.xlsx.writeBuffer();
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        attachmentName = `Payments_Report_${dateStr}.xlsx`;
+      } else {
+        const doc = new jsPDF('l', 'mm', 'a4');
+        doc.text("Finance Payments Tracker Report", 14, 15);
+        const tableData = filteredOccurrences.map(occ => [
+          occ.entityName, occ.vendorName, occ.paymentDescription, occ.paymentType, occ.frequency,
+          new Date(occ.dueDate).toLocaleDateString('en-GB'),
+          occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+          occ.amountPaid ? formatCurrency(occ.amountPaid) : "--",
+          getStatus(occ)
+        ]);
+        autoTable(doc, {
+          head: [['Entity', 'Vendor', 'Description', 'Type', 'Freq', 'Due Date', 'Actual Date', 'Amount', 'Status']],
+          body: tableData,
+          startY: 20,
+          theme: 'grid',
+          headStyles: { fillColor: [37, 99, 235] }
+        });
+        buffer = doc.output('arraybuffer');
+        contentType = 'application/pdf';
+        attachmentName = `Payments_Report_${dateStr}.pdf`;
+      }
+
+      // Convert buffer to base64
+      const base64Buffer = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      const res = await fetch("/api/reports/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: recipientTags.join(','),
+          ccEmail: ccTags.join(','),
+          subject: shareData.subject,
+          attachmentName,
+          attachmentBuffer: base64Buffer,
+          contentType
+        })
+      });
+
+      if (res.ok) {
+        alert("Report shared successfully via email!");
+        setShowShareModal(false);
+      } else {
+        const errData = await res.json();
+        alert(`Failed to share report: ${errData.message}`);
+      }
+    } catch (err: any) {
+      console.error("Share error:", err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const SortIcon = ({ column }: { column: string }) => {
     if (!sortConfig || sortConfig.key !== column) return <ArrowUp size={12} style={{ opacity: 0.2 }} />;
     return sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />;
@@ -322,7 +508,34 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", alignItems: "center", gap: "12px" }}>
+        <div style={{ position: "relative" }}>
+          <button 
+            onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+            style={{ 
+              padding: "8px", borderRadius: "10px", border: "none", background: "#dcfce7", color: "#16a34a", 
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" 
+            }}
+            title="Download/Share Reports"
+          >
+            <Download size={20} />
+          </button>
+          
+          {showDownloadMenu && (
+            <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", border: `1px solid ${t.border}`, zIndex: 100, minWidth: "180px", overflow: "hidden" }}>
+              <button onClick={handleDownloadExcel} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                <FileSpreadsheet size={16} color="#16a34a" /> Download Excel
+              </button>
+              <button onClick={handleDownloadPDF} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                <FileText size={16} color="#ef4444" /> Download PDF
+              </button>
+              <button onClick={() => { setShowShareModal(true); setShowDownloadMenu(false); }} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                <Mail size={16} color="#2563eb" /> Share via Email
+              </button>
+            </div>
+          )}
+        </div>
+
         <div style={{ display: "flex", background: t.card, padding: "4px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
           <button 
             onClick={() => setActiveTab('TRACKER')}
@@ -435,6 +648,9 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('paymentType')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Type <SortIcon column="paymentType" /></div>
                   </th>
+                  <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('frequency')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Freq <SortIcon column="frequency" /></div>
+                  </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('dueDate')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Due Date <SortIcon column="dueDate" /></div>
                   </th>
@@ -462,6 +678,9 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
                         <td style={tdStyle}>{occ.paymentDescription}</td>
                         <td style={tdStyle}>
                           <span style={{ fontSize: "0.7rem", color: t.textMuted, background: theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9", padding: "2px 8px", borderRadius: "4px" }}>{occ.paymentType}</span>
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#2563eb" }}>{occ.frequency}</span>
                         </td>
                         <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
                         <td style={tdStyle}>{occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--"}</td>
@@ -801,6 +1020,125 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
               <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
                 <button onClick={() => setShowStopModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Cancel</button>
                 <button onClick={handleStopTemplate} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#ef4444", color: "white", fontWeight: 600 }}>Stop Schedule</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Share Modal */}
+      {showShareModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "500px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px", background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Share Payments Report</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.9 }}>Send the current payment tracker as an attachment.</p>
+              </div>
+              <button onClick={() => setShowShareModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>×</button>
+            </div>
+            
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Recipient Emails *</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
+                  {recipientTags.map((email, idx) => (
+                    <div key={idx} style={{ background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                      {email}
+                      <X size={14} style={{ cursor: "pointer" }} onClick={() => setRecipientTags(prev => prev.filter((_, i) => i !== idx))} />
+                    </div>
+                  ))}
+                  <input 
+                    type="text" 
+                    placeholder={recipientTags.length === 0 ? "Type email and press Enter..." : ""}
+                    value={recipientInput}
+                    onChange={e => setRecipientInput(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            const email = recipientInput.trim().toLowerCase();
+                            if (email && email.includes('@') && !recipientTags.includes(email)) {
+                              setRecipientTags([...recipientTags, email]);
+                              setRecipientInput("");
+                            }
+                        }
+                    }}
+                    style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>CC Emails (Optional)</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
+                  {ccTags.map((email, idx) => (
+                    <div key={idx} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                      {email}
+                      <X size={14} style={{ cursor: "pointer" }} onClick={() => setCcTags(prev => prev.filter((_, i) => i !== idx))} />
+                    </div>
+                  ))}
+                  <input 
+                    type="text" 
+                    placeholder={ccTags.length === 0 ? "Type email and press Enter..." : ""}
+                    value={ccInput}
+                    onChange={e => setCcInput(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            const email = ccInput.trim().toLowerCase();
+                            if (email && email.includes('@') && !ccTags.includes(email)) {
+                              setCcTags([...ccTags, email]);
+                              setCcInput("");
+                            }
+                        }
+                    }}
+                    style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Report Format</label>
+                  <select 
+                    value={shareData.format}
+                    onChange={e => setShareData({...shareData, format: e.target.value as any})}
+                    style={inputStyle}
+                  >
+                    <option value="excel">Excel Spreadsheet (.xlsx)</option>
+                    <option value="pdf">PDF Document (.pdf)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Subject</label>
+                <input 
+                  type="text" 
+                  value={shareData.subject}
+                  onChange={e => setShareData({...shareData, subject: e.target.value})}
+                  style={inputStyle} 
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                <button 
+                  onClick={() => setShowShareModal(false)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleShareReport}
+                  disabled={isSharing}
+                  style={{ 
+                    flex: 1, padding: "12px", borderRadius: "10px", border: "none", 
+                    background: isSharing ? "#94a3b8" : "#16a34a", color: "white", 
+                    fontWeight: 600, cursor: isSharing ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"
+                  }}
+                >
+                  {isSharing ? "Sharing..." : <><Send size={18} /> Share Report</>}
+                </button>
               </div>
             </div>
           </div>
