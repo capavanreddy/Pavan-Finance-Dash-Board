@@ -39,6 +39,7 @@ type Task = {
   requestStatus?: string | null;
   transferStatus: string | null;
   originalRequestType: string | null;
+  frequency: string | null;
 };
 
 type ExternalRequest = {
@@ -56,6 +57,7 @@ type ExternalRequest = {
   transferStatus: string | null;
   transferredBy: string | null;
   createdAt: string;
+  frequency: string | null;
 };
 
 type LearningOpportunity = {
