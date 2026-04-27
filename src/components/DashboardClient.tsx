@@ -5090,6 +5090,51 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             />
                           </div>
                         </div>
+                      </div>                      {/* Payment Types */}
+                      <div style={{ padding: "20px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#0f172a" }}>
+                          <Wallet size={18} color="#3b82f6" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Payment Types</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterPaymentTypes || "").split(',').filter(t => t.trim()).map((type, idx) => (
+                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {type.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterPaymentTypes.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterPaymentTypes: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px", opacity: 0.7 }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add payment type..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    const currentItems = (settings.masterPaymentTypes || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Payment Types.`);
+                                      return;
+                                    }
+                                    setSettings({...settings, masterPaymentTypes: (settings.masterPaymentTypes || "") + (settings.masterPaymentTypes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...inputStyle, padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
                       </div>
 
                     </div>
@@ -5310,62 +5355,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </div>
                   </div>
                 )}
-                {activeMatrixTab === 'ACCESS' && (
-                        <div>
-                          <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "16px" }}>Define which departments can access specific modules.</p>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
-                            {['Tasks', 'Requests', 'Learning', 'Payments'].map((module: string) => (
-                              <div key={module} style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-                                <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                                  {module === 'Tasks' && <Briefcase size={16} />}
-                                  {module === 'Requests' && <MessageSquare size={16} />}
-                                  {module === 'Learning' && <Lightbulb size={16} />}
-                                  {module === 'Payments' && <Wallet size={16} />}
-                                  {module} Module
-                                </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                                  {settings.masterDepartments.split(',').map((dept: string) => {
-                                    const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
-                                    const isAllowed = matrix[module]?.includes(dept.trim());
-                                    return (
-                                      <button
-                                        key={dept}
-                                        onClick={() => {
-                                          const currentMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
-                                          const currentDepts = currentMatrix[module] || [];
-                                          const newDepts = isAllowed 
-                                            ? currentDepts.filter((d: string) => d !== dept.trim())
-                                            : [...currentDepts, dept.trim()];
-                                          setSettings({
-                                            ...settings,
-                                            moduleAccessMatrix: JSON.stringify({
-                                              ...currentMatrix,
-                                              [module]: newDepts
-                                            })
-                                          });
-                                        }}
-                                        style={{
-                                          padding: "4px 10px",
-                                          borderRadius: "6px",
-                                          fontSize: "0.75rem",
-                                          fontWeight: 500,
-                                          cursor: "pointer",
-                                          background: isAllowed ? "#2563eb" : "white",
-                                          color: isAllowed ? "white" : "#64748b",
-                                          border: `1px solid ${isAllowed ? "#2563eb" : "#e2e8f0"}`,
-                                          transition: "all 0.2s ease"
-                                        }}
-                                      >
-                                        {dept.trim()}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+
                 {activeOptionsTab === 'MATRICES' && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
