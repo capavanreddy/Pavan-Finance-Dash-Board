@@ -2526,11 +2526,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     const canEditOwnerFields = isAdmin || isCurrentUserOwner;
                     
                     return (
-                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background-color 0.2s", backgroundColor: isOverdue ? "#fee2e2" : undefined }} className="table-row">
-                      <td style={tdStyle}><span style={{ color: "#94a3b8", fontWeight: 500 }}>#{task.id}</span></td>
-                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: "#64748b" }}>{formatDateTime(task.createdAt)}</span></td>
+                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
+                      <td style={tdStyle}><span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>#{task.id}</span></td>
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
                       <td style={tdStyle}>{task.entityName}</td>
-                      <td style={{ ...tdStyle, fontWeight: 500, color: "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={{ ...tdStyle, fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
                       <td style={tdStyle}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{ padding: "4px 8px", background: "#f1f5f9", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>
@@ -2587,7 +2587,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.completionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
+                          <span style={{ color: isOverdue ? "inherit" : (task.completionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
                             {formatDate(task.completionDate)}
                             {(isOwnerLocked || !canEditOwnerFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditOwnerFields ? "Only Owner can edit" : "Task Completed"}>🔒</span>}
                           </span>
@@ -2630,7 +2630,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             style={inputStyle}
                           />
                         ) : (
-                          <span style={{ color: task.reviewCompletionDate ? "#0f172a" : "#cbd5e1", fontWeight: 500 }}>
+                          <span style={{ color: isOverdue ? "inherit" : (task.reviewCompletionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
                             {formatDate(task.reviewCompletionDate)}
                             {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
                           </span>

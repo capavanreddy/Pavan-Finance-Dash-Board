@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { resolveTaskName, getPeriodKey, isWithinLeadTime, FREQUENCIES, Frequency, getOccurrencesBetween } from "@/lib/recurringUtils";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -78,6 +78,9 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
   });
   const [freqFilter, setFreqFilter] = useState<string>("ALL");
   const [showConverted, setShowConverted] = useState(true);
+  const [searchStaging, setSearchStaging] = useState("");
+  const [searchMaster, setSearchMaster] = useState("");
+  const [stagingSortConfig, setStagingSortConfig] = useState<{ key: keyof StagingTask; direction: 'asc' | 'desc' } | null>(null);
 
   const [templateForm, setTemplateForm] = useState<Partial<RecurringTemplate>>({
     taskNamePattern: "",
@@ -394,6 +397,35 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
   const thStyle = { padding: "12px 16px", textAlign: "left" as const, fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" as const, letterSpacing: "0.05em" };
   const tdStyle = { padding: "12px 16px", fontSize: "0.875rem", color: "#334155" };
   const inputStyle = { padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem", outline: "none", width: "100%" };
+  
+  const handleStagingSort = (key: keyof StagingTask) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (stagingSortConfig && stagingSortConfig.key === key && stagingSortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setStagingSortConfig({ key, direction });
+  };
+
+  const filteredAndSortedStaging = [...stagingTasks]
+    .filter(task => {
+      const search = searchStaging.toLowerCase();
+      const matchesSearch = 
+        task.taskName.toLowerCase().includes(search) ||
+        task.entityName.toLowerCase().includes(search) ||
+        (task.financeFunction || "").toLowerCase().includes(search) ||
+        task.periodKey.toLowerCase().includes(search);
+      
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      if (!stagingSortConfig) return 0;
+      const { key, direction } = stagingSortConfig;
+      const valA = a[key] || "";
+      const valB = b[key] || "";
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   return (
     <div style={{ padding: "24px" }}>
@@ -447,6 +479,17 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                 {showConverted ? "Showing History" : "Hide History"}
              </button>
 
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "300px" }}>
+                <Search size={16} color="#64748b" />
+                <input 
+                  type="text" 
+                  placeholder="Search staging tasks..." 
+                  value={searchStaging}
+                  onChange={e => setSearchStaging(e.target.value)}
+                  style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", width: "100%", color: "#334155" }}
+                />
+              </div>
+
              <div style={{ flex: 1 }}></div>
 
              <div style={{ display: "flex", gap: "8px" }}>
@@ -491,21 +534,41 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                   <th style={{ width: "40px", padding: "12px 16px" }}>
                     <input 
                       type="checkbox" 
-                      onChange={e => setSelectedTasks(e.target.checked ? stagingTasks.map((_, i) => i) : [])}
-                      checked={selectedTasks.length === stagingTasks.length && stagingTasks.length > 0}
+                      onChange={e => setSelectedTasks(e.target.checked ? filteredAndSortedStaging.map((_, i) => i) : [])}
+                      checked={selectedTasks.length === filteredAndSortedStaging.length && filteredAndSortedStaging.length > 0}
                     />
                   </th>
-                  <th style={thStyle}>Entity</th>
-                  <th style={thStyle}>Task Details</th>
-                  <th style={thStyle}>Freq / Period</th>
-                  <th style={thStyle}>Owner & Reviewer</th>
-                  <th style={thStyle}>Target Date</th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleStagingSort('entityName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Entity {stagingSortConfig?.key === 'entityName' && (stagingSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleStagingSort('taskName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Details {stagingSortConfig?.key === 'taskName' && (stagingSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleStagingSort('periodKey')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Freq / Period {stagingSortConfig?.key === 'periodKey' && (stagingSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleStagingSort('ownerName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Owner & Reviewer {stagingSortConfig?.key === 'ownerName' && (stagingSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleStagingSort('dueDate')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Target Date {stagingSortConfig?.key === 'dueDate' && (stagingSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={thStyle}>Status</th>
                   <th style={{...thStyle, textAlign: "right"}}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {stagingTasks.map((task, idx) => (
+                {filteredAndSortedStaging.map((task, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9", background: task.isConverted ? "#f9fafb" : "white", opacity: task.isConverted ? 0.8 : 1 }}>
                     <td style={{ padding: "12px 16px" }}>
                       {!task.isConverted && (
@@ -538,9 +601,12 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                                 value={task.ownerName} 
                                 onChange={e => {
                                     const updated = [...stagingTasks];
-                                    updated[idx].ownerName = e.target.value;
-                                    updated[idx].isReady = !!e.target.value;
-                                    setStagingTasks(updated);
+                                    const actualIdx = stagingTasks.findIndex(t => t.templateId === task.templateId && t.periodKey === task.periodKey);
+                                    if (actualIdx !== -1) {
+                                      updated[actualIdx].ownerName = e.target.value;
+                                      updated[actualIdx].isReady = !!e.target.value;
+                                      setStagingTasks(updated);
+                                    }
                                 }}
                                 style={inputStyle}
                             >
@@ -551,8 +617,11 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                                 value={task.reviewerName} 
                                 onChange={e => {
                                     const updated = [...stagingTasks];
-                                    updated[idx].reviewerName = e.target.value;
-                                    setStagingTasks(updated);
+                                    const actualIdx = stagingTasks.findIndex(t => t.templateId === task.templateId && t.periodKey === task.periodKey);
+                                    if (actualIdx !== -1) {
+                                      updated[actualIdx].reviewerName = e.target.value;
+                                      setStagingTasks(updated);
+                                    }
                                 }}
                                 style={inputStyle}
                             >
@@ -571,8 +640,11 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                             value={task.dueDate} 
                             onChange={e => {
                                 const updated = [...stagingTasks];
-                                updated[idx].dueDate = e.target.value;
-                                setStagingTasks(updated);
+                                const actualIdx = stagingTasks.findIndex(t => t.templateId === task.templateId && t.periodKey === task.periodKey);
+                                if (actualIdx !== -1) {
+                                  updated[actualIdx].dueDate = e.target.value;
+                                  setStagingTasks(updated);
+                                }
                             }}
                             style={inputStyle} 
                         />
@@ -591,7 +663,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                     </td>
                   </tr>
                 ))}
-                {stagingTasks.length === 0 && (
+                {filteredAndSortedStaging.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
                       <Calendar size={40} style={{ opacity: 0.3, marginBottom: "12px" }} />
