@@ -4990,8 +4990,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             ))}
                           </div>
                         )}
-                              ) : editRequestSubTab === 'LO' ? (
-                          <div>
+                      </div>
+                    ) : editRequestSubTab === 'LO' ? (
+                      <div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                               <div>
                                 <h3 style={{ margin: "0 0 8px 0", color: "#0f172a" }}>Learning Opportunity (LO) Admin</h3>
@@ -5074,11 +5075,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               </div>
                             )}
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     )}
-                  </div>
-                )}
 
                 {activeOptionsTab === 'MASTER_DATA' && (
                   <div>
