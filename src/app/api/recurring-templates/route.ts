@@ -12,34 +12,34 @@ export async function GET() {
     }
 
     // --- Self-Healing Migration: Create table and add new columns ---
-    await (sql as any).query(`
-      CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
-        id SERIAL PRIMARY KEY,
-        "taskNamePattern" TEXT NOT NULL,
-        "entityName" TEXT NOT NULL,
-        "taskType" TEXT DEFAULT 'External',
-        "frequency" TEXT NOT NULL,
-        "dayOffset" INTEGER DEFAULT 0,
-        "monthOffset" INTEGER DEFAULT 0,
-        "defaultOwner" TEXT,
-        "defaultReviewer" TEXT,
-        "isActive" BOOLEAN DEFAULT TRUE,
-        "lastGeneratedPeriod" TEXT,
-        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-
-      ALTER TABLE "RecurringTemplate" 
-      ADD COLUMN IF NOT EXISTS "taskType" TEXT DEFAULT 'External',
-      ADD COLUMN IF NOT EXISTS "financeFunction" TEXT,
-      ADD COLUMN IF NOT EXISTS "startDate" DATE,
-      ADD COLUMN IF NOT EXISTS "endDate" DATE,
-      ADD COLUMN IF NOT EXISTS "stopDate" DATE,
-      ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE;
-      
-      ALTER TABLE "Task"
-      ADD COLUMN IF NOT EXISTS "financeFunction" TEXT;
-    `).catch((err: any) => console.error("Migration check error:", err));
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
+          id SERIAL PRIMARY KEY,
+          "taskNamePattern" TEXT NOT NULL,
+          "entityName" TEXT NOT NULL,
+          "taskType" TEXT DEFAULT 'External',
+          "frequency" TEXT NOT NULL,
+          "dayOffset" INTEGER DEFAULT 0,
+          "monthOffset" INTEGER DEFAULT 0,
+          "defaultOwner" TEXT,
+          "defaultReviewer" TEXT,
+          "isActive" BOOLEAN DEFAULT TRUE,
+          "lastGeneratedPeriod" TEXT,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "taskType" TEXT DEFAULT 'External'`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "financeFunction" TEXT`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "startDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "endDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "stopDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "financeFunction" TEXT`;
+    } catch (err) {
+      console.error("Migration error:", err);
+    }
     // ------------------------------------------------------------------
 
     const templates = await sql`
@@ -62,44 +62,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+
     // --- Ensure Database is ready ---
-    await (sql as any).query(`
-      CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
-        id SERIAL PRIMARY KEY,
-        "taskNamePattern" TEXT NOT NULL,
-        "entityName" TEXT NOT NULL,
-        "taskType" TEXT DEFAULT 'External',
-        "frequency" TEXT NOT NULL,
-        "dayOffset" INTEGER DEFAULT 0,
-        "monthOffset" INTEGER DEFAULT 0,
-        "defaultOwner" TEXT,
-        "defaultReviewer" TEXT,
-        "isActive" BOOLEAN DEFAULT TRUE,
-        "lastGeneratedPeriod" TEXT,
-        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-
-      ALTER TABLE "RecurringTemplate" 
-      ADD COLUMN IF NOT EXISTS "taskType" TEXT DEFAULT 'External',
-      ADD COLUMN IF NOT EXISTS "departmentName" TEXT DEFAULT 'Finance',
-      ADD COLUMN IF NOT EXISTS "financeFunction" TEXT,
-      ADD COLUMN IF NOT EXISTS "startDate" DATE,
-      ADD COLUMN IF NOT EXISTS "endDate" DATE,
-      ADD COLUMN IF NOT EXISTS "stopDate" DATE,
-      ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS "weeklyDay" TEXT,
-      ADD COLUMN IF NOT EXISTS "excludedDates" JSONB;
-
-      ALTER TABLE "SystemSettings"
-      ADD COLUMN IF NOT EXISTS "masterWeekDays" TEXT DEFAULT 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';
-    `).catch(() => {});
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS "RecurringTemplate" (
+          id SERIAL PRIMARY KEY,
+          "taskNamePattern" TEXT NOT NULL,
+          "entityName" TEXT NOT NULL,
+          "taskType" TEXT DEFAULT 'External',
+          "frequency" TEXT NOT NULL,
+          "dayOffset" INTEGER DEFAULT 0,
+          "monthOffset" INTEGER DEFAULT 0,
+          "defaultOwner" TEXT,
+          "defaultReviewer" TEXT,
+          "isActive" BOOLEAN DEFAULT TRUE,
+          "lastGeneratedPeriod" TEXT,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "taskType" TEXT DEFAULT 'External'`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "departmentName" TEXT DEFAULT 'Finance'`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "financeFunction" TEXT`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "startDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "endDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "stopDate" DATE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "weeklyDay" TEXT`;
+      await sql`ALTER TABLE "RecurringTemplate" ADD COLUMN IF NOT EXISTS "excludedDates" JSONB`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterWeekDays" TEXT DEFAULT 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday'`;
+    } catch (err) {
+      console.error("Migration error in POST:", err);
+    }
 
     const data = await req.json();
     const {
       taskNamePattern,
       entityName,
-      taskType,
+      taskType = "External", // Default if missing from UI
       departmentName,
       financeFunction,
       frequency,
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       weeklyDay
     } = data;
 
-    if (!taskNamePattern || !entityName || !taskType || !frequency) {
+    if (!taskNamePattern || !entityName || !frequency) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
