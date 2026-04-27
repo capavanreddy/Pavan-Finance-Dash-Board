@@ -511,23 +511,35 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
                   onChange={e => setFormData({...formData, frequency: e.target.value})}
                   style={inputStyle}
                 >
-                  <option value="M">Monthly</option>
-                  <option value="Q">Quarterly</option>
-                  <option value="Y">Yearly</option>
-                  <option value="W">Weekly</option>
-                  <option value="BW">Bi-Weekly</option>
-                  <option value="H">Half-Yearly</option>
+                  <option value="">Select Frequency</option>
+                  {(settings.masterFrequencies || "").split(',').map((f: string) => {
+                    const label = f.trim() === 'M' ? 'Monthly' : 
+                                f.trim() === 'Q' ? 'Quarterly' : 
+                                f.trim() === 'Y' ? 'Yearly' : 
+                                f.trim() === 'W' ? 'Weekly' : 
+                                f.trim() === 'BW' ? 'Bi-Weekly' : 
+                                f.trim() === 'H' ? 'Half-Yearly' : 
+                                f.trim() === 'D' ? 'Daily' : f.trim();
+                    return <option key={f} value={f.trim()}>{label}</option>;
+                  })}
                 </select>
               </div>
 
               <div>
-                <label style={labelStyle}>Lead Time (Days)</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <label style={labelStyle}>Lead Time (Days)</label>
+                  <div title="How many days before the due date this payment should appear in the tracker." style={{ cursor: "help" }}>
+                    <AlertTriangle size={14} color="#94a3b8" />
+                  </div>
+                </div>
                 <input 
                   type="number" 
                   value={formData.leadTime}
                   onChange={e => setFormData({...formData, leadTime: Number(e.target.value)})}
                   style={inputStyle}
+                  min={0}
                 />
+                <p style={{ fontSize: "0.65rem", color: "#64748b", marginTop: "4px" }}>Visibility window in tracker.</p>
               </div>
 
               <div>
