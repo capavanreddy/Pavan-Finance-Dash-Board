@@ -65,8 +65,17 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
   // Date range defaults: 1st of current month to last of current month
   const getInitialDates = () => {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    
+    // First day of current month
+    const firstDayDate = new Date(y, m, 1);
+    const firstDay = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    
+    // Last day of current month
+    const lastDayDate = new Date(y, m + 1, 0);
+    const lastDay = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+    
     return { firstDay, lastDay };
   };
   
