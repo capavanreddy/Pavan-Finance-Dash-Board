@@ -120,18 +120,18 @@ async function generateTaskExcelBuffer(tasks: any[], subtitle: string) {
 
   worksheet.columns = [
     { width: 8 }, { width: 20 }, { width: 45 }, { width: 25 }, { width: 20 }, { width: 20 },
-    { width: 20 }, { width: 25 }, { width: 20 }, { width: 20 }, { width: 18 }, { width: 25 },
+    { width: 20 }, { width: 25 }, { width: 20 }, { width: 20 }, { width: 18 }, { width: 15 }, { width: 25 },
     { width: 25 }, { width: 20 }, { width: 40 }, { width: 40 }, { width: 30 }
   ];
 
-  worksheet.mergeCells('A1:Q1');
+  worksheet.mergeCells('A1:R1');
   const titleCell = worksheet.getCell('A1');
   titleCell.value = 'ITPL - Finance Task Management Report';
   titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
   titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B5998' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  worksheet.mergeCells('A2:Q2');
+  worksheet.mergeCells('A2:R2');
   const subCell = worksheet.getCell('A2');
   subCell.value = subtitle;
   subCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF3B5998' } };
@@ -139,7 +139,7 @@ async function generateTaskExcelBuffer(tasks: any[], subtitle: string) {
   subCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
   const headerRow = worksheet.getRow(3);
-  const headers = ['SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 'Department', 'Requested By',
+  const headers = ['SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 'Frequency', 'Department', 'Requested By',
     'Owner', 'Due Date', 'Completion Date', 'Status', 'Reviewer', 'Review Status', 'Review Date',
     'Owner Comments', 'Reviewer Comments', 'Mail Link'];
   
@@ -154,8 +154,8 @@ async function generateTaskExcelBuffer(tasks: any[], subtitle: string) {
 
   tasks.forEach((t, index) => {
     const row = worksheet.addRow([
-      index + 1, formatDateTime(t.createdAt), t.taskName || "", t.entityName || "", t.taskType || "",
-      t.departmentName || "", t.requestFrom || "", t.ownerName || "", formatDate(t.dueDate),
+      index + 1, formatDateTime(t.createdAt), t.taskName || "", t.entityName || "", t.taskType || "", t.frequency || "",
+      t.departmentName || "", t.requestFrom || "", formatDate(t.dueDate),
       formatDate(t.completionDate), t.taskStatus || "", t.reviewerName || "Not Applicable",
       t.reviewStatus || "", formatDate(t.reviewCompletionDate), t.ownerComments || "",
       t.reviewerComments || "", t.mailLink || ""
@@ -177,11 +177,11 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
   html += `<h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; font-weight: 600;">${title}</h2>`;
   html += `<table cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; font-size: 12px; text-align: left; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
     <tr style="background-color: #2563eb; color: #ffffff; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">
-      <th>S.No</th><th>Time Stamp</th><th>Owner Name</th><th>Reviewer Name</th><th>Task Name</th><th>Entity Name</th><th>Task Type</th><th>Department Name</th><th>Request From</th><th>Owner Mail ID</th><th>Due Date</th><th>Completion Date</th><th>Task Status</th><th>Reviewer Email</th><th>Review Completion Date</th><th>Review Status</th><th>Mail Link</th><th>Owner Comments</th><th>Reviewer Comments</th>
+      <th>S.No</th><th>Time Stamp</th><th>Owner Name</th><th>Reviewer Name</th><th>Task Name</th><th>Entity Name</th><th>Task Type</th><th>Freq</th><th>Department Name</th><th>Request From</th><th>Owner Mail ID</th><th>Due Date</th><th>Completion Date</th><th>Task Status</th><th>Reviewer Email</th><th>Review Completion Date</th><th>Review Status</th><th>Mail Link</th><th>Owner Comments</th><th>Reviewer Comments</th>
     </tr>`;
 
   if (tasks.length === 0) {
-    html += `<tr><td colspan="19" style="padding: 20px;">No pending tasks found.</td></tr>`;
+    html += `<tr><td colspan="20" style="padding: 20px;">No pending tasks found.</td></tr>`;
   } else {
     tasks.forEach((t, index) => {
       const overdue = isOverdue(t.dueDate, referenceDate) && t.taskStatus !== "Completed";
@@ -189,7 +189,7 @@ function generateGridHtml(tasks: any[], title: string, referenceDate: Date) {
       html += `<tr style="${rowStyle}">
         <td>${index + 1}</td><td>${formatDateTime(t.createdAt)}</td><td>${t.ownerName}</td>
         <td>${t.reviewerName === "Not Applicable" ? "NA" : t.reviewerName || ""}</td>
-        <td style="min-width: 400px;">${t.taskName}</td><td>${t.entityName}</td><td>${t.taskType}</td>
+        <td style="min-width: 400px;">${t.taskName}</td><td>${t.entityName}</td><td>${t.taskType}</td><td>${t.frequency || ""}</td>
         <td>${t.departmentName}</td><td>${t.requestFrom}</td>
         <td><a href="mailto:${getEmailFromName(t.ownerName)}">${getEmailFromName(t.ownerName)}</a></td>
         <td style="${overdue ? 'color: red; font-weight: bold;' : ''}">${formatDate(t.dueDate)}</td>
