@@ -5075,7 +5075,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               </div>
                             )}
                           </div>
-                        ) : null}
+                        )}
                       </div>
                     )}
 
