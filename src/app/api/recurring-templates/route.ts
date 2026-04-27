@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
       ADD COLUMN IF NOT EXISTS "startDate" DATE,
       ADD COLUMN IF NOT EXISTS "endDate" DATE,
       ADD COLUMN IF NOT EXISTS "stopDate" DATE,
-      ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE;
+      ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS "weeklyDay" TEXT,
+      ADD COLUMN IF NOT EXISTS "excludedDates" JSONB;
     `).catch(() => {});
 
     const data = await req.json();
@@ -66,10 +68,10 @@ export async function POST(req: NextRequest) {
       frequency,
       dayOffset,
       monthOffset,
-      defaultOwner,
       defaultReviewer,
       startDate,
-      endDate
+      endDate,
+      weeklyDay
     } = data;
 
     if (!taskNamePattern || !entityName || !taskType || !frequency) {
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO "RecurringTemplate" (
         "taskNamePattern", "entityName", "taskType", "departmentName", "financeFunction",
         "frequency", "dayOffset", "monthOffset", "defaultOwner", "defaultReviewer",
-        "startDate", "endDate",
+        "startDate", "endDate", "weeklyDay",
         "isActive", "createdAt", "updatedAt"
       )
       VALUES (
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
         ${frequency}, ${Number(dayOffset) || 0}, ${Number(monthOffset) || 0},
         ${defaultOwner || null}, ${defaultReviewer || null},
         ${startDate ? new Date(startDate) : null}, ${endDate ? new Date(endDate) : null},
+        ${weeklyDay || null},
         TRUE, NOW(), NOW()
       )
       RETURNING *

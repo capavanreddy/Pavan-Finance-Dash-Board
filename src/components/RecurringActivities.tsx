@@ -22,10 +22,11 @@ type RecurringTemplate = {
   defaultReviewer: string | null;
   isActive: boolean;
   lastGeneratedPeriod: string | null;
-  startDate: string | null;
   endDate: string | null;
   stopDate: string | null;
   isStopped: boolean;
+  weeklyDay: string | null;
+  excludedDates: string[] | null;
 };
 
 type StagingTask = {
@@ -176,6 +177,29 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     });
     setStagingTasks(staging);
+  };
+
+  const handleDismissOccurrence = async (templateId: number, periodKey: string) => {
+    if (!confirm("Are you sure you want to dismiss this occurrence? It will no longer show in the pending list.")) return;
+    
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const excluded = Array.isArray(template.excludedDates) ? [...template.excludedDates] : [];
+    if (!excluded.includes(periodKey)) {
+        excluded.push(periodKey);
+    }
+
+    try {
+        await fetch(`/api/recurring-templates/${templateId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ excludedDates: excluded })
+        });
+        fetchTemplates();
+    } catch (err) {
+        console.error("Dismiss error:", err);
+    }
   };
 
   const handleBulkApply = () => {
@@ -457,6 +481,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                   <th style={thStyle}>Owner & Reviewer</th>
                   <th style={thStyle}>Target Date</th>
                   <th style={thStyle}>Status</th>
+                  <th style={{...thStyle, textAlign: "right"}}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -533,20 +558,16 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                         />
                       )}
                     </td>
-                    <td style={tdStyle}>
-                      {task.isConverted ? (
-                        <span style={{ color: "#059669", background: "#d1fae5", padding: "4px 10px", borderRadius: "20px", fontSize: "0.65rem", fontWeight: 800 }}>CONVERTED</span>
-                      ) : (
-                        task.isReady ? (
-                            <span style={{ color: "#059669", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", fontWeight: 600 }}>
-                              <CheckCircle2 size={14} /> Ready
-                            </span>
-                          ) : (
-                            <span style={{ color: "#d97706", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", fontWeight: 600 }}>
-                              <AlertTriangle size={14} /> Need Owner
-                            </span>
-                          )
-                      )}
+                    <td style={{...tdStyle, textAlign: "right"}}>
+                        {!task.isConverted && (
+                            <button 
+                                onClick={() => handleDismissOccurrence(task.templateId, task.periodKey)}
+                                title="Dismiss this occurrence"
+                                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
                     </td>
                   </tr>
                 ))}
@@ -733,8 +754,34 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
 
                 <div>
                   <label style={labelStyle}>Day of Month (Due Date)</label>
-                  <input type="number" min="1" max="31" value={templateForm.dayOffset || 1} onChange={e => setTemplateForm({...templateForm, dayOffset: parseInt(e.target.value)})} style={inputStyle} />
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="31" 
+                    value={templateForm.dayOffset === undefined ? "" : templateForm.dayOffset} 
+                    onChange={e => {
+                        const val = e.target.value;
+                        setTemplateForm({...templateForm, dayOffset: val === "" ? undefined : parseInt(val)});
+                    }} 
+                    style={inputStyle} 
+                  />
                 </div>
+
+                {templateForm.frequency === 'WEEKLY' && (
+                    <div>
+                        <label style={labelStyle}>Day of Week</label>
+                        <select 
+                            value={templateForm.weeklyDay || ""} 
+                            onChange={e => setTemplateForm({...templateForm, weeklyDay: e.target.value})} 
+                            style={inputStyle}
+                        >
+                            <option value="">Align to Start Date</option>
+                            {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => (
+                                <option key={d} value={d}>{d}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <div>
                   <label style={labelStyle}>Default Owner</label>

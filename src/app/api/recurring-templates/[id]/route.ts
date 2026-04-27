@@ -18,8 +18,7 @@ export async function PATCH(
     const data = await req.json();
     const allowedFields = [
       "taskNamePattern", "entityName", "taskType", "departmentName", "financeFunction",
-      "frequency", "dayOffset", "monthOffset", "defaultOwner", "defaultReviewer", 
-      "isActive", "startDate", "endDate", "stopDate", "isStopped"
+        "defaultReviewer", "isActive", "startDate", "endDate", "stopDate", "isStopped", "weeklyDay", "excludedDates"
     ];
 
     const updates: any = {};
@@ -41,7 +40,7 @@ export async function PATCH(
         "departmentName" = ${updates.departmentName !== undefined ? updates.departmentName : sql`"departmentName"`},
         "financeFunction" = ${updates.financeFunction !== undefined ? updates.financeFunction : sql`"financeFunction"`},
         "frequency" = ${updates.frequency !== undefined ? updates.frequency : sql`"frequency"`},
-        "dayOffset" = ${updates.dayOffset !== undefined ? Number(updates.dayOffset) : sql`"dayOffset"`},
+        "dayOffset" = ${updates.dayOffset !== undefined ? (updates.dayOffset === null || updates.dayOffset === undefined ? null : Number(updates.dayOffset)) : sql`"dayOffset"`},
         "monthOffset" = ${updates.monthOffset !== undefined ? Number(updates.monthOffset) : sql`"monthOffset"`},
         "defaultOwner" = ${updates.defaultOwner !== undefined ? updates.defaultOwner : sql`"defaultOwner"`},
         "defaultReviewer" = ${updates.defaultReviewer !== undefined ? updates.defaultReviewer : sql`"defaultReviewer"`},
@@ -50,6 +49,8 @@ export async function PATCH(
         "endDate" = ${updates.endDate !== undefined ? (updates.endDate ? new Date(updates.endDate) : null) : sql`"endDate"`},
         "stopDate" = ${updates.stopDate !== undefined ? (updates.stopDate ? new Date(updates.stopDate) : null) : sql`"stopDate"`},
         "isStopped" = ${updates.isStopped !== undefined ? updates.isStopped : sql`"isStopped"`},
+        "weeklyDay" = ${updates.weeklyDay !== undefined ? updates.weeklyDay : sql`"weeklyDay"`},
+        "excludedDates" = ${updates.excludedDates !== undefined ? (updates.excludedDates ? JSON.stringify(updates.excludedDates) : null) : sql`"excludedDates"`},
         "updatedAt" = NOW()
       WHERE id = ${id}
       RETURNING *
