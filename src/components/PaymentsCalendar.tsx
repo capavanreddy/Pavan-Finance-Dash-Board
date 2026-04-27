@@ -251,12 +251,7 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header & Tabs */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: t.text }}>Payments Calendar</h2>
-          <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: t.textMuted }}>Manage recurring vendor payments and track execution.</p>
-        </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
         <div style={{ display: "flex", background: t.card, padding: "4px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
           <button 
             onClick={() => setActiveTab('TRACKER')}
