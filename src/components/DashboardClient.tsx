@@ -4694,14 +4694,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                             {settings.masterDepartments.split(',').filter(d => d.trim()).map((dept, idx) => (
-                              <div key={idx} style={{ background: "white", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                              <div key={idx} style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
                                 {dept.trim()}
                                 <button 
                                   onClick={() => {
                                     const items = settings.masterDepartments.split(',').filter((_, i) => i !== idx);
                                     setSettings({...settings, masterDepartments: items.join(',')});
                                   }}
-                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
+                                  style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", fontWeight: "bold", fontSize: "14px", opacity: 0.7 }}
                                 >
                                   ×
                                 </button>
