@@ -306,7 +306,8 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
     setTemplateForm({
         ...t,
         startDate: t.startDate ? new Date(t.startDate).toISOString().split('T')[0] : "",
-        endDate: t.endDate ? new Date(t.endDate).toISOString().split('T')[0] : ""
+        endDate: t.endDate ? new Date(t.endDate).toISOString().split('T')[0] : "",
+        taskType: t.taskType || "External"
     });
     setShowTemplateForm(true);
   };
@@ -710,14 +711,6 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                     style={inputStyle} 
                   />
                   <p style={{ margin: "6px 0 0 0", fontSize: "0.7rem", color: "#94a3b8" }}>Tip: Use placeholders like {'{{MONTH}}'}, {'{{YEAR}}'}, {'{{QUARTER}}'}</p>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Task Type</label>
-                  <select value={templateForm.taskType} onChange={e => setTemplateForm({...templateForm, taskType: e.target.value})} style={inputStyle}>
-                    <option value="External">External</option>
-                    <option value="Internal">Internal</option>
-                  </select>
                 </div>
 
                 <div>

@@ -18,6 +18,7 @@ export async function PATCH(
     // --- Ensure Database is ready ---
     await (sql as any).query(`
       ALTER TABLE "RecurringTemplate" 
+      ADD COLUMN IF NOT EXISTS "taskType" TEXT DEFAULT 'External',
       ADD COLUMN IF NOT EXISTS "departmentName" TEXT DEFAULT 'Finance',
       ADD COLUMN IF NOT EXISTS "financeFunction" TEXT,
       ADD COLUMN IF NOT EXISTS "startDate" DATE,
