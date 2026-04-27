@@ -86,7 +86,19 @@ export function getOccurrencesBetween(
   
   let current = new Date(templateStart);
   
-  // Align current to search window
+  // Align current to search window AND desired weekday if weekly
+  if (template.frequency === 'W' && template.weeklyDay) {
+    const targetDayIndex = WEEKDAYS.indexOf(template.weeklyDay) + 1; // 1=Mon, 7=Sun
+    let currentDayIndex = current.getDay() === 0 ? 7 : current.getDay();
+    let diff = targetDayIndex - currentDayIndex;
+    current.setDate(current.getDate() + diff);
+    
+    // Ensure we start after templateStart and align with 7-day jumps
+    while (current < templateStart) {
+      current.setDate(current.getDate() + 7);
+    }
+  }
+
   while (current < searchStart) {
       if (template.frequency === 'D') current.setDate(current.getDate() + 1);
       else if (template.frequency === 'W') current.setDate(current.getDate() + 7);
@@ -106,19 +118,7 @@ export function getOccurrencesBetween(
     
     if (current >= searchStart && !template.isStopped && !excluded.includes(pk)) {
       if (!template.stopDate || current <= new Date(template.stopDate)) {
-        
-        let occurrenceDate = new Date(current);
-        // Handle specific Weekday for Weekly tasks
-        if (template.frequency === 'W' && template.weeklyDay) {
-            const targetDayIndex = WEEKDAYS.indexOf(template.weeklyDay); // 0=Mon, 6=Sun
-            // getDay() returns 0=Sun, 1=Mon...
-            const currentDayIndex = occurrenceDate.getDay(); 
-            const adjustedCurrent = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
-            const diff = targetDayIndex - adjustedCurrent;
-            occurrenceDate.setDate(occurrenceDate.getDate() + diff);
-        }
-
-        occurrences.push({ date: occurrenceDate, periodKey: pk });
+        occurrences.push({ date: new Date(current), periodKey: pk });
       }
     }
     
