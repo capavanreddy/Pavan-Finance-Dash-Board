@@ -104,11 +104,11 @@ export function getOccurrencesBetween(
       if (template.frequency === 'D') current.setDate(current.getDate() + 1);
       else if (template.frequency === 'W') current.setDate(current.getDate() + 7);
       else if (template.frequency === 'BW') current.setDate(current.getDate() + 14);
-      else if (template.frequency === 'M') current.setMonth(current.getMonth() + 1);
-      else if (template.frequency === 'Q') current.setMonth(current.getMonth() + 3);
-      else if (template.frequency === 'H') current.setMonth(current.getMonth() + 6);
-      else if (template.frequency === 'Y') current.setFullYear(current.getFullYear() + 1);
-      else if (template.frequency === '2Y') current.setFullYear(current.getFullYear() + 2);
+      else if (template.frequency === 'M') { current.setDate(1); current.setMonth(current.getMonth() + 1); }
+      else if (template.frequency === 'Q') { current.setDate(1); current.setMonth(current.getMonth() + 3); }
+      else if (template.frequency === 'H') { current.setDate(1); current.setMonth(current.getMonth() + 6); }
+      else if (template.frequency === 'Y') { current.setDate(1); current.setFullYear(current.getFullYear() + 1); }
+      else if (template.frequency === '2Y') { current.setDate(1); current.setFullYear(current.getFullYear() + 2); }
       else break;
       if (current > searchEnd) break;
   }
@@ -142,11 +142,26 @@ export function getOccurrencesBetween(
         current.setDate(templateStart.getDate());
       }
     }
-    else if (template.frequency === 'M') current.setMonth(current.getMonth() + 1);
-    else if (template.frequency === 'Q') current.setMonth(current.getMonth() + 3);
-    else if (template.frequency === 'H') current.setMonth(current.getMonth() + 6);
-    else if (template.frequency === 'Y') current.setFullYear(current.getFullYear() + 1);
-    else if (template.frequency === '2Y') current.setFullYear(current.getFullYear() + 2);
+    else if (template.frequency === 'M') {
+      current.setDate(1);
+      current.setMonth(current.getMonth() + 1);
+    }
+    else if (template.frequency === 'Q') {
+      current.setDate(1);
+      current.setMonth(current.getMonth() + 3);
+    }
+    else if (template.frequency === 'H') {
+      current.setDate(1);
+      current.setMonth(current.getMonth() + 6);
+    }
+    else if (template.frequency === 'Y') {
+      current.setDate(1);
+      current.setFullYear(current.getFullYear() + 1);
+    }
+    else if (template.frequency === '2Y') {
+      current.setDate(1);
+      current.setFullYear(current.getFullYear() + 2);
+    }
     else break;
 
     if (occurrences.length > 500) break; 

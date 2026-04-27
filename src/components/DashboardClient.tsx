@@ -214,7 +214,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
-  const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO'>('TASK_EDIT');
+  const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO' | 'PAYMENT'>('TASK_EDIT');
+  const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
   const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
   const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
   const [showExtReqDownloadDropdown, setShowExtReqDownloadDropdown] = useState(false);
@@ -353,6 +354,59 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
+  const fetchPaymentRequests = async () => {
+    try {
+      const res = await fetch("/api/payments/master");
+      if (res.ok) {
+        const allPayments = await res.json();
+        // Flatten occurrences and filter for editRequested
+        const requests: any[] = [];
+        allPayments.forEach((p: any) => {
+          if (p.occurrences) {
+            p.occurrences.forEach((occ: any) => {
+              if (occ.editRequested && !occ.editApproved) {
+                requests.push({ ...occ, templateVendor: p.vendorName, templateDesc: p.paymentDescription });
+              }
+            });
+          }
+        });
+        setPaymentRequests(requests);
+      }
+    } catch (error) {
+      console.error("Failed to fetch payment requests", error);
+    }
+  };
+
+  const handleApprovePaymentEdit = async (occId: number) => {
+    try {
+      const res = await fetch(`/api/payments/tracker/${occId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editApproved: true })
+      });
+      if (res.ok) {
+        fetchPaymentRequests();
+      }
+    } catch (err) {
+      console.error("Approve payment edit error:", err);
+    }
+  };
+
+  const handleRejectPaymentEdit = async (occId: number) => {
+    try {
+      const res = await fetch(`/api/payments/tracker/${occId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editRequested: false, editRequestReason: "" })
+      });
+      if (res.ok) {
+        fetchPaymentRequests();
+      }
+    } catch (err) {
+      console.error("Reject payment edit error:", err);
+    }
+  };
+
   const fetchLOs = async () => {
     setLoLoading(true);
     try {
@@ -405,6 +459,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchTasks();
     fetchLOs();
     fetchExternalRequests();
+    fetchPaymentRequests();
     fetchSettings();
     fetchUsersList(); // Ensure users load on mount for LO form
   }, [isAdmin]);
@@ -4832,6 +4887,22 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           </span>
                         )}
                       </button>
+                      <button 
+                        onClick={() => setEditRequestSubTab('PAYMENT')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'PAYMENT' ? "#2563eb" : "#f1f5f9",
+                          color: editRequestSubTab === 'PAYMENT' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <Wallet size={16} /> Edit Payment
+                        {paymentRequests.length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'PAYMENT' ? "white" : "#ef4444", color: editRequestSubTab === 'PAYMENT' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {paymentRequests.length}
+                          </span>
+                        )}
+                      </button>
                     </div>
 
                     {editRequestSubTab === 'TASK_EDIT' ? (
@@ -4919,52 +4990,95 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             ))}
                           </div>
                         )}
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                            <div>
-                              <h3 style={{ margin: "0 0 8px 0", color: "#0f172a" }}>Learning Opportunity (LO) Admin</h3>
-                              <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>Manage LO edit requests and view/export all records.</p>
-                            </div>
-                            <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                              <FileSpreadsheet size={18} /> Export All
-                            </button>
-                          </div>
-  
-                          {/* LO Edit Requests Section */}
-                          <div style={{ marginBottom: "32px" }}>
-                            <h4 style={{ fontSize: "0.9375rem", color: "#475569", marginBottom: "12px", fontWeight: 600 }}>Pending LO Edit Requests</h4>
-                            {los.filter(l => l.editRequested).length === 0 ? (
-                              <div style={{ padding: "24px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                                <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>No pending LO edit requests.</p>
+                              ) : editRequestSubTab === 'LO' ? (
+                          <div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                              <div>
+                                <h3 style={{ margin: "0 0 8px 0", color: "#0f172a" }}>Learning Opportunity (LO) Admin</h3>
+                                <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>Manage LO edit requests and view/export all records.</p>
                               </div>
-                            ) : (
-                              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                {los.filter(l => l.editRequested).map(lo => (
-                                  <div key={`lo-${lo.id}`} style={{ padding: "16px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                                      <div>
-                                        <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9375rem", color: "#0f172a" }}>LO #{lo.id}: {lo.entity}</h5>
-                                        <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b" }}>Submitted by: <strong>{lo.identifiedBy}</strong></p>
+                              <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                <FileSpreadsheet size={18} /> Export All
+                              </button>
+                            </div>
+    
+                            {/* LO Edit Requests Section */}
+                            <div style={{ marginBottom: "32px" }}>
+                              <h4 style={{ fontSize: "0.9375rem", color: "#475569", marginBottom: "12px", fontWeight: 600 }}>Pending LO Edit Requests</h4>
+                              {los.filter(l => l.editRequested).length === 0 ? (
+                                <div style={{ padding: "24px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                  <p style={{ color: "#64748b", margin: 0, fontSize: "0.875rem" }}>No pending LO edit requests.</p>
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                  {los.filter(l => l.editRequested).map(lo => (
+                                    <div key={`lo-${lo.id}`} style={{ padding: "16px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                        <div>
+                                          <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9375rem", color: "#0f172a" }}>LO #{lo.id}: {lo.entity}</h5>
+                                          <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b" }}>Submitted by: <strong>{lo.identifiedBy}</strong></p>
+                                        </div>
+                                        <div style={{ display: "flex", gap: "8px" }}>
+                                          <button onClick={() => handleApproveEditLO(lo.id, 'APPROVE')} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Approve</button>
+                                          <button onClick={() => handleApproveEditLO(lo.id, 'REJECT')} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Reject</button>
+                                        </div>
                                       </div>
-                                      <div style={{ display: "flex", gap: "8px" }}>
-                                        <button onClick={() => handleApproveEditLO(lo.id, 'APPROVE')} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Approve</button>
-                                        <button onClick={() => handleApproveEditLO(lo.id, 'REJECT')} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Reject</button>
+                                      <div style={{ padding: "10px", background: "#f8fafc", borderRadius: "6px", fontSize: "0.8125rem", borderLeft: "3px solid #cbd5e1" }}>
+                                        <strong>Reason:</strong> {lo.editRequestReason}
                                       </div>
                                     </div>
-                                    <div style={{ padding: "10px", background: "#f8fafc", borderRadius: "6px", fontSize: "0.8125rem", borderLeft: "3px solid #cbd5e1" }}>
-                                      <strong>Reason:</strong> {lo.editRequestReason}
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 style={{ margin: "0 0 16px 0", color: "#0f172a" }}>Pending Payment Edit Requests</h3>
+                            <p style={{ color: "#64748b", marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to update payment dates or amounts for processed payments.</p>
+                            
+                            {paymentRequests.length === 0 ? (
+                              <div style={{ padding: "40px", textAlign: "center", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                <p style={{ color: "#64748b", margin: 0 }}>No pending payment edit requests.</p>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                {paymentRequests.map(req => (
+                                  <div key={`pay-req-${req.id}`} style={{ padding: "20px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                      <div>
+                                        <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: "#0f172a" }}>{req.templateVendor}</h4>
+                                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>{req.templateDesc}</p>
+                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#3b82f6", fontWeight: 600 }}>Due Date: {new Date(req.dueDate).toLocaleDateString('en-GB')}</p>
+                                      </div>
+                                      <div style={{ display: "flex", gap: "8px" }}>
+                                        <button 
+                                          onClick={() => handleApprovePaymentEdit(req.id)}
+                                          style={{ background: "#22c55e", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
+                                        >
+                                          Approve
+                                        </button>
+                                        <button 
+                                          onClick={() => handleRejectPaymentEdit(req.id)}
+                                          style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #f59e0b" }}>
+                                      <strong>Request Reason:</strong> {req.editRequestReason}
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {activeOptionsTab === 'MASTER_DATA' && (
                   <div>

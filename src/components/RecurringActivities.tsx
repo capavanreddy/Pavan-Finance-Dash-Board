@@ -103,9 +103,17 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
   const [dailyOwnerFilter, setDailyOwnerFilter] = useState("ALL");
   const [dailyCompletionData, setDailyCompletionData] = useState<any[]>([]);
   const [selectedDailyOccs, setSelectedDailyOccs] = useState<string[]>([]);
-  const [dailySortConfig, setDailySortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [dailyDownloadMenu, setDailyDownloadMenu] = useState(false);
   const [dailyShareModal, setDailyShareModal] = useState(false);
+  const [dailySortConfig, setDailySortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'targetDate', direction: 'desc' });
+
+  const handleDailySort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (dailySortConfig.key === key && dailySortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setDailySortConfig({ key, direction });
+  };
 
   const [templateForm, setTemplateForm] = useState<Partial<RecurringTemplate>>({
     taskNamePattern: "",
@@ -1502,7 +1510,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ ...thStyle, width: "40px" }}>
+                  <th style={thStyle}>
                     <input 
                       type="checkbox" 
                       onChange={e => {
@@ -1513,11 +1521,31 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                     />
                   </th>
                   <th style={thStyle}>Sl No</th>
-                  <th style={thStyle}>Task Details</th>
-                  <th style={thStyle}>Type</th>
-                  <th style={thStyle}>Owner</th>
-                  <th style={thStyle}>Reviewer</th>
-                  <th style={thStyle}>Target Date</th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('taskName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Task Details {dailySortConfig.key === 'taskName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('taskType')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Type {dailySortConfig.key === 'taskType' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('ownerName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Owner {dailySortConfig.key === 'ownerName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('reviewerName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Reviewer {dailySortConfig.key === 'reviewerName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('targetDate')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Target Date {dailySortConfig.key === 'targetDate' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={thStyle}>Status</th>
                   <th style={thStyle}>Action</th>
                 </tr>
@@ -1531,10 +1559,18 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
                     return matchesSearch && matchesOwner;
                   })
                   .sort((a, b) => {
-                    // Date descending, then templateId
-                    const dateDiff = new Date(b.targetDate).getTime() - new Date(a.targetDate).getTime();
-                    if (dateDiff !== 0) return dateDiff;
-                    return a.templateId - b.templateId;
+                    const key = dailySortConfig.key;
+                    const dir = dailySortConfig.direction === 'asc' ? 1 : -1;
+                    
+                    if (key === 'targetDate') {
+                      return (new Date(a[key]).getTime() - new Date(b[key]).getTime()) * dir;
+                    }
+                    
+                    const valA = (a as any)[key] || "";
+                    const valB = (b as any)[key] || "";
+                    if (valA < valB) return -1 * dir;
+                    if (valA > valB) return 1 * dir;
+                    return 0;
                   })
                   .map((occ, idx) => (
                   <tr key={occ.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
