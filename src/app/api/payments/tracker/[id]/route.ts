@@ -21,41 +21,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       actualDate, amountPaid 
     } = data;
 
-    // Build update dynamic
-    const updates: any = { updatedAt: new Date() };
-    
-    if (isHold !== undefined) {
-      updates.isHold = isHold;
-      if (holdReason !== undefined) updates.holdReason = holdReason;
-    }
-    
-    if (editRequested !== undefined) {
-      updates.editRequested = editRequested;
-      if (editRequestReason !== undefined) updates.editRequestReason = editRequestReason;
-    }
-    
-    if (editApproved !== undefined) {
-      updates.editApproved = editApproved;
-    }
-
-    // Special handling for the "Pen" update (actualDate and amountPaid)
-    if (actualDate !== undefined || amountPaid !== undefined) {
-      updates.actualDate = actualDate ? new Date(actualDate) : null;
-      updates.amountPaid = amountPaid ? Number(amountPaid) : null;
-      // If date and amount are present, mark as paid. If cleared, maybe not.
-      // User says: "If he delete payment date and amount, still he can update payment date and amount in future"
-      updates.isPaid = !!(updates.actualDate && updates.amountPaid);
-      
-      // Once updated via "Pen", clear the edit approval flag
-      if (editApproved === undefined) {
-        updates.editApproved = false;
-        updates.editRequested = false;
-      }
-    }
-
+    // Build the update query manually since Neon's sql tagged template doesn't support the sql(obj) helper
     const result = await sql`
       UPDATE "PaymentOccurrence"
-      SET ${sql(updates)}
+      SET 
+        "isHold" = CASE WHEN ${isHold !== undefined} THEN ${isHold}::BOOLEAN ELSE "isHold" END,
+        "holdReason" = CASE WHEN ${holdReason !== undefined} THEN ${holdReason}::TEXT ELSE "holdReason" END,
+        "editRequested" = CASE 
+          WHEN ${editRequested !== undefined} THEN ${editRequested}::BOOLEAN 
+          WHEN ${actualDate !== undefined || amountPaid !== undefined} THEN FALSE
+          ELSE "editRequested" 
+        END,
+        "editRequestReason" = CASE WHEN ${editRequestReason !== undefined} THEN ${editRequestReason}::TEXT ELSE "editRequestReason" END,
+        "editApproved" = CASE 
+          WHEN ${editApproved !== undefined} THEN ${editApproved}::BOOLEAN 
+          WHEN ${actualDate !== undefined || amountPaid !== undefined} THEN FALSE
+          ELSE "editApproved" 
+        END,
+        "actualDate" = CASE WHEN ${actualDate !== undefined} THEN ${actualDate ? new Date(actualDate) : null}::DATE ELSE "actualDate" END,
+        "amountPaid" = CASE WHEN ${amountPaid !== undefined} THEN ${amountPaid ? Number(amountPaid) : null}::NUMERIC ELSE "amountPaid" END,
+        "isPaid" = CASE 
+          WHEN ${actualDate !== undefined || amountPaid !== undefined} THEN (${(actualDate && amountPaid) ? true : false})::BOOLEAN
+          ELSE "isPaid" 
+        END,
+        "updatedAt" = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
