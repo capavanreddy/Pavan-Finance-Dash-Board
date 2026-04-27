@@ -5,7 +5,7 @@ import HomeHub from "@/components/HomeHub";
 import DashboardClient from "@/components/DashboardClient";
 
 export default function DashboardWrapper({ user }: { user: any }) {
-  const [showHome, setShowHome] = useState(true);
+  const [showHome, setShowHome] = useState(false);
 
   if (showHome) {
     return (
