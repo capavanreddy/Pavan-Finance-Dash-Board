@@ -2046,19 +2046,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             transition: "all 0.3s ease"
           }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
-                <span style={{ color: "#cbd5e1" }}>/</span>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
-                  {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
-                </span>
-              </div>
+              {activeView !== 'HOME' && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
+                  <span style={{ color: "#cbd5e1" }}>/</span>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#64748b" }}>
+                    {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : "Development"}
+                  </span>
+                </div>
+              )}
               <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
-                {activeView === 'HOME' ? "Finance Home Hub" : 
+                {activeView === 'HOME' ? "" : 
                  activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dashboard" : "Inter Department Request") : "Learning Opportunities"}
               </h2>
               <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "0.95rem", fontWeight: 500 }}>
-                {activeView === 'HOME' ? "Your central space for team mission, stories, and achievements." : 
+                {activeView === 'HOME' ? "" : 
                  activeView === 'TASKS' ? 
                   (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") 
                   : "Turning challenges into structured growth opportunities."}
