@@ -59,7 +59,7 @@ export default function HomeHub() {
   }
 
   return (
-    <div style={{ 
+    <div key="premium-home-v2" style={{ 
       flex: 1, overflowY: "auto", padding: "40px", background: "#f8fafc",
       backgroundImage: "radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%)",
       minHeight: "100vh"
