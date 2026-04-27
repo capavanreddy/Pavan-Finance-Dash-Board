@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-<<<<<<< HEAD
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat } from "lucide-react";
-=======
 import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase } from "lucide-react";
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
@@ -100,7 +96,7 @@ const convertTo24h = (h12: string, m: string, suffix: string) => {
   return `${String(h).padStart(2, '0')}:${m}`;
 };
 
-// Dynamic lookup from User Management list
+// User name mapping handled dynamically
 
 export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [user, setUser] = useState(initialUser);
@@ -112,11 +108,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'COMPLETED'>('ALL');
-<<<<<<< HEAD
-  const [activeView, setActiveView] = useState<'TASKS' | 'RECURRING' | 'LOS'>('TASKS');
-=======
   const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS'>('HOME');
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
@@ -384,11 +376,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchLOs();
     fetchExternalRequests();
     fetchSettings();
-<<<<<<< HEAD
-    fetchUsersList();
-=======
     fetchUsersList(); // Ensure users load on mount for LO form
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
   }, [isAdmin]);
 
   // SMART REDIRECTION LOGIC
@@ -441,12 +429,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   }, [settingsLoading, activeView, activeSubView]);
 
-  useEffect(() => {
-    if (showLOForm || editingLO) {
-      fetchUsersList();
-    }
-  }, [showLOForm, editingLO]);
-
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
@@ -469,12 +451,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const [preFilledTask, setPreFilledTask] = useState<any>(null);
-
-  useEffect(() => {
-    if (showLOForm || editingLO) {
-      fetchUsersList();
-    }
-  }, [showLOForm, editingLO]);
 
   const handleConvertToTask = (req: ExternalRequest) => {
     setPreFilledTask({
@@ -1152,10 +1128,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     // 1. Metric Filter (My Reports / My Learnings)
     let typeMatch = true;
     if (loActiveFilter === 'REPORTS') {
-      const myName = user?.name;
+      const myName = user?.name || user?.email;
       typeMatch = lo.identifiedBy === myName;
     } else if (loActiveFilter === 'LEARNINGS') {
-      const myName = user?.name;
+      const myName = user?.name || user?.email;
       typeMatch = lo.committedBy === myName;
     }
 
@@ -1965,11 +1941,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </nav>
 
         {/* Content Area */}
-<<<<<<< HEAD
-        <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: "#f8fafc" }}>
-=======
         <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: t.bg, transition: "all 0.3s ease" }}>
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
           {activeView === 'RECURRING' && (
             <RecurringActivities settings={settings} usersList={usersList} />
           )}
@@ -3309,7 +3281,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <td style={tdStyle}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {lo.identifiedBy}
-                              {lo.identifiedBy === user?.name && (
+                              {lo.identifiedBy === (user?.name || user?.email) && (
                                 <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Reported</span>
                               )}
                             </div>
@@ -3317,7 +3289,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <td style={tdStyle}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {lo.committedBy}
-                              {lo.committedBy === user?.name && (
+                              {lo.committedBy === (user?.name || user?.email) && (
                                 <span style={{ background: "#fef2f2", color: "#ef4444", padding: "2px 6px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Learning</span>
                               )}
                             </div>
@@ -3390,10 +3362,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         <LOForm 
           settings={settings}
           usersList={usersList}
-<<<<<<< HEAD
           user={user}
-=======
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
           onClose={() => setShowLOForm(false)} 
           onSuccess={() => {
             setShowLOForm(false);
@@ -3406,10 +3375,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         <LOForm 
           settings={settings}
           usersList={usersList}
-<<<<<<< HEAD
           user={user}
-=======
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
           initialData={editingLO}
           onClose={() => setEditingLO(null)} 
           onSuccess={() => {
@@ -4960,11 +4926,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <thead>
                                 <tr style={{ background: "#f8fafc" }}>
                                   <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>Department</th>
-<<<<<<< HEAD
-                                  {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
-=======
                                   {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
                                     <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
                                   ))}
                                 </tr>
@@ -4975,11 +4937,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   return (
                                     <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>{dept}</td>
-<<<<<<< HEAD
-                                      {['Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
-=======
                                       {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities'].map(module => (
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
                                         <td key={module} style={{ padding: "12px", textAlign: "center" }}>
                                           <input 
                                             type="checkbox" 
@@ -5086,8 +5044,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                             }
                                           </select>
                                         </div>
-<<<<<<< HEAD
-=======
                                       </td>
                                     </tr>
                                   );
@@ -5150,7 +5106,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                           }}
                                           style={{ width: "20px", height: "20px", cursor: "pointer" }}
                                         />
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
                                       </td>
                                       {settings.masterEntities.split(',').filter(e => e.trim()).map(entity => {
                                         const entityName = entity.trim();

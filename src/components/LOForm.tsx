@@ -8,7 +8,6 @@ type LOFormProps = {
   onSuccess: () => void;
   settings: any;
   usersList: any[];
-<<<<<<< HEAD
   user: any;
   initialData?: any;
 };
@@ -17,19 +16,7 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const finalEmployees = usersList
-    .filter(u => u.department === 'Finance' && u.isApproved !== false && !u.isSuspended)
-    .map(u => u.name || u.email);
-=======
-  initialData?: any;
-};
-
-export default function LOForm({ onClose, onSuccess, settings, usersList = [], initialData }: LOFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
   const finalEmployees = usersList.filter(u => u.department === 'Finance' && u.isApproved !== false).map(u => u.name || u.email);
->>>>>>> 72d784980c559b53ba095da66d5223e7b7ce6bba
 
   const [formData, setFormData] = useState({
     entity: "",
@@ -160,18 +147,16 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], i
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
-            <div>
-              <label style={labelStyle}>Resolution Provided *</label>
-              <textarea 
-                name="resolutionProvided" 
-                required 
-                value={formData.resolutionProvided} 
-                onChange={handleChange} 
-                style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
-                placeholder="Describe the resolution provided"
-              />
-            </div>
+          <div>
+            <label style={labelStyle}>Resolution Provided *</label>
+            <textarea 
+              name="resolutionProvided" 
+              required 
+              value={formData.resolutionProvided} 
+              onChange={handleChange} 
+              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
+              placeholder="Describe the resolution provided"
+            />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
