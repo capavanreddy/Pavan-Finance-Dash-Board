@@ -356,23 +356,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const fetchPaymentRequests = async () => {
     try {
-      const res = await fetch("/api/payments/master");
+      const res = await fetch("/api/payments/tracker");
       if (res.ok) {
-        const allPayments = await res.json();
-        // Flatten occurrences and filter for editRequested
-        const requests: any[] = [];
-        allPayments.forEach((p: any) => {
-          if (p.occurrences) {
-            p.occurrences.forEach((occ: any) => {
-              if (occ.editRequested && !occ.editApproved) {
-                requests.push({ ...occ, templateVendor: p.vendorName, templateDesc: p.paymentDescription });
-              }
-            });
-          }
-        });
+        const allOccurrences = await res.json();
+        // Filter for editRequested and map fields for UI consistency
+        const requests = allOccurrences
+          .filter((occ: any) => occ.editRequested && !occ.editApproved)
+          .map((occ: any) => ({
+            ...occ,
+            templateVendor: occ.vendorName,
+            templateDesc: occ.paymentDescription
+          }));
         setPaymentRequests(requests);
       }
     } catch (error) {
+      console.error("Failed to fetch payment requests", error);
+    }
+  };
       console.error("Failed to fetch payment requests", error);
     }
   };

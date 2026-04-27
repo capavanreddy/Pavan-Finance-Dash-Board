@@ -338,19 +338,6 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
     }
   };
 
-  const handleApproveEdit = async (occ: PaymentOccurrence) => {
-    if (!confirm(`Approve edit request for ${occ.vendorName}?`)) return;
-    try {
-      const res = await fetch(`/api/payments/tracker/${occ.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ editApproved: true })
-      });
-      if (res.ok) fetchData();
-    } catch (err) {
-      console.error("Approve edit error:", err);
-    }
-  };
 
   const handleSaveEditOcc = async () => {
     if (!activeOccurrence) return;
@@ -870,16 +857,7 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
                                 </button>
                             )}
 
-                            {occ.editRequested && isAdmin && !occ.editApproved && (
-                                <button 
-                                    onClick={() => handleApproveEdit(occ)}
-                                    style={{ padding: "6px 10px", borderRadius: "8px", border: "none", background: "#16a34a", color: "white", fontSize: "0.7rem", cursor: "pointer" }}
-                                >
-                                    Approve Edit
-                                </button>
-                            )}
-
-                            {occ.editRequested && !isAdmin && !occ.editApproved && (
+                            {occ.editRequested && !occ.editApproved && (
                                 <span style={{ fontSize: "0.65rem", color: "#f59e0b", fontStyle: "italic" }}>Pending Approval</span>
                             )}
 
