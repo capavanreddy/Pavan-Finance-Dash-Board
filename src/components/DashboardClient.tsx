@@ -5,7 +5,6 @@ import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
 import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
-import LearningDashboard from "@/components/LearningDashboard";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
