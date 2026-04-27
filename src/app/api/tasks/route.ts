@@ -45,10 +45,7 @@ export async function GET(req: NextRequest) {
       ORDER BY "createdAt" DESC
     `;
 
-    const filteredTasks = allTasks.map(t => ({
-      ...t,
-      taskStatus: getTrackingStatus(t as any)
-    })).filter(task => {
+    const filteredTasks = allTasks.filter(task => {
       const ownerEmail = getEmailFromName(task.ownerName);
       const reviewerEmail = getEmailFromName(task.reviewerName);
       
@@ -57,11 +54,16 @@ export async function GET(req: NextRequest) {
       
       // Reviewer can only see the task if the owner has finished it
       if (reviewerEmail === userEmail) {
-        return COMPLETION_STATUSES.includes(task.taskStatus) || task.reviewStatus === "Pending" || task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required";
+        // Use completion check on original data
+        const isCompleted = task.taskStatus === "Completed" || !!task.completionDate;
+        return isCompleted || task.reviewStatus === "Pending" || task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required";
       }
 
       return false;
-    });
+    }).map(t => ({
+      ...t,
+      taskStatus: getTrackingStatus(t as any)
+    }));
 
     return NextResponse.json(filteredTasks, { status: 200 });
   } catch (error: any) {
