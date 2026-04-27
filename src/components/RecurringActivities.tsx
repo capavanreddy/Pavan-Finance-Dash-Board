@@ -243,8 +243,6 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tasks: tasksToPost })
       });
-      const result = await res.json();
-      alert(`Successfully generated ${result.successCount} tasks. ${result.errorCount > 0 ? `Errors: ${result.errorCount}` : ""}`);
       fetchTemplates();
       setSelectedTasks([]);
     } catch (err) {
@@ -252,6 +250,16 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
     } finally {
       setLoading(false);
     }
+  };
+
+  const openEditTemplate = (t: RecurringTemplate) => {
+    setEditingTemplate(t);
+    setTemplateForm({
+        ...t,
+        startDate: t.startDate ? new Date(t.startDate).toISOString().split('T')[0] : "",
+        endDate: t.endDate ? new Date(t.endDate).toISOString().split('T')[0] : ""
+    });
+    setShowTemplateForm(true);
   };
 
   const exportToExcel = async () => {
