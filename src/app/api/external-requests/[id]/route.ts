@@ -48,15 +48,23 @@ export async function PATCH(
       return NextResponse.json({ message: 'No fields to update' }, { status: 400 });
     }
     
-    // Use the dynamic sql helper which correctly handles case-sensitive CamelCase column names by quoting them
-    const updatedRequests = await sql`
+    // Manually build the update query for Neon Serverless compatibility
+    // and explicitly quote column names for case-sensitivity
+    const entries = Object.entries(updateData);
+    const setClause = entries.map(([key], index) => `"${key}" = $${index + 1}`).join(', ');
+    const values = entries.map(([, val]) => val);
+    
+    const query = `
       UPDATE "ExternalRequest"
-      SET ${sql(updateData, Object.keys(updateData))}, "updatedAt" = NOW()
-      WHERE id = ${id}
+      SET ${setClause}, "updatedAt" = NOW()
+      WHERE id = $${values.length + 1}
       RETURNING *
     `;
     
-    return NextResponse.json(updatedRequests[0]);
+    const result = await sql(query, [...values, id]);
+    const updatedRequest = result[0];
+    
+    return NextResponse.json(updatedRequest);
   } catch (error) {
     console.error('Error updating external request:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
