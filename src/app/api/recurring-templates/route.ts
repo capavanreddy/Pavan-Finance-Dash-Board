@@ -38,15 +38,24 @@ export async function GET() {
 
 // POST /api/recurring-templates
 export async function POST(req: NextRequest) {
+  const sql = getDb();
   try {
-    const sql = getDb();
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Role check - only Admin or those allowed in matrix
-    // For now, allow all logged in, we will refine in UI
+    // --- Ensure Database is ready ---
+    await (sql as any).query(`
+      ALTER TABLE "RecurringTemplate" 
+      ADD COLUMN IF NOT EXISTS "departmentName" TEXT DEFAULT 'Finance',
+      ADD COLUMN IF NOT EXISTS "financeFunction" TEXT,
+      ADD COLUMN IF NOT EXISTS "startDate" DATE,
+      ADD COLUMN IF NOT EXISTS "endDate" DATE,
+      ADD COLUMN IF NOT EXISTS "stopDate" DATE,
+      ADD COLUMN IF NOT EXISTS "isStopped" BOOLEAN DEFAULT FALSE;
+    `).catch(() => {});
+
     const data = await req.json();
     const {
       taskNamePattern,
@@ -87,6 +96,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result[0], { status: 201 });
   } catch (error: any) {
     console.error("Create recurring template error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ 
+        error: "Database error during save", 
+        details: error.message,
+        hint: "Please ensure all mandatory fields are filled."
+    }, { status: 500 });
   }
 }
