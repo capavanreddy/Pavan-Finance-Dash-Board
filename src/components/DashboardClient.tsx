@@ -4716,6 +4716,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterDepartments || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Departments.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterDepartments: (settings.masterDepartments || "") + (settings.masterDepartments?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4758,6 +4763,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterEntities || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Entities.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterEntities: (settings.masterEntities || "") + (settings.masterEntities?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4800,6 +4810,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterTaskTypes || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Task Types.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterTaskTypes: (settings.masterTaskTypes || "") + (settings.masterTaskTypes?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4841,6 +4856,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterCommunicationModes || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Communication Modes.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterCommunicationModes: (settings.masterCommunicationModes || "") + (settings.masterCommunicationModes?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4883,6 +4903,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterFrequencies || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Frequencies.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterFrequencies: (settings.masterFrequencies || "") + (settings.masterFrequencies?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4926,6 +4951,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterRequestTypes || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Finance Functions.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterRequestTypes: (settings.masterRequestTypes || "") + (settings.masterRequestTypes?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
@@ -4969,6 +4999,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterWeekDays || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      alert(`"${val}" already exists in Week Days.`);
+                                      return;
+                                    }
                                     setSettings({...settings, masterWeekDays: (settings.masterWeekDays || "") + (settings.masterWeekDays?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
