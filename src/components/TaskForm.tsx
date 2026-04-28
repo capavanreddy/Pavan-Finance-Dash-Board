@@ -10,9 +10,9 @@ type TaskFormProps = {
   usersList?: any[];
   initialData?: any;
   user: any;
-};
+ showNotification: any;};
 
-export default function TaskForm({ onClose, onSuccess, settings, usersList = [], initialData, user }: TaskFormProps) {
+export default function TaskForm({  onClose, onSuccess, settings, usersList = [], initialData, user , showNotification }: TaskFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [changeRequestType, setChangeRequestType] = useState(false);
@@ -111,7 +111,7 @@ export default function TaskForm({ onClose, onSuccess, settings, usersList = [],
         const errData = await res.json();
         throw new Error(errData.details || "Failed to transfer request");
       }
-      alert(`Request transferred successfully!`);
+      showNotification(`Request transferred successfully!`);
       onSuccess();
     } catch (err: any) {
       setError(`Transfer Failed: ${err.message}`);

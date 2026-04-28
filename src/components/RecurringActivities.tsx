@@ -49,7 +49,7 @@ type StagingTask = {
   freqLabel?: string | null;
 };
 
-export default function RecurringActivities({ settings, usersList = [] }: { settings: any; usersList: any[] }) {
+export default function RecurringActivities({  settings, usersList = [] , showNotification }: { settings: any; usersList: any[] ; showNotification: any; }) {
   const [activeSubTab, setActiveSubTab] = useState<'STAGING' | 'MASTER' | 'D'>('STAGING');
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [stagingTasks, setStagingTasks] = useState<StagingTask[]>([]);
@@ -283,7 +283,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
 
   const handleSaveTemplate = async () => {
     if (!templateForm.taskNamePattern || !templateForm.entityName) {
-      alert("Please fill all required fields");
+      showNotification("Please fill all required fields");
       return;
     }
     setIsSaving(true);
@@ -311,11 +311,11 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
         alert(editingTemplate ? "Rule updated successfully!" : "Recurring rule created successfully!");
       } else {
         const err = await res.json();
-        alert(`Failed to save: ${err.error || 'Unknown error'}\n\nDetails: ${err.details || 'No details available'}`);
+        showNotification(`Failed to save: ${err.error || 'Unknown error'}\n\nDetails: ${err.details || 'No details available'}`);
       }
     } catch (err) {
       console.error("Save template error:", err);
-      alert("A network error occurred. Please try again.");
+      showNotification("A network error occurred. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -361,7 +361,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
       fetchTemplates();
       setSelectedTasks([]);
     } catch (err) {
-      alert("Failed to generate tasks");
+      showNotification("Failed to generate tasks");
     } finally {
       setLoading(false);
     }
@@ -441,7 +441,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
 
   const handleShareViaEmail = async () => {
     if (shareData.recipients.length === 0) {
-      alert("Please add at least one recipient email.");
+      showNotification("Please add at least one recipient email.");
       return;
     }
     setShareLoading(true);
@@ -502,14 +502,14 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
       });
 
       if (res.ok) {
-        alert("Report shared successfully via email!");
+        showNotification("Report shared successfully via email!");
         setShowShareModal(false);
       } else {
-        alert("Failed to share report.");
+        showNotification("Failed to share report.");
       }
     } catch (error) {
       console.error("Share error", error);
-      alert("An error occurred while sharing the report.");
+      showNotification("An error occurred while sharing the report.");
     } finally {
       setShareLoading(false);
     }
@@ -646,7 +646,7 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
 
   const handleDailyShareViaEmail = async () => {
     if (shareData.recipients.length === 0) {
-      alert("Please add at least one recipient email.");
+      showNotification("Please add at least one recipient email.");
       return;
     }
     setShareLoading(true);
@@ -704,10 +704,10 @@ export default function RecurringActivities({ settings, usersList = [] }: { sett
       });
 
       if (res.ok) {
-        alert("Report shared successfully via email!");
+        showNotification("Report shared successfully via email!");
         setDailyShareModal(false);
       } else {
-        alert("Failed to share report.");
+        showNotification("Failed to share report.");
       }
     } catch (error) {
       console.error("Daily Share error", error);

@@ -61,7 +61,6 @@ type ExternalRequest = {
   transferStatus: string | null;
   transferredBy: string | null;
   createdAt: string;
-  frequency: string | null;
 };
 
 type LearningOpportunity = {
@@ -112,6 +111,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const isAdmin = user?.role === 'ADMIN' || user?.email === 'pavanreddy@intellicar.in';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: "", type: null });
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: "", type: null }), 4000);
+  };
+
   const [showForm, setShowForm] = useState(false);
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
@@ -520,10 +526,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify(settings)
       });
       if (res.ok) {
-        alert("Matrix settings saved successfully!");
+        showNotification("Matrix settings saved successfully!");
       } else {
         const errData = await res.json();
-        alert(`Failed to save matrix settings: ${errData.details || errData.message || 'Unknown error'}`);
+        showNotification(`Failed to save matrix settings: ${errData.details || errData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Failed to save settings", error);
@@ -541,8 +547,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       requestFrom: req.requestFrom,
       linkedRequestId: req.id,
       transferStatus: req.transferStatus,
-      originalRequestType: req.originalRequestType,
-      frequency: req.frequency
+      originalRequestType: req.originalRequestType
     });
     setShowForm(true);
   };
@@ -765,7 +770,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify(type === 'payments' ? { items: rows } : rows)
       });
       if (res.ok) {
-        alert("Import successful!");
+        showNotification("Import successful!");
         if (type === 'tasks') fetchTasks(); 
         else if (type === 'lo') fetchLOs();
         else {
@@ -775,7 +780,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           // But actually, fetchTasks() is good because it updates global state if needed.
         }
       } else {
-        alert("Import failed. Please check template format.");
+        showNotification("Import failed. Please check template format.");
       }
     }
     e.target.value = ""; // Clear input
@@ -799,7 +804,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordData.new !== passwordData.confirm) {
-      alert("Passwords do not match!");
+      showNotification("Passwords do not match!");
       return;
     }
     setPasswordLoading(true);
@@ -810,7 +815,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ currentPassword: passwordData.current, newPassword: passwordData.new }),
       });
       if (res.ok) {
-        alert("Password updated successfully!");
+        showNotification("Password updated successfully!");
         setPasswordData({ current: "", new: "", confirm: "" });
       } else {
         const data = await res.json();
@@ -834,7 +839,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         alert(data.message + "\n\nDefault Password: " + data.defaultPassword);
         fetchUsersList();
       } else {
-        alert("Failed to bulk add users.");
+        showNotification("Failed to bulk add users.");
       }
     } catch (error) {
       console.error("Bulk add failed", error);
@@ -855,11 +860,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         fetchUsersList();
       } else {
         const data = await res.json();
-        alert("Cleanup failed: " + (data.message || "Unauthorized"));
+        showNotification("Cleanup failed: " + (data.message || "Unauthorized"));
       }
     } catch (error) {
       console.error("Cleanup failed", error);
-      alert("An error occurred during cleanup.");
+      showNotification("An error occurred during cleanup.");
     } finally {
       setUsersLoading(false);
     }
@@ -868,7 +873,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const handleResetUserPassword = async (userId: number, userName: string) => {
     const newPassword = prompt(`Enter new password for ${userName}:`);
     if (!newPassword || newPassword.trim().length < 6) {
-      if (newPassword !== null) alert("Password must be at least 6 characters.");
+      if (newPassword !== null) showNotification("Password must be at least 6 characters.");
       return;
     }
 
@@ -880,14 +885,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       });
 
       if (res.ok) {
-        alert(`Password for ${userName} has been reset successfully!`);
+        showNotification(`Password for ${userName} has been reset successfully!`);
       } else {
         const data = await res.json();
-        alert(`Error: ${data.error || "Failed to reset password"}`);
+        showNotification(`Error: ${data.error || "Failed to reset password"}`);
       }
     } catch (error) {
       console.error("Error resetting password:", error);
-      alert("Network error. Failed to reset password.");
+      showNotification("Network error. Failed to reset password.");
     }
   };
 
@@ -896,10 +901,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     try {
       const res = await fetch(`/api/admin/users/${id}/approve`, { method: "POST" });
       if (res.ok) {
-        alert("User approved successfully!");
+        showNotification("User approved successfully!");
         fetchUsersList();
       } else {
-        alert("Failed to approve user.");
+        showNotification("Failed to approve user.");
       }
     } catch (error) {
       console.error("Approval failed", error);
@@ -917,10 +922,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ comment })
       });
       if (res.ok) {
-        alert("Request rejected.");
+        showNotification("Request rejected.");
         fetchUsersList();
       } else {
-        alert("Failed to reject request.");
+        showNotification("Failed to reject request.");
       }
     } catch (error) {
       console.error("Rejection failed", error);
@@ -932,7 +937,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     try {
       const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
       if (res.ok) {
-        alert("Employee removed successfully.");
+        showNotification("Employee removed successfully.");
         fetchUsersList();
       } else {
         const data = await res.json();
@@ -953,7 +958,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         fetchUsersList(); // Refresh
       } else {
-        alert("Failed to update user role.");
+        showNotification("Failed to update user role.");
       }
     } catch (error) {
       console.error("Failed to update role", error);
@@ -978,14 +983,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         setPendingUserUpdates({});
         fetchUsersList();
-        alert("User updates saved successfully!");
+        showNotification("User updates saved successfully!");
       } else {
         const data = await res.json();
         alert(data.message || "Failed to save user updates.");
       }
     } catch (error) {
       console.error("Save users error", error);
-      alert("An error occurred while saving user updates.");
+      showNotification("An error occurred while saving user updates.");
     } finally {
       setIsSavingUsers(false);
     }
@@ -1022,7 +1027,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         fetchTasks();
       } else {
-        alert("Failed to update. You may not have permission.");
+        showNotification("Failed to update. You may not have permission.");
       }
     } catch (error) {
       console.error("Failed to update status", error);
@@ -1038,7 +1043,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         fetchTasks();
       } else {
-        alert("Failed to delete. You do not have permission.");
+        showNotification("Failed to delete. You do not have permission.");
       }
     } catch (error) {
       console.error("Failed to delete task", error);
@@ -1056,9 +1061,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ comment })
       });
       if (res.ok) {
-        alert("Deletion request sent to Master Admin successfully.");
+        showNotification("Deletion request sent to Master Admin successfully.");
       } else {
-        alert("Failed to send deletion request.");
+        showNotification("Failed to send deletion request.");
       }
     } catch (error) {
       console.error("Failed to request delete", error);
@@ -1076,10 +1081,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ reason, requestedBy: roleType })
       });
       if (res.ok) {
-        alert("Edit request sent to Admin successfully.");
+        showNotification("Edit request sent to Admin successfully.");
         fetchTasks();
       } else {
-        alert("Failed to send edit request.");
+        showNotification("Failed to send edit request.");
       }
     } catch (error) {
       console.error("Failed to request edit", error);
@@ -1095,10 +1100,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ action })
       });
       if (res.ok) {
-        alert(`Edit request ${action.toLowerCase()}d successfully.`);
+        showNotification(`Edit request ${action.toLowerCase()}d successfully.`);
         fetchTasks();
       } else {
-        alert("Failed to process edit request.");
+        showNotification("Failed to process edit request.");
       }
     } catch (error) {
       console.error("Failed to process edit", error);
@@ -1114,10 +1119,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ action })
       });
       if (res.ok) {
-        alert(`Deletion request ${action.toLowerCase()}d successfully.`);
+        showNotification(`Deletion request ${action.toLowerCase()}d successfully.`);
         fetchTasks();
       } else {
-        alert("Failed to process deletion request.");
+        showNotification("Failed to process deletion request.");
       }
     } catch (error) {
       console.error("Failed to process deletion", error);
@@ -1134,7 +1139,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ reason })
       });
       if (res.ok) {
-        alert("Edit request sent to Admin successfully.");
+        showNotification("Edit request sent to Admin successfully.");
         fetchLOs();
       }
     } catch (error) {
@@ -1152,7 +1157,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ comment })
       });
       if (res.ok) {
-        alert("Deletion request sent to Admin successfully.");
+        showNotification("Deletion request sent to Admin successfully.");
         fetchLOs();
       }
     } catch (error) {
@@ -1169,7 +1174,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify({ action })
       });
       if (res.ok) {
-        alert(`Edit request ${action.toLowerCase()}d successfully.`);
+        showNotification(`Edit request ${action.toLowerCase()}d successfully.`);
         fetchLOs();
       }
     } catch (error) {
@@ -1179,7 +1184,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const handleSubmitLOCapture = async () => {
     if (!loCaptureForm.learningOpportunity || !loCaptureForm.resolutionProvided) {
-      alert("Please fill in the Learning Opportunity and Resolution fields.");
+      showNotification("Please fill in the Learning Opportunity and Resolution fields.");
       return;
     }
 
@@ -1191,15 +1196,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       });
 
       if (res.ok) {
-        alert("Learning Opportunity captured successfully!");
+        showNotification("Learning Opportunity captured successfully!");
         setShowLOCaptureModal(false);
         fetchLOs(); // Refresh LO list
       } else {
-        alert("Failed to capture Learning Opportunity.");
+        showNotification("Failed to capture Learning Opportunity.");
       }
     } catch (error) {
       console.error("Failed to submit LO capture", error);
-      alert("An error occurred while saving the LO.");
+      showNotification("An error occurred while saving the LO.");
     }
   };
 
@@ -1216,10 +1221,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         headers: { "Authorization": "Bearer intellicar-cron-123" }
       });
       if (res.ok) {
-        alert("Emails sent successfully!");
+        showNotification("Emails sent successfully!");
       } else {
         const data = await res.json();
-        alert(`Failed to send emails: ${data.error || data.message || "Unknown error"}`);
+        showNotification(`Failed to send emails: ${data.error || data.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Failed to trigger emails", error);
@@ -1845,7 +1850,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
   const handleShareReport = async () => {
     if (recipientTags.length === 0) {
-      alert("Please add at least one recipient email.");
+      showNotification("Please add at least one recipient email.");
       return;
     }
     setShareLoading(true);
@@ -2018,14 +2023,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       });
 
       if (res.ok) {
-        alert("Report shared successfully via email!");
+        showNotification("Report shared successfully via email!");
         setShowShareModal(false);
       } else {
-        alert("Failed to share report.");
+        showNotification("Failed to share report.");
       }
     } catch (error) {
       console.error("Share error", error);
-      alert("An error occurred while sharing the report.");
+      showNotification("An error occurred while sharing the report.");
     } finally {
       setShareLoading(false);
     }
@@ -2261,7 +2266,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         {/* Content Area */}
         <main style={{ flex: 1, overflow: "auto", padding: activeView === 'RECURRING' ? "0" : "32px", background: t.bg, transition: "all 0.3s ease" }}>
           {activeView === 'RECURRING' && (
-            <RecurringActivities settings={settings} usersList={usersList} />
+            <RecurringActivities settings={settings} usersList={usersList} showNotification={showNotification} />
           )}
 
           {activeView !== 'RECURRING' && (
@@ -2979,7 +2984,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (task.linkedRequestId) {
                                     await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
                                   }
-                                  alert("Marked as Processed and Requester notified!");
+                                  showNotification("Marked as Processed and Requester notified!");
                                 }}
                                 style={{ 
                                   padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
@@ -3710,7 +3715,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       )}
 
       {activeView === 'PAYMENTS' && (
-        <PaymentsCalendar user={user} isAdmin={isAdmin} t={t} theme={theme} settings={settings} />
+        <PaymentsCalendar user={user} isAdmin={isAdmin} t={t} theme={theme} settings={settings} showNotification={showNotification} />
       )}
 
       {showForm && (
@@ -3719,6 +3724,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           usersList={usersList}
           initialData={preFilledTask}
           user={user}
+          showNotification={showNotification}
           onClose={() => {
             setShowForm(false);
             setPreFilledTask(null);
@@ -3740,7 +3746,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           onSuccess={() => {
             setShowLOForm(false);
             fetchLOs();
-            alert("LO Update submitted successfully!");
+            showNotification("LO Update submitted successfully!");
           }} 
         />
       )}
@@ -3754,7 +3760,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           onSuccess={() => {
             setEditingLO(null);
             fetchLOs();
-            alert("LO entry updated successfully!");
+            showNotification("LO entry updated successfully!");
           }} 
         />
       )}
@@ -3766,7 +3772,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           onSuccess={() => {
             setShowExtReqForm(false);
             fetchExternalRequests();
-            alert("Your request has been submitted to Finance team.");
+            showNotification("Your request has been submitted.");
           }}
         />
       )}
@@ -4523,7 +4529,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               const data = await res.json();
                               alert(data.message || "Sync completed successfully!");
                             } catch (err) {
-                              alert("Sync failed. Please check the logs.");
+                              showNotification("Sync failed. Please check the logs.");
                             }
                           }}
                           style={{ background: "#2563eb", color: "white", padding: "12px 24px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}
@@ -5127,7 +5133,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterDepartments || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Departments.`);
+                                      showNotification(`"${val}" already exists in Departments.`);
                                       return;
                                     }
                                     setSettings({...settings, masterDepartments: (settings.masterDepartments || "") + (settings.masterDepartments?.trim() ? "," : "") + val});
@@ -5174,7 +5180,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterEntities || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Entities.`);
+                                      showNotification(`"${val}" already exists in Entities.`);
                                       return;
                                     }
                                     setSettings({...settings, masterEntities: (settings.masterEntities || "") + (settings.masterEntities?.trim() ? "," : "") + val});
@@ -5221,7 +5227,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterTaskTypes || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Task Types.`);
+                                      showNotification(`"${val}" already exists in Task Types.`);
                                       return;
                                     }
                                     setSettings({...settings, masterTaskTypes: (settings.masterTaskTypes || "") + (settings.masterTaskTypes?.trim() ? "," : "") + val});
@@ -5267,7 +5273,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterCommunicationModes || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Communication Modes.`);
+                                      showNotification(`"${val}" already exists in Communication Modes.`);
                                       return;
                                     }
                                     setSettings({...settings, masterCommunicationModes: (settings.masterCommunicationModes || "") + (settings.masterCommunicationModes?.trim() ? "," : "") + val});
@@ -5314,7 +5320,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterFrequencies || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Frequencies.`);
+                                      showNotification(`"${val}" already exists in Frequencies.`);
                                       return;
                                     }
                                     setSettings({...settings, masterFrequencies: (settings.masterFrequencies || "") + (settings.masterFrequencies?.trim() ? "," : "") + val});
@@ -5362,7 +5368,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterRequestTypes || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Finance Functions.`);
+                                      showNotification(`"${val}" already exists in Finance Functions.`);
                                       return;
                                     }
                                     setSettings({...settings, masterRequestTypes: (settings.masterRequestTypes || "") + (settings.masterRequestTypes?.trim() ? "," : "") + val});
@@ -5410,7 +5416,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterWeekDays || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Week Days.`);
+                                      showNotification(`"${val}" already exists in Week Days.`);
                                       return;
                                     }
                                     setSettings({...settings, masterWeekDays: (settings.masterWeekDays || "") + (settings.masterWeekDays?.trim() ? "," : "") + val});
@@ -5455,7 +5461,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   if (val) {
                                     const currentItems = (settings.masterPaymentTypes || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
-                                      alert(`"${val}" already exists in Payment Types.`);
+                                      showNotification(`"${val}" already exists in Payment Types.`);
                                       return;
                                     }
                                     setSettings({...settings, masterPaymentTypes: (settings.masterPaymentTypes || "") + (settings.masterPaymentTypes?.trim() ? "," : "") + val});
@@ -6172,6 +6178,57 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             </>
           )}
         </main>
+      {notification.type && (
+        <div style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 9999,
+          animation: "fadeIn 0.3s ease-out"
+        }}>
+          <div style={{
+            background: theme === 'DARK' ? "rgba(30, 41, 59, 0.8)" : "rgba(255, 255, 255, 0.8)",
+            backdropFilter: "blur(12px)",
+            padding: "16px 32px",
+            borderRadius: "16px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+            border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"}`,
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            minWidth: "300px"
+          }}>
+            <div style={{
+              background: notification.type === 'success' ? "#22c55e" : "#ef4444",
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white"
+            }}>
+              {notification.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            </div>
+            <p style={{
+              margin: 0,
+              fontSize: "1rem",
+              fontWeight: 600,
+              color: t.text,
+              letterSpacing: "-0.01em"
+            }}>
+              {notification.message}
+            </p>
+          </div>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translate(-50%, -40%); }
+              to { opacity: 1; transform: translate(-50%, -50%); }
+            }
+          `}} />
+        </div>
+      )}
   </div>
 </div>
   );

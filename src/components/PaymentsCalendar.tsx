@@ -52,7 +52,7 @@ interface PaymentOccurrence {
 
 import { resolveTaskName, getPeriodKey, getOccurrencesBetween } from "@/lib/recurringUtils";
 
-export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: { user: any; isAdmin: boolean; t: any; theme: string; settings: any }) {
+export default function PaymentsCalendar({  user, isAdmin, t, theme, settings , showNotification }: { user: any; isAdmin: boolean; t: any; theme: string; settings: any ; showNotification: any; }) {
   const [activeTab, setActiveTab] = useState<'TRACKER' | 'MASTER'>('TRACKER');
   const [templates, setTemplates] = useState<PaymentTemplate[]>([]);
   const [occurrences, setOccurrences] = useState<PaymentOccurrence[]>([]);
@@ -227,7 +227,7 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
         setEditingTemplate(null);
         fetchData();
       } else {
-        alert("Failed to save template");
+        showNotification("Failed to save template");
       }
     } catch (err) {
       console.error("Save error:", err);
@@ -322,17 +322,17 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
         body: JSON.stringify({ editRequested: true, editRequestReason: requestEditData.reason })
       });
       if (res.ok) {
-        alert("Edit request sent successfully!");
+        showNotification("Edit request sent successfully!");
         setShowRequestEditModal(false);
         setRequestEditData({ reason: "" });
         fetchData();
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error || 'Failed to send request'}`);
+        showNotification(`Error: ${err.error || 'Failed to send request'}`);
       }
     } catch (err: any) {
       console.error("Request edit error:", err);
-      alert(`Network error: ${err.message}`);
+      showNotification(`Network error: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -520,7 +520,7 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
 
   const handleShareReport = async () => {
     if (recipientTags.length === 0) {
-      alert("Please add at least one recipient email");
+      showNotification("Please add at least one recipient email");
       return;
     }
     setIsSharing(true);
@@ -603,15 +603,15 @@ export default function PaymentsCalendar({ user, isAdmin, t, theme, settings }: 
       });
 
       if (res.ok) {
-        alert("Report shared successfully via email!");
+        showNotification("Report shared successfully via email!");
         setShowShareModal(false);
       } else {
         const errData = await res.json();
-        alert(`Failed to share report: ${errData.message}`);
+        showNotification(`Failed to share report: ${errData.message}`);
       }
     } catch (err: any) {
       console.error("Share error:", err);
-      alert(`Error: ${err.message}`);
+      showNotification(`Error: ${err.message}`);
     } finally {
       setIsSharing(false);
     }
