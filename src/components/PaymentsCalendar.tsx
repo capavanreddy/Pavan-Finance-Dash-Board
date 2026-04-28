@@ -381,7 +381,9 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     const today = new Date();
     due.setHours(0,0,0,0);
     today.setHours(0,0,0,0);
-    return today > due ? "OVERDUE" : "NOT YET DUE";
+    
+    if (today.getTime() === due.getTime()) return "Due On Today";
+    return today > due ? "OVERDUE" : "Not Yet Due";
   };
 
   const getStatusStyle = (status: string) => {
@@ -391,7 +393,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       case "Paid Before due date": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
       case "Paid After due date": return { bg: "#fef3c7", text: "#f59e0b", border: "#fde68a" };
       case "ON HOLD": return { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" };
-      case "NOT YET DUE": return { bg: "#eff6ff", text: "#3b82f6", border: "#bfdbfe" };
+      case "Not Yet Due": return { bg: "#eff6ff", text: "#3b82f6", border: "#bfdbfe" };
+      case "Due On Today": return { bg: "#fff7ed", text: "#ea580c", border: "#fdba74" };
       default: return { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0" };
     }
   };
@@ -710,7 +713,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
               <option value="ALL">All Status</option>
               <option value="ON HOLD">On Hold</option>
               <option value="OVERDUE">Overdue</option>
-              <option value="NOT YET DUE">Upcoming</option>
+              <option value="Due On Today">Due On Today</option>
+              <option value="Not Yet Due">Not Yet Due</option>
               <option value="Paid Before due date">Paid Before due date</option>
               <option value="Paid on due date">Paid on due date</option>
               <option value="Paid After due date">Paid After due date</option>
@@ -1105,15 +1109,17 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                 />
               </div>
 
-              <div>
-                <label style={labelStyle}>End Date</label>
-                <input 
-                  type="date" 
-                  value={formData.endDate}
-                  onChange={e => setFormData({...formData, endDate: e.target.value})}
-                  style={inputStyle}
-                />
-              </div>
+              {formData.frequency !== 'Ad' && (
+                <div>
+                  <label style={labelStyle}>End Date</label>
+                  <input 
+                    type="date" 
+                    value={formData.endDate}
+                    onChange={e => setFormData({...formData, endDate: e.target.value})}
+                    style={inputStyle}
+                  />
+                </div>
+              )}
 
               <div style={{ gridColumn: "1 / -1", marginTop: "12px", display: "flex", gap: "12px" }}>
                 <button type="button" onClick={() => setShowForm(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Cancel</button>
