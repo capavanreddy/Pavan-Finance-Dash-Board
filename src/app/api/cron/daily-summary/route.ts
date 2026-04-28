@@ -471,7 +471,7 @@ export async function GET(req: NextRequest) {
 
         const ownerTasks = pendingOwnerTasks.filter(t => t.ownerName === owner);
         const taskListHtml = generateGridHtml(ownerTasks, `Pending Tasks for ${owner}`, referenceDate);
-        const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intellicar-finance-team-task-manage-one.vercel.app/";
+        const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://v0-finpulse.vercel.app/";
 
         await sendEmail({
           to: ownerEmail,

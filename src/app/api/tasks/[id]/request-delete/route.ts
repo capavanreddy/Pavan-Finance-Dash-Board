@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://intellicar-finance-team-task-manage-one.vercel.app/'}" style="background: #ef4444; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Login to Admin Dashboard</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app/'}" style="background: #ef4444; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Login to Admin Dashboard</a>
         </div>
 
         <p style="margin-top: 24px; font-size: 13px; color: #64748b; text-align: center;">You can review and approve this request in the Admin Options panel.</p>

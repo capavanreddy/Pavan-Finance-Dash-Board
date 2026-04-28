@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     }
 
     const createdTasks = [];
-    const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intellicar-finance-team-task-manage-one.vercel.app/";
+    const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://v0-finpulse.vercel.app/";
 
     for (const assignment of assignments) {
       const { entityName, ownerName, reviewerName } = assignment;

@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         // 4. Send Email Notification
         const ownerEmail = getEmailFromName(taskItem.ownerName);
         if (ownerEmail) {
-          const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intellicar-finance-team-task-manage-one.vercel.app/";
+          const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || "https://v0-finpulse.vercel.app/";
           const emailHtml = `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
               <h2 style="color: #0f172a; margin-top: 0;">New Recurring Task Assigned</h2>
