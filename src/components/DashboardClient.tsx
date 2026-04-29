@@ -6130,10 +6130,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           <div style={{ overflowX: "auto" }}>
                             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                               <thead>
-                                <tr style={{ background: t.bg }}>
-                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: t.textMuted, fontSize: "0.7rem", textTransform: "uppercase" }}>User & Department</th>
+                                <tr style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)" }}>
+                                  <th style={{ padding: "16px", textAlign: "left", color: "#ffffff", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>User & Department</th>
                                   {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities', 'Payments'].map(module => (
-                                    <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: t.textMuted, fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
+                                    <th key={module} style={{ padding: "16px", textAlign: "center", color: "#ffffff", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>{module}</th>
                                   ))}
                                 </tr>
                               </thead>
@@ -6646,14 +6646,14 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: s
 // Styles
 
 const getThStyle = (t: any) => ({
-  background: t.bg,
-  color: t.textMuted,
-  padding: "16px 24px",
-  fontWeight: 600,
+  background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
+  color: "#ffffff",
+  padding: "20px 24px",
+  fontWeight: 700,
   fontSize: "0.75rem",
   textTransform: "uppercase" as const,
-  letterSpacing: "0.05em",
-  borderBottom: `1px solid ${t.border}`,
+  letterSpacing: "0.1em",
+  borderBottom: "1px solid rgba(255,255,255,0.1)",
   whiteSpace: "nowrap" as const,
 });
 
