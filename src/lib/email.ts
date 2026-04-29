@@ -37,11 +37,13 @@ export const getEmailFromName = (name: string | null) => {
 
 export async function sendEmail({
   to,
+  cc,
   subject,
   html,
   attachments,
 }: {
   to: string;
+  cc?: string;
   subject: string;
   html: string;
   attachments?: any[];
@@ -56,6 +58,7 @@ export async function sendEmail({
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || `"Task Manager" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
       to,
+      cc,
       subject,
       html,
       attachments,

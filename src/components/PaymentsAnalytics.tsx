@@ -6,13 +6,16 @@ import {
   BarChart3, TrendingUp, Info, Table as TableIcon, 
   ArrowUpRight, ArrowDownRight, Wallet, Activity,
   ChevronDown, X, Trash2, CheckCircle2, AlertCircle,
-  Zap, ArrowRight
+  Zap, ArrowRight, Download, FileSpreadsheet, FileText, Mail, Share2
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend,
-  Sector
+  ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend
 } from "recharts";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface ManualEntry {
   id: number;
@@ -43,28 +46,59 @@ export default function PaymentsAnalytics({
   const [loading, setLoading] = useState(true);
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  
+  // Export/Share UI State
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  
+  // Tag-style Email Inputs
+  const [recipientTags, setRecipientTags] = useState<string[]>([]);
+  const [recipientInput, setRecipientInput] = useState("");
+  const [ccTags, setCcTags] = useState<string[]>([]);
+  const [ccInput, setCcInput] = useState("");
+  
+  const [shareConfig, setShareConfig] = useState({
+    format: 'BOTH' as 'PDF' | 'EXCEL' | 'BOTH',
+    subject: "Treasury Performance & Analytics Report"
+  });
+  const [isSharing, setIsSharing] = useState(false);
 
-  // Table Filters
+  useEffect(() => {
+    if (settings?.paymentReportEmail) {
+      setRecipientTags(settings.paymentReportEmail.split(',').map((e: string) => e.trim()).filter(Boolean));
+    }
+  }, [settings]);
+
+  // Default Dates: 1st of current month to last day of current month
+  const getInitialDates = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const firstDay = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const lastDayDate = new Date(y, m + 1, 0);
+    const lastDay = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+    return { firstDay, lastDay };
+  };
+
+  const { firstDay, lastDay } = getInitialDates();
+
   const [tableFilters, setTableFilters] = useState({
-    fromDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    toDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
+    fromDate: firstDay,
+    toDate: lastDay,
     entity: 'ALL',
     type: 'ALL',
     status: 'ALL',
     search: ''
   });
 
-  // Chart Filters
   const [chartFilters, setChartFilters] = useState({
-    fromDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    toDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
+    fromDate: firstDay,
+    toDate: lastDay,
     entity: 'ALL',
     type: 'ALL',
     status: 'ALL'
   });
 
-  // New Entry Form State
   const [newEntry, setNewEntry] = useState({
     entity_name: "",
     payment_type: "",
@@ -147,7 +181,7 @@ export default function PaymentsAnalytics({
         entity_name: o.entityName,
         payment_type: o.paymentType,
         frequency: o.frequency,
-        amount: o.amountPaid || 0,
+        amount: Number(o.amountPaid) || 0,
         status: (() => {
           const due = new Date(o.dueDate);
           const actual = new Date(o.actualDate);
@@ -165,6 +199,7 @@ export default function PaymentsAnalytics({
     const manual = manualEntries.map(e => ({
       ...e,
       id: `manual-${e.id}`,
+      amount: Number(e.amount),
       isTracker: false
     }));
 
@@ -197,7 +232,7 @@ export default function PaymentsAnalytics({
   }, [combinedData, chartFilters]);
 
   const stats = useMemo(() => {
-    const totalAmount = filteredChartData.reduce((sum, d) => sum + d.amount, 0);
+    const totalAmount = filteredChartData.reduce((sum, d) => sum + Number(d.amount), 0);
     const totalCount = filteredChartData.reduce((sum, d) => sum + d.transaction_count, 0);
     const onTimeCount = filteredChartData.filter(d => d.status !== "Paid After due date").reduce((sum, d) => sum + d.transaction_count, 0);
     const healthScore = totalCount > 0 ? Math.round((onTimeCount / totalCount) * 100) : 0;
@@ -229,31 +264,142 @@ export default function PaymentsAnalytics({
 
   const insights = useMemo(() => {
     if (filteredChartData.length === 0) return "Select a wider date range to see intelligence insights.";
-    
     const topEntity = stats.barData[0]?.name || "N/A";
-    const statusMsg = stats.healthScore >= 95 ? "Outstanding payment health! Your team is remarkably punctual." : 
-                     stats.healthScore >= 80 ? "Your payment health is strong. Minor late payments detected." : 
-                     "Attention required: Payment delays are impacting your health score.";
+    const statusMsg = stats.healthScore >= 95 ? "Outstanding punctuality!" : 
+                     stats.healthScore >= 80 ? "Strong on-time performance." : "Delays detected in payments.";
     
-    return `In this period, ₹${stats.totalAmount.toLocaleString()} was processed across ${stats.totalCount.toLocaleString()} transactions. 
+    return `In this period, ₹${stats.totalAmount.toLocaleString('en-IN')} was processed across ${stats.totalCount} transactions. 
             ${topEntity} represents your highest financial volume. ${statusMsg}`;
   }, [stats, filteredChartData]);
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#ec4899", "#06b6d4"];
 
+  // Tag Management
+  const handleRecipientKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = recipientInput.trim().replace(',', '');
+      if (val && val.includes('@') && !recipientTags.includes(val)) {
+        setRecipientTags([...recipientTags, val]);
+        setRecipientInput("");
+      }
+    }
+  };
+
+  const handleCcKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = ccInput.trim().replace(',', '');
+      if (val && val.includes('@') && !ccTags.includes(val)) {
+        setCcTags([...ccTags, val]);
+        setCcInput("");
+      }
+    }
+  };
+
+  // REPORT GENERATION LOGIC
+  const generateExcel = async (isForEmail = false) => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Payment Analytics');
+    sheet.columns = [
+      { header: 'Entity', key: 'entity', width: 25 },
+      { header: 'Payment Type', key: 'type', width: 20 },
+      { header: 'Amount (INR)', key: 'amount', width: 15 },
+      { header: 'Status', key: 'status', width: 20 },
+      { header: 'Txn Count', key: 'count', width: 10 },
+      { header: 'Date', key: 'date', width: 15 }
+    ];
+    filteredTableData.forEach(d => {
+      sheet.addRow({
+        entity: d.entity_name, type: d.payment_type, amount: d.amount,
+        status: d.status, count: d.transaction_count, date: d.payment_date
+      });
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    if (isForEmail) return buffer;
+    saveAs(new Blob([buffer]), `Payments_Analytics_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const generatePDF = (isForEmail = false) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Treasury Analytics Report", 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+    doc.text(`Period: ${chartFilters.fromDate} to ${chartFilters.toDate}`, 14, 38);
+    doc.setFontSize(14);
+    doc.text("Executive Summary", 14, 50);
+    doc.setFontSize(10);
+    doc.text(`Total Amount: INR ${stats.totalAmount.toLocaleString('en-IN')}`, 14, 58);
+    doc.text(`Total Transactions: ${stats.totalCount}`, 14, 64);
+    doc.text(`Health Score: ${stats.healthScore}%`, 14, 70);
+    autoTable(doc, {
+      startY: 80,
+      head: [['Entity', 'Type', 'Amount', 'Status', 'Count', 'Date']],
+      body: filteredTableData.map(d => [
+        d.entity_name, d.payment_type, d.amount.toLocaleString('en-IN'), d.status, d.transaction_count, d.payment_date
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    if (isForEmail) return doc.output('arraybuffer');
+    doc.save(`Payments_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const handleShareEmail = async () => {
+    if (recipientTags.length === 0) {
+      showNotification("Please add at least one recipient email tag.");
+      return;
+    }
+    setIsSharing(true);
+    try {
+      const attachments = [];
+      if (shareConfig.format === 'PDF' || shareConfig.format === 'BOTH') {
+        const pdfBuffer = generatePDF(true) as ArrayBuffer;
+        attachments.push({
+          filename: `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+          content: Buffer.from(pdfBuffer).toString('base64'),
+          contentType: 'application/pdf'
+        });
+      }
+      if (shareConfig.format === 'EXCEL' || shareConfig.format === 'BOTH') {
+        const excelBuffer = await generateExcel(true) as ArrayBuffer;
+        attachments.push({
+          filename: `Analytics_Data_${new Date().toISOString().split('T')[0]}.xlsx`,
+          content: Buffer.from(excelBuffer).toString('base64'),
+          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+      }
+      const res = await fetch('/api/reports/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: recipientTags.join(','),
+          ccEmail: ccTags.join(','),
+          subject: shareConfig.subject,
+          attachments
+        })
+      });
+      if (res.ok) {
+        showNotification("Analytics report shared successfully!");
+        setShowShareModal(false);
+      } else {
+        showNotification("Failed to share report.");
+      }
+    } catch (error) {
+      console.error("Share error:", error);
+      showNotification("Error sharing report.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{ 
-          background: theme === 'DARK' ? "rgba(15, 23, 42, 0.8)" : "rgba(255, 255, 255, 0.8)",
-          backdropFilter: "blur(12px)",
-          padding: "12px 16px",
-          borderRadius: "16px",
-          border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`,
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
-        }}>
+        <div style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", padding: "12px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}>
           <p style={{ margin: "0 0 4px 0", fontSize: "0.75rem", fontWeight: 700, color: "#64748b" }}>{label}</p>
-          <p style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#3b82f6" }}>₹{payload[0].value.toLocaleString()}</p>
+          <p style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#3b82f6" }}>₹{payload[0].value.toLocaleString('en-IN')}</p>
         </div>
       );
     }
@@ -262,141 +408,66 @@ export default function PaymentsAnalytics({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", animation: "fade-in 0.5s ease-out" }}>
-      {/* Styles for Animations */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .recharts-area-path { filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.3)); }
-        .recharts-pie-sector { transition: all 0.3s ease; }
-        .recharts-pie-sector:hover { cursor: pointer; opacity: 0.8; }
-      `}} />
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }` }} />
 
-      {/* Navigation Header */}
-      <div style={{ 
-        display: "flex", justifyContent: "space-between", alignItems: "center", 
-        background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", 
-        padding: "20px 24px", borderRadius: "20px", 
-        border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-      }}>
+      {/* Header & Toggle */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "20px 24px", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "white", padding: "12px", borderRadius: "14px", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}>
+          <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "white", padding: "12px", borderRadius: "14px" }}>
             <Activity size={24} />
           </div>
           <div>
             <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Finance Analytics Hub</h2>
-            <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>Real-time treasury intelligence & performance</p>
+            <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>Real-time treasury & performance tracking</p>
           </div>
         </div>
 
-        <div style={{ display: "flex", background: theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9", padding: "4px", borderRadius: "14px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}` }}>
-          <button 
-            onClick={() => setActiveTab('TABLE')}
-            style={{ 
-              display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px", borderRadius: "10px", border: "none",
-              background: activeTab === 'TABLE' ? "#3b82f6" : "transparent",
-              color: activeTab === 'TABLE' ? "white" : "#64748b",
-              cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            }}
-          >
-            <TableIcon size={18} /> Detailed Records
-          </button>
-          <button 
-            onClick={() => setActiveTab('CHARTS')}
-            style={{ 
-              display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px", borderRadius: "10px", border: "none",
-              background: activeTab === 'CHARTS' ? "#3b82f6" : "transparent",
-              color: activeTab === 'CHARTS' ? "white" : "#64748b",
-              cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            }}
-          >
-            <PieIcon size={18} /> Visual Dashboard
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setShowDownloadMenu(!showDownloadMenu)} style={{ background: "#dcfce7", color: "#16a34a", border: "none", padding: "10px", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Download size={20} /> <ChevronDown size={14} />
+            </button>
+            {showDownloadMenu && (
+              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "16px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", border: "1px solid #e2e8f0", zIndex: 100, minWidth: "200px", overflow: "hidden" }}>
+                <button onClick={() => { generateExcel(); setShowDownloadMenu(false); }} style={menuItemStyle}><FileSpreadsheet size={16} color="#16a34a" /> Download Excel</button>
+                <button onClick={() => { generatePDF(); setShowDownloadMenu(false); }} style={menuItemStyle}><FileText size={16} color="#ef4444" /> Download PDF</button>
+                <button onClick={() => { setShowShareModal(true); setShowDownloadMenu(false); }} style={{ ...menuItemStyle, borderTop: "1px solid #f1f5f9" }}><Mail size={16} color="#3b82f6" /> Share via Email</button>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", background: theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9", padding: "4px", borderRadius: "14px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}` }}>
+            <button onClick={() => setActiveTab('TABLE')} style={tabStyle(activeTab === 'TABLE')}><TableIcon size={18} /> Detailed Records</button>
+            <button onClick={() => setActiveTab('CHARTS')} style={tabStyle(activeTab === 'CHARTS')}><PieIcon size={18} /> Visual Dashboard</button>
+          </div>
         </div>
       </div>
 
       {activeTab === 'TABLE' ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Table Filters */}
+          {/* Filters */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px", background: theme === 'DARK' ? "rgba(30, 41, 59, 0.4)" : "#f8fafc", padding: "24px", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#e2e8f0"}` }}>
-            <div>
-              <label style={filterLabelStyle}>From Date</label>
-              <input type="date" value={tableFilters.fromDate} onChange={e => setTableFilters({...tableFilters, fromDate: e.target.value})} style={filterInputStyle(theme)} />
-            </div>
-            <div>
-              <label style={filterLabelStyle}>To Date</label>
-              <input type="date" value={tableFilters.toDate} onChange={e => setTableFilters({...tableFilters, toDate: e.target.value})} style={filterInputStyle(theme)} />
-            </div>
-            <div>
-              <label style={filterLabelStyle}>By Entity</label>
-              <select value={tableFilters.entity} onChange={e => setTableFilters({...tableFilters, entity: e.target.value})} style={filterInputStyle(theme)}>
-                <option value="ALL">All Entities</option>
-                {settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={filterLabelStyle}>By Type</label>
-              <select value={tableFilters.type} onChange={e => setTableFilters({...tableFilters, type: e.target.value})} style={filterInputStyle(theme)}>
-                <option value="ALL">All Types</option>
-                {settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
-              </select>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
-              <button 
-                onClick={() => setShowAddEntry(true)}
-                style={{ width: "100%", height: "44px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "white", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", cursor: "pointer", boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)", transition: "all 0.2s" }}
-              >
-                <Plus size={18} /> Add Entry
-              </button>
-            </div>
+            <div><label style={filterLabelStyle}>From Date</label><input type="date" value={tableFilters.fromDate} onChange={e => setTableFilters({...tableFilters, fromDate: e.target.value})} style={filterInputStyle(theme)} /></div>
+            <div><label style={filterLabelStyle}>To Date</label><input type="date" value={tableFilters.toDate} onChange={e => setTableFilters({...tableFilters, toDate: e.target.value})} style={filterInputStyle(theme)} /></div>
+            <div><label style={filterLabelStyle}>By Entity</label><select value={tableFilters.entity} onChange={e => setTableFilters({...tableFilters, entity: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Entities</option>{settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}</select></div>
+            <div><label style={filterLabelStyle}>By Type</label><select value={tableFilters.type} onChange={e => setTableFilters({...tableFilters, type: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Types</option>{settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}</select></div>
+            <div style={{ display: "flex", alignItems: "flex-end" }}><button onClick={() => setShowAddEntry(true)} style={addBtnStyle}><Plus size={18} /> Add Entry</button></div>
           </div>
 
-          {/* Table */}
           <div style={{ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: theme === 'DARK' ? "rgba(255,255,255,0.02)" : "#f8fafc" }}>
-                  <th style={thStyle}>Entity Name</th>
-                  <th style={thStyle}>Payment Type</th>
-                  <th style={thStyle}>Amount</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Txn Count</th>
-                  <th style={thStyle}>Date</th>
-                  <th style={thStyle}></th>
-                </tr>
-              </thead>
+              <thead><tr style={{ background: "#f8fafc" }}><th style={thStyle}>Entity</th><th style={thStyle}>Type</th><th style={thStyle}>Amount</th><th style={thStyle}>Status</th><th style={thStyle}>Txn Count</th><th style={thStyle}>Date</th><th style={thStyle}></th></tr></thead>
               <tbody>
-                {filteredTableData.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: "64px", textAlign: "center", color: "#64748b", fontWeight: 500 }}>No analytical records found. Change filters or add an entry.</td></tr>
-                ) : (
-                  filteredTableData.map((d) => (
-                    <tr key={d.id} style={{ borderBottom: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9"}`, transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = theme === 'DARK' ? "rgba(255,255,255,0.02)" : "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                      <td style={tdStyle}>{d.entity_name}</td>
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "6px", background: theme === 'DARK' ? "rgba(59, 130, 246, 0.15)" : "#eff6ff", color: "#3b82f6" }}>{d.payment_type}</span>
-                      </td>
-                      <td style={{ ...tdStyle, fontWeight: 800 }}>₹{d.amount.toLocaleString()}</td>
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          fontSize: "0.7rem", fontWeight: 800, padding: "4px 12px", borderRadius: "20px",
-                          background: d.status === "Paid After due date" ? "#fee2e2" : "#dcfce7",
-                          color: d.status === "Paid After due date" ? "#ef4444" : "#10b981",
-                          border: `1px solid ${d.status === "Paid After due date" ? "#fecaca" : "#bbf7d0"}`
-                        }}>
-                          {d.status}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>{d.transaction_count}</td>
-                      <td style={tdStyle}>{new Date(d.payment_date).toLocaleDateString('en-GB')}</td>
-                      <td style={tdStyle}>
-                        {!d.isTracker && (
-                          <button onClick={() => handleDeleteEntry(parseInt(d.id.split('-')[1]))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", opacity: 0.6 }}>
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                {filteredTableData.map((d) => (
+                  <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={tdStyle}>{d.entity_name}</td>
+                    <td style={tdStyle}><span style={badgeStyle}>{d.payment_type}</span></td>
+                    <td style={{ ...tdStyle, fontWeight: 800 }}>₹{d.amount.toLocaleString('en-IN')}</td>
+                    <td style={tdStyle}><span style={statusBadgeStyle(d.status)}>{d.status}</span></td>
+                    <td style={tdStyle}>{d.transaction_count}</td>
+                    <td style={tdStyle}>{new Date(d.payment_date).toLocaleDateString('en-GB')}</td>
+                    <td style={tdStyle}>{!d.isTracker && <button onClick={() => handleDeleteEntry(parseInt(d.id.split('-')[1]))} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -404,146 +475,118 @@ export default function PaymentsAnalytics({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Graphical Filters */}
-          <div style={{ 
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", 
-            background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", padding: "24px", borderRadius: "24px", color: "white",
-            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
-          }}>
-            <div>
-              <label style={{ ...filterLabelStyle, color: "rgba(255,255,255,0.6)" }}>Analysis From</label>
-              <input type="date" value={chartFilters.fromDate} onChange={e => setChartFilters({...chartFilters, fromDate: e.target.value})} style={chartFilterInputStyle} />
-            </div>
-            <div>
-              <label style={{ ...filterLabelStyle, color: "rgba(255,255,255,0.6)" }}>Analysis To</label>
-              <input type="date" value={chartFilters.toDate} onChange={e => setChartFilters({...chartFilters, toDate: e.target.value})} style={chartFilterInputStyle} />
-            </div>
-            <div>
-              <label style={{ ...filterLabelStyle, color: "rgba(255,255,255,0.6)" }}>Entity Focus</label>
-              <select value={chartFilters.entity} onChange={e => setChartFilters({...chartFilters, entity: e.target.value})} style={chartFilterInputStyle}>
-                <option value="ALL">All Entities</option>
-                {settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ ...filterLabelStyle, color: "rgba(255,255,255,0.6)" }}>Payment Status</label>
-              <select value={chartFilters.status} onChange={e => setChartFilters({...chartFilters, status: e.target.value})} style={chartFilterInputStyle}>
-                <option value="ALL">All Status</option>
-                <option value="Paid on due date">On Due Date</option>
-                <option value="Paid Before due date">Before Due Date</option>
-                <option value="Paid After due date">After Due Date</option>
-              </select>
-            </div>
+          <div style={chartFilterBarStyle}>
+            <div><label style={labelLight}>Analysis From</label><input type="date" value={chartFilters.fromDate} onChange={e => setChartFilters({...chartFilters, fromDate: e.target.value})} style={chartInputStyle} /></div>
+            <div><label style={labelLight}>Analysis To</label><input type="date" value={chartFilters.toDate} onChange={e => setChartFilters({...chartFilters, toDate: e.target.value})} style={chartInputStyle} /></div>
+            <div><label style={labelLight}>Entity focus</label><select value={chartFilters.entity} onChange={e => setChartFilters({...chartFilters, entity: e.target.value})} style={chartInputStyle}><option value="ALL">All Entities</option>{settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}</select></div>
+            <div><label style={labelLight}>By Type</label><select value={chartFilters.type} onChange={e => setChartFilters({...chartFilters, type: e.target.value})} style={chartInputStyle}><option value="ALL">All Types</option>{settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}</select></div>
           </div>
 
-          {/* KPI Row */}
+          {/* KPI Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
             <div style={statCardStyle(theme)}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <span style={{ fontSize: "0.875rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Health Index</span>
-                <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: "10px", borderRadius: "12px", color: "#10b981" }}><CheckCircle2 size={22} /></div>
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                <div style={{ fontSize: "3rem", fontWeight: 900, color: theme === 'DARK' ? "white" : "#1e293b", letterSpacing: "-0.05em" }}>{stats.healthScore}%</div>
-                <ArrowUpRight size={24} color="#10b981" />
-              </div>
-              <div style={{ width: "100%", height: "6px", background: "#f1f5f9", borderRadius: "3px", marginTop: "12px", overflow: "hidden" }}>
-                <div style={{ width: `${stats.healthScore}%`, height: "100%", background: "linear-gradient(90deg, #10b981 0%, #34d399 100%)", borderRadius: "3px", transition: "width 1s ease-out" }}></div>
-              </div>
+              <div style={cardHead}><span>Health Index</span><div style={iconBox("#10b981")}><CheckCircle2 size={22} /></div></div>
+              <div style={cardVal}>{stats.healthScore}% <ArrowUpRight size={24} color="#10b981" /></div>
+              <p style={cardSub}>Payment Efficiency</p>
             </div>
-
             <div style={statCardStyle(theme)}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <span style={{ fontSize: "0.875rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Volume</span>
-                <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: "10px", borderRadius: "12px", color: "#3b82f6" }}><Wallet size={22} /></div>
-              </div>
-              <div style={{ fontSize: "2.25rem", fontWeight: 900, color: theme === 'DARK' ? "white" : "#1e293b", letterSpacing: "-0.02em" }}>₹{stats.totalAmount.toLocaleString()}</div>
-              <p style={{ margin: "8px 0 0 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{stats.totalCount.toLocaleString()} Transactions processed</p>
+              <div style={cardHead}><span>Total Amount Paid</span><div style={iconBox("#3b82f6")}><Wallet size={22} /></div></div>
+              <div style={cardVal}>₹{stats.totalAmount.toLocaleString('en-IN')}</div>
+              <p style={cardSub}>Aggregate Financial Volume</p>
             </div>
-
-            <div style={{ ...statCardStyle(theme), background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)", color: "white", border: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <Zap size={20} color="#f59e0b" fill="#f59e0b" />
-                <span style={{ fontSize: "0.875rem", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase" }}>Strategic Intelligence</span>
-              </div>
-              <p style={{ margin: 0, fontSize: "1rem", lineHeight: "1.7", fontWeight: 500, color: "#e2e8f0" }}>{insights}</p>
-              <div style={{ marginTop: "16px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", fontWeight: 700, color: "#60a5fa", cursor: "pointer" }}>
-                View Actionable Recommendations <ArrowRight size={14} />
-              </div>
+            <div style={statCardStyle(theme)}>
+              <div style={cardHead}><span>Txn Count</span><div style={iconBox("#f59e0b")}><Activity size={22} /></div></div>
+              <div style={cardVal}>{stats.totalCount} <span style={{ fontSize: "1rem" }}>txns</span></div>
+              <p style={cardSub}>Processed Transactions</p>
             </div>
           </div>
 
-          {/* Charts Grid */}
+          <div style={{ ...statCardStyle(theme), background: "#1e293b", color: "white" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+              <Zap size={20} color="#f59e0b" fill="#f59e0b" />
+              <span style={{ fontSize: "0.875rem", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase" }}>Strategic Intelligence</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "1rem", lineHeight: "1.7", fontWeight: 500, color: "#e2e8f0" }}>{insights}</p>
+          </div>
+
+          {/* Charts Row */}
           <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
             <div style={chartContainerStyle(theme)}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800 }}>Spending Velocity</h4>
-                <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", background: "#f8fafc", padding: "4px 10px", borderRadius: "8px" }}>Monthly Trends</div>
-              </div>
+              <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", fontWeight: 800 }}>Spending Velocity</h4>
               <div style={{ height: "350px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={stats.trendData}>
-                    <defs>
-                      <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9"} />
-                    <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tick={{dy: 10}} />
-                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                    <defs><linearGradient id="colorAmt" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tick={{dy: 10}} />
+                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorAmount)" animationBegin={300} animationDuration={1500} />
+                    <Area type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={4} fill="url(#colorAmt)" animationDuration={1500} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
             <div style={chartContainerStyle(theme)}>
               <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", fontWeight: 800 }}>Health Breakdown</h4>
               <div style={{ height: "350px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie 
-                      data={stats.pieData} 
-                      innerRadius={70} 
-                      outerRadius={100} 
-                      paddingAngle={8} 
-                      dataKey="value"
-                      stroke="none"
-                      animationBegin={500}
-                      animationDuration={1500}
-                      cornerRadius={10}
-                    >
-                      {stats.pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
+                    <Pie data={stats.pieData} innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value" stroke="none" cornerRadius={10}>
+                      {stats.pieData.map((e, i) => <Cell key={`c-${i}`} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                    <Legend verticalAlign="bottom" height={36} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          <div style={chartContainerStyle(theme)}>
-            <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", fontWeight: 800 }}>Top Entity Financial Footprint</h4>
-            <div style={{ height: "350px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.barData}>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#60a5fa" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9"} />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tick={{dy: 10}} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="amount" fill="url(#barGradient)" radius={[8, 8, 0, 0]} barSize={40} animationDuration={2000} />
-                </BarChart>
-              </ResponsiveContainer>
+      {/* Share Modal */}
+      {showShareModal && (
+        <div style={modalOverlay}>
+          <div style={modalBox(theme)}>
+            <div style={modalHeader}><h3>Share Analytics Report</h3><button onClick={() => setShowShareModal(false)} style={closeBtn}><X size={20} /></button></div>
+            <div style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Recipient Smart Tags */}
+              <div>
+                <label style={filterLabelStyle}>Recipient Emails (Hit Enter/Comma)</label>
+                <div style={tagInputBoxStyle}>
+                  {recipientTags.map(tag => (
+                    <span key={tag} style={tagStyle}>
+                      {tag} <X size={12} style={{ cursor: "pointer" }} onClick={() => setRecipientTags(recipientTags.filter(t => t !== tag))} />
+                    </span>
+                  ))}
+                  <input type="text" value={recipientInput} onChange={e => setRecipientInput(e.target.value)} onKeyDown={handleRecipientKeyDown} placeholder="Type email..." style={tagGhostInputStyle} />
+                </div>
+              </div>
+              {/* CC Smart Tags */}
+              <div>
+                <label style={filterLabelStyle}>CC Emails (Hit Enter/Comma)</label>
+                <div style={tagInputBoxStyle}>
+                  {ccTags.map(tag => (
+                    <span key={tag} style={tagStyle}>
+                      {tag} <X size={12} style={{ cursor: "pointer" }} onClick={() => setCcTags(ccTags.filter(t => t !== tag))} />
+                    </span>
+                  ))}
+                  <input type="text" value={ccInput} onChange={e => setCcInput(e.target.value)} onKeyDown={handleCcKeyDown} placeholder="Type email..." style={tagGhostInputStyle} />
+                </div>
+              </div>
+              <div>
+                <label style={filterLabelStyle}>Subject</label>
+                <input type="text" value={shareConfig.subject} onChange={e => setShareConfig({...shareConfig, subject: e.target.value})} style={filterInputStyle(theme)} />
+              </div>
+              <div>
+                <label style={filterLabelStyle}>Format</label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {['PDF', 'EXCEL', 'BOTH'].map(f => (
+                    <button key={f} onClick={() => setShareConfig({...shareConfig, format: f as any})} style={formatBtnStyle(shareConfig.format === f)}>{f}</button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={handleShareEmail} disabled={isSharing} style={primaryBtnStyle}>{isSharing ? "Sharing Intelligence..." : "Share Report Now"}</button>
             </div>
           </div>
         </div>
@@ -551,56 +594,17 @@ export default function PaymentsAnalytics({
 
       {/* Add Entry Modal */}
       {showAddEntry && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
-          <div style={{ background: theme === 'DARK' ? "#1e293b" : "white", borderRadius: "28px", width: "100%", maxWidth: "520px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)", overflow: "hidden", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}` }}>
-            <div style={{ padding: "28px", borderBottom: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: "1.5rem", letterSpacing: "-0.02em" }}>Create Record</h3>
-                <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>Add a manual entry to your financial analytics pool.</p>
-              </div>
-              <button onClick={() => setShowAddEntry(false)} style={{ background: theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#f1f5f9", border: "none", color: "#64748b", cursor: "pointer", width: "36px", height: "36px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={20} /></button>
-            </div>
+        <div style={modalOverlay}>
+          <div style={modalBox(theme)}>
+            <div style={modalHeader}><h3>Add Entry</h3><button onClick={() => setShowAddEntry(false)} style={closeBtn}><X size={20} /></button></div>
             <form onSubmit={handleAddEntry} style={{ padding: "28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div style={{ gridColumn: "span 2" }}>
-                <label style={filterLabelStyle}>Company Entity</label>
-                <select required value={newEntry.entity_name} onChange={e => setNewEntry({...newEntry, entity_name: e.target.value})} style={filterInputStyle(theme)}>
-                  <option value="">Select Company</option>
-                  {settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}
-                </select>
-              </div>
-              <div style={{ gridColumn: "span 2" }}>
-                <label style={filterLabelStyle}>Payment Type</label>
-                <select required value={newEntry.payment_type} onChange={e => setNewEntry({...newEntry, payment_type: e.target.value})} style={filterInputStyle(theme)}>
-                  <option value="">Select Nature of Payment</option>
-                  {settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={filterLabelStyle}>Amount (INR)</label>
-                <input required type="number" value={newEntry.amount} onChange={e => setNewEntry({...newEntry, amount: e.target.value})} style={filterInputStyle(theme)} placeholder="₹ 0.00" />
-              </div>
-              <div>
-                <label style={filterLabelStyle}>Trans. Count</label>
-                <input required type="number" value={newEntry.transaction_count} onChange={e => setNewEntry({...newEntry, transaction_count: e.target.value})} style={filterInputStyle(theme)} placeholder="e.g. 520" />
-              </div>
-              <div>
-                <label style={filterLabelStyle}>Payment Date</label>
-                <input required type="date" value={newEntry.payment_date} onChange={e => setNewEntry({...newEntry, payment_date: e.target.value})} style={filterInputStyle(theme)} />
-              </div>
-              <div>
-                <label style={filterLabelStyle}>Status</label>
-                <select value={newEntry.status} onChange={e => setNewEntry({...newEntry, status: e.target.value})} style={filterInputStyle(theme)}>
-                  <option value="Paid on due date">Paid on due date</option>
-                  <option value="Paid Before due date">Paid Before due date</option>
-                  <option value="Paid After due date">Paid After due date</option>
-                </select>
-              </div>
-              <div style={{ gridColumn: "span 2", marginTop: "16px", display: "flex", gap: "16px" }}>
-                <button type="button" onClick={() => setShowAddEntry(false)} style={{ flex: 1, padding: "14px", borderRadius: "14px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: "transparent", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" disabled={isSubmitting} style={{ flex: 2, padding: "14px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "white", fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(37, 99, 235, 0.4)" }}>
-                  {isSubmitting ? "Finalizing..." : "Add Entry"}
-                </button>
-              </div>
+              <div style={{ gridColumn: "span 2" }}><label style={filterLabelStyle}>Entity</label><select required value={newEntry.entity_name} onChange={e => setNewEntry({...newEntry, entity_name: e.target.value})} style={filterInputStyle(theme)}><option value="">Select Entity</option>{settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}</select></div>
+              <div style={{ gridColumn: "span 2" }}><label style={filterLabelStyle}>Type</label><select required value={newEntry.payment_type} onChange={e => setNewEntry({...newEntry, payment_type: e.target.value})} style={filterInputStyle(theme)}><option value="">Select Type</option>{settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}</select></div>
+              <div><label style={filterLabelStyle}>Amount</label><input required type="number" value={newEntry.amount} onChange={e => setNewEntry({...newEntry, amount: e.target.value})} style={filterInputStyle(theme)} /></div>
+              <div><label style={filterLabelStyle}>Txn Count</label><input required type="number" value={newEntry.transaction_count} onChange={e => setNewEntry({...newEntry, transaction_count: e.target.value})} style={filterInputStyle(theme)} /></div>
+              <div><label style={filterLabelStyle}>Date</label><input required type="date" value={newEntry.payment_date} onChange={e => setNewEntry({...newEntry, payment_date: e.target.value})} style={filterInputStyle(theme)} /></div>
+              <div><label style={filterLabelStyle}>Status</label><select value={newEntry.status} onChange={e => setNewEntry({...newEntry, status: e.target.value})} style={filterInputStyle(theme)}><option value="Paid on due date">Paid on due date</option><option value="Paid Before due date">Paid Before due date</option><option value="Paid After due date">Paid After due date</option></select></div>
+              <button type="submit" style={{ gridColumn: "span 2", padding: "14px", borderRadius: "14px", border: "none", background: "#3b82f6", color: "white", fontWeight: 700 }}>Add Entry</button>
             </form>
           </div>
         </div>
@@ -609,11 +613,31 @@ export default function PaymentsAnalytics({
   );
 }
 
-// Styles
+// STYLES
 const filterLabelStyle = { display: "block", marginBottom: "8px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "#94a3b8" };
-const filterInputStyle = (theme: string) => ({ width: "100%", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: theme === 'DARK' ? "rgba(15, 23, 42, 0.4)" : "white", color: theme === 'DARK' ? "white" : "#1e293b", fontSize: "0.875rem", outline: "none", transition: "border-color 0.2s" });
-const chartFilterInputStyle = { width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white", fontSize: "0.875rem", outline: "none" };
+const filterInputStyle = (theme: string) => ({ width: "100%", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: theme === 'DARK' ? "rgba(15, 23, 42, 0.4)" : "white", color: theme === 'DARK' ? "white" : "#1e293b", fontSize: "0.875rem", outline: "none" });
+const tabStyle = (active: boolean) => ({ display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px", borderRadius: "10px", border: "none", background: active ? "#3b82f6" : "transparent", color: active ? "white" : "#64748b", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", transition: "all 0.3s" });
 const thStyle = { padding: "20px 24px", textAlign: "left" as const, fontSize: "0.7rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.1em" };
-const tdStyle = { padding: "18px 24px", fontSize: "0.875rem", color: "inherit" };
-const statCardStyle = (theme: string) => ({ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "28px", borderRadius: "24px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" });
-const chartContainerStyle = (theme: string) => ({ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "28px", borderRadius: "24px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" });
+const tdStyle = { padding: "18px 24px", fontSize: "0.875rem" };
+const badgeStyle = { fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "6px", background: "#eff6ff", color: "#3b82f6" };
+const statusBadgeStyle = (status: string) => ({ fontSize: "0.7rem", fontWeight: 800, padding: "4px 12px", borderRadius: "20px", background: status === "Paid After due date" ? "#fee2e2" : "#dcfce7", color: status === "Paid After due date" ? "#ef4444" : "#10b981" });
+const addBtnStyle = { width: "100%", height: "44px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", cursor: "pointer" };
+const menuItemStyle = { width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "none", cursor: "pointer", textAlign: "left" as const, fontSize: "0.875rem", color: "#1e293b" };
+const statCardStyle = (theme: string) => ({ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "28px", borderRadius: "24px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}` });
+const cardHead = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", fontSize: "0.875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" as const };
+const cardVal = { fontSize: "2.5rem", fontWeight: 900, color: "#1e293b", letterSpacing: "-0.02em" };
+const cardSub = { margin: "8px 0 0 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 };
+const iconBox = (color: string) => ({ background: `${color}10`, padding: "10px", borderRadius: "12px", color });
+const chartFilterBarStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", background: "#1e293b", padding: "24px", borderRadius: "24px", color: "white" };
+const labelLight = { display: "block", marginBottom: "8px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.6)" };
+const chartInputStyle = { width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white", fontSize: "0.875rem" };
+const chartContainerStyle = (theme: string) => ({ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "28px", borderRadius: "24px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}` });
+const modalOverlay = { position: "fixed" as const, inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" };
+const modalBox = (theme: string) => ({ background: theme === 'DARK' ? "#1e293b" : "white", borderRadius: "28px", width: "100%", maxWidth: "520px", boxShadow: "0 25px 50px rgba(0,0,0,0.3)" });
+const modalHeader = { padding: "28px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" };
+const closeBtn = { background: "#f1f5f9", border: "none", color: "#64748b", cursor: "pointer", width: "36px", height: "36px", borderRadius: "12px" };
+const tagInputBoxStyle = { display: "flex", flexWrap: "wrap" as const, gap: "8px", padding: "10px 14px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", minHeight: "48px" };
+const tagStyle = { display: "flex", alignItems: "center", gap: "6px", background: "#eff6ff", color: "#3b82f6", padding: "4px 10px", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 700 };
+const tagGhostInputStyle = { border: "none", outline: "none", flex: 1, fontSize: "0.875rem", minWidth: "120px" };
+const formatBtnStyle = (active: boolean) => ({ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${active ? "#3b82f6" : "#e2e8f0"}`, background: active ? "#eff6ff" : "white", color: active ? "#3b82f6" : "#64748b", fontWeight: 700, cursor: "pointer" });
+const primaryBtnStyle = { width: "100%", padding: "14px", borderRadius: "14px", border: "none", background: "#3b82f6", color: "white", fontWeight: 700, cursor: "pointer" };
