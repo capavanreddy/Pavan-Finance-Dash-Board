@@ -94,6 +94,8 @@ export default function PaymentsAnalytics({
     fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL', search: ''
   });
 
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'payment_date', direction: 'desc' });
+
   const [chartFilters, setChartFilters] = useState({
     fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL'
   });
@@ -174,7 +176,7 @@ export default function PaymentsAnalytics({
   }, [trackerOccurrences, manualEntries]);
 
   const filteredTableData = useMemo(() => {
-    return combinedData.filter(d => {
+    const filtered = combinedData.filter(d => {
       const dateInRange = d.payment_date >= tableFilters.fromDate && d.payment_date <= tableFilters.toDate;
       const entityMatch = tableFilters.entity === 'ALL' || d.entity_name === tableFilters.entity;
       const deptMatch = tableFilters.department === 'ALL' || d.department_name === tableFilters.department;
@@ -182,8 +184,35 @@ export default function PaymentsAnalytics({
       const statusMatch = tableFilters.status === 'ALL' || d.status === tableFilters.status;
       const searchMatch = !tableFilters.search || d.entity_name.toLowerCase().includes(tableFilters.search.toLowerCase());
       return dateInRange && entityMatch && deptMatch && typeMatch && statusMatch && searchMatch;
-    }).sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
-  }, [combinedData, tableFilters]);
+    });
+
+    return filtered.sort((a: any, b: any) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      if (sortConfig.key === 'payment_date') {
+        valA = new Date(valA).getTime();
+        valB = new Date(valB).getTime();
+      }
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [combinedData, tableFilters, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const SortIcon = ({ colKey }: { colKey: string }) => {
+    if (sortConfig.key !== colKey) return <ChevronDown size={14} style={{ opacity: 0.3, marginLeft: '4px' }} />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} style={{ marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ marginLeft: '4px' }} />;
+  };
+
 
   const filteredChartData = useMemo(() => {
     return combinedData.filter(d => {
@@ -459,7 +488,17 @@ export default function PaymentsAnalytics({
           </div>
           <div style={{ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr style={{ background: "#f8fafc" }}><th style={thStyle}>Entity</th><th style={thStyle}>Department</th><th style={thStyle}>Type</th><th style={thStyle}>Amount</th><th style={thStyle}>Status</th><th style={thStyle}>Date</th><th style={thStyle}></th></tr></thead>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th onClick={() => handleSort('entity_name')} style={{ ...thStyle, cursor: "pointer" }}>Entity <SortIcon colKey="entity_name" /></th>
+                  <th onClick={() => handleSort('department_name')} style={{ ...thStyle, cursor: "pointer" }}>Department <SortIcon colKey="department_name" /></th>
+                  <th onClick={() => handleSort('payment_type')} style={{ ...thStyle, cursor: "pointer" }}>Type <SortIcon colKey="payment_type" /></th>
+                  <th onClick={() => handleSort('amount')} style={{ ...thStyle, cursor: "pointer" }}>Amount <SortIcon colKey="amount" /></th>
+                  <th onClick={() => handleSort('status')} style={{ ...thStyle, cursor: "pointer" }}>Status <SortIcon colKey="status" /></th>
+                  <th onClick={() => handleSort('payment_date')} style={{ ...thStyle, cursor: "pointer" }}>Date <SortIcon colKey="payment_date" /></th>
+                  <th style={thStyle}></th>
+                </tr>
+              </thead>
               <tbody>
                 {filteredTableData.map((d) => (
                   <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
