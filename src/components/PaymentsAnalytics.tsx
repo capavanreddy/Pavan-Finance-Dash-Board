@@ -7,7 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Wallet, Activity,
   ChevronDown, X, Trash2, CheckCircle2, AlertCircle,
   Zap, ArrowRight, Download, FileSpreadsheet, FileText, Mail, Share2,
-  Building2, Layers
+  Building2, Layers, ArrowUp, ArrowDown
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -449,13 +449,13 @@ export default function PaymentsAnalytics({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", animation: "fade-in 0.5s ease-out" }}>
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } select option { background: white !important; color: #1e293b !important; }` }} />
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } select option { background: white !important; color: #1e293b !important; } .sort-th:hover { background: #f1f5f9 !important; }` }} />
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "20px 24px", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "white", padding: "12px", borderRadius: "14px" }}><Activity size={24} /></div>
-          <div><h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Finance Analytics Hub</h2><p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>Global Date Standard: DD-MM-YYYY</p></div>
+          <div><h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Finance Analytics Hub</h2></div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ position: "relative" }}>
@@ -490,12 +490,12 @@ export default function PaymentsAnalytics({
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  <th onClick={() => handleSort('entity_name')} style={{ ...thStyle, cursor: "pointer" }}>Entity <SortIcon colKey="entity_name" /></th>
-                  <th onClick={() => handleSort('department_name')} style={{ ...thStyle, cursor: "pointer" }}>Department <SortIcon colKey="department_name" /></th>
-                  <th onClick={() => handleSort('payment_type')} style={{ ...thStyle, cursor: "pointer" }}>Type <SortIcon colKey="payment_type" /></th>
-                  <th onClick={() => handleSort('amount')} style={{ ...thStyle, cursor: "pointer" }}>Amount <SortIcon colKey="amount" /></th>
-                  <th onClick={() => handleSort('status')} style={{ ...thStyle, cursor: "pointer" }}>Status <SortIcon colKey="status" /></th>
-                  <th onClick={() => handleSort('payment_date')} style={{ ...thStyle, cursor: "pointer" }}>Date <SortIcon colKey="payment_date" /></th>
+                  <th onClick={() => handleSort('entity_name')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Entity <SortIcon colKey="entity_name" /></th>
+                  <th onClick={() => handleSort('department_name')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Department <SortIcon colKey="department_name" /></th>
+                  <th onClick={() => handleSort('payment_type')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Type <SortIcon colKey="payment_type" /></th>
+                  <th onClick={() => handleSort('amount')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Amount <SortIcon colKey="amount" /></th>
+                  <th onClick={() => handleSort('status')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Status <SortIcon colKey="status" /></th>
+                  <th onClick={() => handleSort('payment_date')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Date <SortIcon colKey="payment_date" /></th>
                   <th style={thStyle}></th>
                 </tr>
               </thead>

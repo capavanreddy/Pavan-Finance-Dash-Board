@@ -197,9 +197,18 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       setIsTasksMenuOpen(false);
     }
     
-    // Future-proof: Add similar logic here for Learning or other modules
-    // if (activeView !== 'LOS') setIsLearningMenuOpen(false);
-  }, [activeView]);
+    // Persist active view
+    localStorage.setItem('finpulse_active_view', activeView);
+    localStorage.setItem('finpulse_active_subview', activeSubView);
+  }, [activeView, activeSubView]);
+
+  // Load persisted view on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('finpulse_active_view');
+    const savedSubView = localStorage.getItem('finpulse_active_subview');
+    if (savedView) setActiveView(savedView as any);
+    if (savedSubView) setActiveSubView(savedSubView as any);
+  }, []);
 
   // Advanced Controls State
   const [startDate, setStartDate] = useState("");
