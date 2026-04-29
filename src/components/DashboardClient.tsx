@@ -626,19 +626,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Requester', key: 'requestFrom', width: 20 },
         { header: 'Owner', key: 'ownerName', width: 20 },
         { header: 'Reviewer', key: 'reviewerName', width: 20 },
-        { header: 'Due Date (YYYY-MM-DD)', key: 'dueDate', width: 25 },
+        { header: 'Due Date (DD-MM-YYYY)', key: 'dueDate', width: 25 },
       ];
-      worksheet.addRow(['Sample Task', 'Sample Entity', 'Daily', 'Finance', 'Manager', 'Owner Name', 'Reviewer Name', '2026-12-31']);
+      worksheet.addRow(['Sample Task', 'Intellicar-BLR', 'Daily', 'Finance', 'Manager Name', 'Owner Name', 'Reviewer Name', '31-12-2026']);
     } else if (type === 'lo') {
       worksheet.columns = [
         { header: 'Entity', key: 'entity', width: 20 },
-        { header: 'Date (YYYY-MM-DD)', key: 'dateOfIdentification', width: 25 },
+        { header: 'Date (DD-MM-YYYY)', key: 'dateOfIdentification', width: 25 },
         { header: 'LO Description', key: 'learningOpportunity', width: 40 },
         { header: 'Identified By', key: 'identifiedBy', width: 20 },
         { header: 'Committed By', key: 'committedBy', width: 20 },
         { header: 'Resolution', key: 'resolutionProvided', width: 40 },
       ];
-      worksheet.addRow(['Sample Entity', '2026-04-21', 'Sample LO description...', 'Name A', 'Name B', 'Done']);
+      worksheet.addRow(['Intellicar-BLR', '21-04-2026', 'Sample LO description...', 'Name A', 'Name B', 'Done']);
     } else if (type === 'recurring') {
       worksheet.columns = [
         { header: 'Task Name Pattern', key: 'taskNamePattern', width: 30 },
@@ -651,23 +651,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Month Offset', key: 'monthOffset', width: 15 },
         { header: 'Default Owner', key: 'defaultOwner', width: 20 },
         { header: 'Default Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (YYYY-MM-DD)', key: 'startDate', width: 25 },
-        { header: 'End Date (YYYY-MM-DD)', key: 'endDate', width: 25 },
+        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 25 },
+        { header: 'End Date (DD-MM-YYYY)', key: 'endDate', width: 25 },
         { header: 'Is Active (TRUE/FALSE)', key: 'isActive', width: 20 },
         { header: 'Freq Label', key: 'freqLabel', width: 20 },
       ];
       worksheet.addRow([
         'Sample Recurring Task - [Month] [Year]', 
-        'Entity Name', 
+        'Intellicar-BLR', 
         'External', 
         'Finance', 
         'Direct Tax', 
         'M', 
         '10', 
         '0', 
-        'Owner Email/Name', 
-        'Reviewer Email/Name', 
-        '2026-04-01', 
+        'Owner Name', 
+        'Reviewer Name', 
+        '01-04-2026', 
         '', 
         'TRUE', 
         'Monthly'
@@ -687,11 +687,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Prod Email', key: 'prodEmail', width: 25 },
         { header: 'Owner', key: 'defaultOwner', width: 20 },
         { header: 'Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (YYYY-MM-DD)', key: 'startDate', width: 25 },
-        { header: 'End Date (YYYY-MM-DD)', key: 'endDate', width: 25 },
+        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 25 },
+        { header: 'End Date (DD-MM-YYYY)', key: 'endDate', width: 25 },
       ];
       worksheet.addRow([
-        'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '2026-04-01', ''
+        'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '01-04-2026', ''
       ]);
     }
 
@@ -721,12 +721,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           requestFrom: values[5],
           ownerName: values[6],
           reviewerName: values[7],
-          dueDate: values[8],
+          dueDate: parseExcelDate(values[8]),
         });
       } else if (type === 'lo') {
         rows.push({
           entity: values[1],
-          dateOfIdentification: values[2],
+          dateOfIdentification: parseExcelDate(values[2]),
           learningOpportunity: values[3],
           identifiedBy: values[4],
           committedBy: values[5],
@@ -745,10 +745,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           monthOffset: Number(values[8]),
           defaultOwner: values[9],
           defaultReviewer: values[10],
-          startDate: values[11],
-          endDate: values[12],
+          startDate: parseExcelDate(values[11]),
+          endDate: parseExcelDate(values[12]),
           isActive: String(values[13]).toUpperCase() === 'TRUE',
-          freqLabel: values[14],
+          freqLabel: values[14]
         });
       } else if (type === 'payments') {
         rows.push({
@@ -765,8 +765,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           prodEmail: values[11],
           defaultOwner: values[12],
           defaultReviewer: values[13],
-          startDate: values[14],
-          endDate: values[15],
+          startDate: parseExcelDate(values[14]),
+          endDate: parseExcelDate(values[15]),
         });
       }
     });
@@ -1243,28 +1243,41 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const pendingReviewCount = tasks.filter(t => t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner").length;
   const completedCount = tasks.filter(t => t.taskStatus === "Completed" && (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required")).length;
 
-  // Format date as DD-MMM-YYYY
+  // Format date as DD-MM-YYYY
   const formatDate = (date: string | Date | null) => {
-    if (!date) return "--";
-    const d = typeof date === "string" ? new Date(date) : date;
-    if (isNaN(d.getTime())) return "--";
+    if (!date) return "Not Set";
+    const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
 
   // Format date and time as DD-MMM-YYYY HH:mm
-  const formatDateTime = (date: string | Date | null) => {
-    if (!date) return "--";
-    const d = typeof date === "string" ? new Date(date) : date;
-    if (isNaN(d.getTime())) return "--";
+  const formatDateTime = (dateStr: string) => {
+    const d = new Date(dateStr);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${day}-${month}-${year} ${hours}:${minutes}`;
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${mins}`;
+  };
+
+  const parseExcelDate = (val: any) => {
+    if (!val) return null;
+    if (val instanceof Date) return val.toISOString().split('T')[0];
+    const s = String(val).trim();
+    if (s.includes('-')) {
+      const parts = s.split('-');
+      if (parts[0].length === 4) return s; // YYYY-MM-DD
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+    }
+    if (s.includes('/')) {
+      const parts = s.split('/');
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD/MM/YYYY
+    }
+    try { return new Date(val).toISOString().split('T')[0]; } catch { return s; }
   };
 
   const filteredTasksToDisplay = tasks.filter(t => {
