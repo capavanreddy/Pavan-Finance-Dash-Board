@@ -22,12 +22,13 @@ export async function PATCH(request: Request) {
     const existingSettings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
     console.log('PATCH /api/admin/settings - Existing settings found:', existingSettings.length);
 
-    // Self-healing migration for masterFrequencies and masterPaymentTypes
+    // Self-healing migration for new fields
     try {
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterFrequencies" TEXT DEFAULT 'Ad,M,Y,2Y,H,Q,W,BW,D'`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterPaymentTypes" TEXT DEFAULT 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "userModuleExceptions" TEXT DEFAULT '{}'`;
     } catch (e) {
-      console.log("Migration for masterFrequencies/PaymentTypes failed/skipped");
+      console.log("Migration for settings fields failed/skipped");
     }
 
     if (!existingSettings || existingSettings.length === 0) {
@@ -54,7 +55,8 @@ export async function PATCH(request: Request) {
           "managerEmail",
           "loReportEmail",
           "masterFrequencies",
-          "masterPaymentTypes"
+          "masterPaymentTypes",
+          "userModuleExceptions"
         ) VALUES (
           'singleton',
           ${body.masterDepartments || ''},
@@ -76,7 +78,8 @@ export async function PATCH(request: Request) {
           ${body.managerEmail || ''},
           ${body.loReportEmail || ''},
           ${body.masterFrequencies || 'Ad,M,Y,2Y,H,Q,W,BW,D'},
-          ${body.masterPaymentTypes || 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'}
+          ${body.masterPaymentTypes || 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'},
+          ${body.userModuleExceptions || '{}'}
         )
         RETURNING *
       `;
@@ -109,7 +112,8 @@ export async function PATCH(request: Request) {
         "managerEmail" = ${body.managerEmail ?? existingSettings[0].managerEmail},
         "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
         "masterFrequencies" = ${body.masterFrequencies ?? existingSettings[0].masterFrequencies},
-        "masterPaymentTypes" = ${body.masterPaymentTypes ?? existingSettings[0].masterPaymentTypes}
+        "masterPaymentTypes" = ${body.masterPaymentTypes ?? existingSettings[0].masterPaymentTypes},
+        "userModuleExceptions" = ${body.userModuleExceptions ?? existingSettings[0].userModuleExceptions}
       WHERE id = ${settingsId}
       RETURNING *
     `;

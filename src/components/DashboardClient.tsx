@@ -141,7 +141,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
   const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB'>('ACCOUNT');
-  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | ''>('ACCESS');
+  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | ''>('ACCESS');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
@@ -169,7 +169,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     entityMatrix: '{}',
     homeContent: '{}',
     masterFrequencies: 'Ad,M,Y,2Y,H,Q,W,BW,D',
-    masterPaymentTypes: 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'
+    masterPaymentTypes: 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment',
+    userModuleExceptions: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -488,30 +489,36 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchUsersList(); // Ensure users load on mount for LO form
   }, [isAdmin]);
 
+  const isModuleAllowed = (moduleName: string) => {
+    if (isAdmin) return true;
+    if (!user?.department || !user?.email) return false;
+    try {
+      const accessMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+      const deptAllowed = accessMatrix[moduleName] && accessMatrix[moduleName].includes(user.department);
+      if (!deptAllowed) return false;
+      const exceptions = JSON.parse(settings.userModuleExceptions || '{}');
+      const userBlockedModules = exceptions[user.email] || [];
+      if (userBlockedModules.includes(moduleName)) return false;
+      return true;
+    } catch (err) { return false; }
+  };
+
   // SMART REDIRECTION LOGIC
   useEffect(() => {
-    if (settings.moduleAccessMatrix && settings.moduleAccessMatrix !== '{}' && user?.department) {
-      try {
-        const matrix = JSON.parse(settings.moduleAccessMatrix);
-        const canSeeTasks = isAdmin || (matrix['Tasks'] && matrix['Tasks'].includes(user.department));
-        
-        // If user is on TASKS dashboard but not allowed, push to Inter-Dept Requests
-        if (!canSeeTasks && activeView === 'TASKS' && activeSubView === 'MAIN') {
-          const canSeeRequests = isAdmin || (matrix['Requests'] && matrix['Requests'].includes(user.department));
-          if (canSeeRequests) {
-            setActiveView('TASKS');
-            setActiveSubView('OTHER_DEPT');
-            setIsTasksMenuOpen(false);
-          } else {
-            // If even requests are not allowed, maybe push to LO or just hide everything
-            setActiveView('LOS');
-          }
+    if (settings.moduleAccessMatrix && user?.department) {
+      const canSeeTasks = isModuleAllowed('Tasks');
+      if (!canSeeTasks && activeView === 'TASKS' && activeSubView === 'MAIN') {
+        const canSeeRequests = isModuleAllowed('Requests');
+        if (canSeeRequests) {
+          setActiveView('TASKS');
+          setActiveSubView('OTHER_DEPT');
+          setIsTasksMenuOpen(false);
+        } else {
+          setActiveView('LOS');
         }
-      } catch (err) {
-        console.error("Matrix parse error during redirect", err);
       }
     }
-  }, [settings.moduleAccessMatrix, user?.department, activeView, activeSubView]);
+  }, [settings.moduleAccessMatrix, settings.userModuleExceptions, user?.department, activeView, activeSubView]);
 
   const fetchSettings = async () => {
     try {
@@ -2173,132 +2180,142 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       </button>
                     );
                   })()}
+                  {(() => {
+                    const canSeeTasks = isModuleAllowed('Tasks');
+                    const canSeeRequests = isModuleAllowed('Requests');
+                    const canSeeLearning = isModuleAllowed('Learning');
+                    const canSeePayments = isModuleAllowed('Payments');
+                    
+                    if (!canSeeTasks && !canSeeRequests && !canSeeLearning && !canSeePayments) return null;
 
-                  {canSeeTasks && (
-                    <div style={{ width: "100%" }}>
-                      <button 
-                        onClick={() => {
-                          if (activeView !== 'TASKS') {
-                            setActiveView('TASKS');
-                            setActiveSubView('MAIN');
-                          }
-                          setIsTasksMenuOpen(!isTasksMenuOpen);
-                          setActiveMainView('DASHBOARD');
-                        }}
-                        style={{ 
-                          display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                          background: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                          border: "none", color: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                          cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                          width: "100%", borderRadius: "16px",
-                          boxShadow: activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none",
-                          position: "relative"
-                        }}
-                      >
-                        <Briefcase size={24} color={activeView === 'TASKS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                        <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Tasks</span>
-                        <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
-                      </button>
-                      
-                      {isTasksMenuOpen && (
-                        <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", padding: "0 8px" }}>
-                          <button 
-                            onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                              background: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                              color: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
-                              cursor: "pointer", transition: "all 0.2s"
-                            }}
-                          >
-                            Task Dashboard
-                          </button>
-                          {(() => {
-                            // Check Matrix for Recurring Activities access
-                            const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
-                            const canSeeRecurring = isAdmin || (matrix['Recurring Activities'] && matrix['Recurring Activities'].includes(user?.department));
-                            if (!canSeeRecurring) return null;
-                            return (
-                              <button 
-                                onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
-                                style={{ 
-                                  padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                                  background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                                  color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
-                                  cursor: "pointer", transition: "all 0.2s"
-                                }}
-                              >
-                                Recurring Activities
-                              </button>
-                            );
-                          })()}
-                          {canSeeRequests && (
+                    return (
+                      <>
+                        {canSeeTasks && (
+                          <div style={{ width: "100%" }}>
                             <button 
-                              onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
+                              onClick={() => {
+                                if (activeView !== 'TASKS') {
+                                  setActiveView('TASKS');
+                                  setActiveSubView('MAIN');
+                                }
+                                setIsTasksMenuOpen(!isTasksMenuOpen);
+                                setActiveMainView('DASHBOARD');
+                              }}
                               style={{ 
-                                padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                                background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                                color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
-                                cursor: "pointer", transition: "all 0.2s"
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                                background: (activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                                border: "none", color: (activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                                cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                                width: "100%", borderRadius: "16px",
+                                boxShadow: (activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none",
+                                position: "relative"
                               }}
                             >
-                              Inter Dept Request
+                              <Briefcase size={24} color={(activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Workplace</span>
+                              <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
                             </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            
+                            {isTasksMenuOpen && (
+                              <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", padding: "0 8px" }}>
+                                <button 
+                                  onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); }}
+                                  style={{ 
+                                    padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                    background: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                    color: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                                    cursor: "pointer", transition: "all 0.2s"
+                                  }}
+                                >
+                                  Task Dashboard
+                                </button>
+                                {(() => {
+                                  if (!isModuleAllowed('Recurring Activities')) return null;
+                                  return (
+                                    <button 
+                                      onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                                      style={{ 
+                                        padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                        background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                        color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
+                                        cursor: "pointer", transition: "all 0.2s"
+                                      }}
+                                    >
+                                      Recurring Activities
+                                    </button>
+                                  );
+                                })()}
+                                {canSeeRequests && (
+                                  <button 
+                                    onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
+                                    style={{ 
+                                      padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
+                                      background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                                      color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                                      cursor: "pointer", transition: "all 0.2s"
+                                    }}
+                                  >
+                                    Inter Dept Request
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                  {!canSeeTasks && canSeeRequests && (
-                    <button 
-                      onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
-                      style={{ 
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px"
-                      }}
-                    >
-                      <Users size={24} color={activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em", textAlign: "center" }}>Inter Dept Request</span>
-                    </button>
-                  )}
+                        {!canSeeTasks && canSeeRequests && (
+                          <button 
+                            onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
+                            style={{ 
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                              background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                              border: "none", color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                              width: "100%", borderRadius: "16px"
+                            }}
+                          >
+                            <Users size={24} color={activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#94a3b8"} />
+                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em", textAlign: "center" }}>Inter Dept Request</span>
+                          </button>
+                        )}
 
-                  {canSeeLearning && (
-                    <button 
-                      onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
-                      style={{ 
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px",
-                        boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                      }}
-                    >
-                      <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
-                    </button>
-                  )}
+                        {canSeeLearning && (
+                          <button 
+                            onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
+                            style={{ 
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                              background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                              border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                              width: "100%", borderRadius: "16px",
+                              boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                            }}
+                          >
+                            <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
+                          </button>
+                        )}
 
-                  {canSeePayments && (
-                    <button 
-                      onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
-                      style={{ 
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                        background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                        border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                        cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                        width: "100%", borderRadius: "16px",
-                        boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                      }}
-                    >
-                      <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                      <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
-                    </button>
-                  )}
+                        {canSeePayments && (
+                          <button 
+                            onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
+                            style={{ 
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                              background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                              border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                              width: "100%", borderRadius: "16px",
+                              boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                            }}
+                          >
+                            <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
+
 
                 </>
               );
@@ -3907,7 +3924,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       )}
       {showOptionsModal && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "24px" }}>
-          <div style={{ background: t.card, borderRadius: "16px", width: "100%", maxWidth: "800px", height: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
+          <div style={{ background: t.card, borderRadius: "20px", width: "100%", maxWidth: "1300px", height: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", animation: "modal-in 0.3s ease-out" }}>
+            <style dangerouslySetInnerHTML={{ __html: `@keyframes modal-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }` }} />
             <div style={{ padding: "24px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: t.bg }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 {isAdmin ? <ShieldCheck size={24} color="#4f46e5" /> : <Sliders size={24} color="#4f46e5" />}
@@ -6033,6 +6051,129 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     </tr>
                                   );
                                 })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* User Module Controls (Matrix D) */}
+                    <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'USER_CONTROLS' ? '' : 'USER_CONTROLS')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'USER_CONTROLS' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'USER_CONTROLS' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'USER_CONTROLS' ? "#2563eb" : "#0f172a" }}>
+                          <ShieldCheck size={20} /> User Module Controls
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'USER_CONTROLS' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: t.textMuted }} />
+                      </div>
+                      
+                      {activeMatrixTab === 'USER_CONTROLS' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                            <div>
+                              <h5 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>Granular User Exceptions</h5>
+                              <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>Disable specific modules for individual users, even if their department has access.</p>
+                            </div>
+                            <div style={{ position: "relative" }}>
+                              <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
+                              <input 
+                                type="text" 
+                                placeholder="Search users..." 
+                                onChange={(e) => setExtReqSearch(e.target.value)} 
+                                style={{ padding: "8px 12px 8px 36px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.875rem", width: "250px" }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: t.bg }}>
+                                  <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", color: t.textMuted, fontSize: "0.7rem", textTransform: "uppercase" }}>User & Department</th>
+                                  {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities', 'Payments'].map(module => (
+                                    <th key={module} style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #e2e8f0", color: t.textMuted, fontSize: "0.7rem", textTransform: "uppercase" }}>{module}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {usersList
+                                  .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
+                                  .filter(u => (u as any).isApproved !== false)
+                                  .map((u) => {
+                                    const accessMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
+                                    const exceptions = JSON.parse(settings.userModuleExceptions || '{}');
+                                    const userExceptions = exceptions[u.email] || [];
+                                    
+                                    return (
+                                      <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                        <td style={{ padding: "12px" }}>
+                                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.75rem", border: "1px solid #e2e8f0" }}>
+                                               {u.name ? u.name[0].toUpperCase() : u.email[0].toUpperCase()}
+                                             </div>
+                                             <div>
+                                               <div style={{ fontWeight: 600, color: t.text, fontSize: "0.875rem" }}>{u.name || "--"}</div>
+                                               <div style={{ fontSize: "0.7rem", color: "#3b82f6", fontWeight: 600 }}>{u.department}</div>
+                                             </div>
+                                           </div>
+                                        </td>
+                                        {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities', 'Payments'].map(module => {
+                                          const deptHasAccess = accessMatrix[module]?.includes(u.department);
+                                          const isManuallyBlocked = userExceptions.includes(module);
+                                          const effectiveAccess = deptHasAccess && !isManuallyBlocked;
+                                          
+                                          return (
+                                            <td key={module} style={{ padding: "12px", textAlign: "center" }}>
+                                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                                                <label className="switch" style={{ position: "relative", display: "inline-block", width: "40px", height: "20px" }}>
+                                                  <input 
+                                                    type="checkbox" 
+                                                    disabled={!deptHasAccess}
+                                                    checked={effectiveAccess}
+                                                    onChange={(e) => {
+                                                      let updatedExceptions = [...userExceptions];
+                                                      if (!e.target.checked) {
+                                                        if (!updatedExceptions.includes(module)) updatedExceptions.push(module);
+                                                      } else {
+                                                        updatedExceptions = updatedExceptions.filter(m => m !== module);
+                                                      }
+                                                      setSettings({
+                                                        ...settings,
+                                                        userModuleExceptions: JSON.stringify({ ...exceptions, [u.email]: updatedExceptions })
+                                                      });
+                                                    }}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                  />
+                                                  <span style={{ 
+                                                    position: "absolute", cursor: deptHasAccess ? "pointer" : "not-allowed", 
+                                                    top: 0, left: 0, right: 0, bottom: 0, 
+                                                    backgroundColor: !deptHasAccess ? "#e2e8f0" : (effectiveAccess ? "#10b981" : "#ef4444"), 
+                                                    transition: ".4s", borderRadius: "34px", opacity: deptHasAccess ? 1 : 0.5 
+                                                  }}>
+                                                    <span style={{ 
+                                                      position: "absolute", content: '""', height: "14px", width: "14px", 
+                                                      left: effectiveAccess ? "23px" : "3px", bottom: "3px", 
+                                                      backgroundColor: "white", transition: ".4s", borderRadius: "50%" 
+                                                    }}></span>
+                                                  </span>
+                                                </label>
+                                                {!deptHasAccess ? (
+                                                  <span style={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>Dept Blocked</span>
+                                                ) : isManuallyBlocked ? (
+                                                  <span style={{ fontSize: "0.6rem", color: "#ef4444", fontWeight: 700 }}>User Blocked</span>
+                                                ) : (
+                                                  <span style={{ fontSize: "0.6rem", color: "#10b981", fontWeight: 700 }}>Active</span>
+                                                )}
+                                              </div>
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    );
+                                  })}
                               </tbody>
                             </table>
                           </div>
