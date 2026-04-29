@@ -766,7 +766,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: theme === 'DARK' ? "rgba(255,255,255,0.02)" : "#f8fafc" }}>
+                <tr style={{ background: "#1e293b" }}>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('entityName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Entity <SortIcon column="entityName" /></div>
                   </th>
@@ -906,7 +906,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: theme === 'DARK' ? "rgba(255,255,255,0.02)" : "#f8fafc" }}>
+                <tr style={{ background: "#1e293b" }}>
                   <th style={thStyle}>Entity</th>
                   <th style={thStyle}>Description</th>
                   <th style={thStyle}>Vendor</th>
@@ -1436,7 +1436,17 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
 }
 
 // Styles
-const thStyle = { padding: "12px 16px", textAlign: "left" as const, fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" as const, letterSpacing: "0.05em" };
+const thStyle = { 
+  background: "#1e293b",
+  color: "#ffffff",
+  padding: "14px 20px", 
+  textAlign: "left" as const, 
+  fontSize: "0.7rem", 
+  fontWeight: 700, 
+  textTransform: "uppercase" as const, 
+  letterSpacing: "0.05em",
+  borderBottom: "2px solid #3b82f6"
+};
 const tdStyle = { padding: "16px", fontSize: "0.875rem" };
 const iconBtnStyle = { background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "4px" };
 const modalOverlayStyle = { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" };

@@ -592,15 +592,15 @@ const filterLabelStyle = { display: "block", marginBottom: "8px", fontSize: "0.6
 const filterInputStyle = (theme: string) => ({ width: "100%", padding: "12px 16px", borderRadius: "12px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: "white", color: "#1e293b", fontSize: "0.875rem", outline: "none" });
 const tabStyle = (active: boolean) => ({ display: "flex", alignItems: "center", gap: "8px", padding: "10px 24px", borderRadius: "10px", border: "none", background: active ? "#3b82f6" : "transparent", color: active ? "white" : "#64748b", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", transition: "all 0.3s" });
 const thStyle = { 
-  background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
-  padding: "20px 24px", 
+  background: "#1e293b",
+  padding: "14px 24px", 
   textAlign: "left" as const, 
-  fontSize: "0.75rem", 
+  fontSize: "0.7rem", 
   fontWeight: 700, 
   color: "#ffffff", 
   textTransform: "uppercase" as const, 
   letterSpacing: "0.1em",
-  borderBottom: "1px solid rgba(255,255,255,0.1)"
+  borderBottom: "2px solid #3b82f6"
 };
 const tdStyle = { padding: "18px 24px", fontSize: "0.875rem" };
 const badgeStyle = { fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "6px", background: "#eff6ff", color: "#3b82f6" };

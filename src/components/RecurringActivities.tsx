@@ -719,7 +719,17 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     }
   };
 
-  const thStyle = { padding: "12px 16px", textAlign: "left" as const, fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" as const, letterSpacing: "0.05em" };
+  const thStyle = { 
+    background: "#1e293b",
+    color: "#ffffff",
+    padding: "14px 20px", 
+    textAlign: "left" as const, 
+    fontSize: "0.7rem", 
+    fontWeight: 700, 
+    textTransform: "uppercase" as const, 
+    letterSpacing: "0.05em",
+    borderBottom: "2px solid #3b82f6"
+  };
   const tdStyle = { padding: "12px 16px", fontSize: "0.875rem", color: "#334155" };
   const inputStyle = { padding: "6px 10px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem", outline: "none", width: "100%" };
   
@@ -1213,7 +1223,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f8fafc" }}>
-                <tr>
+                <tr style={{ background: "#1e293b" }}>
                   <th style={thStyle}>Rule Name / Pattern</th>
                   <th style={thStyle}>Entity & Function</th>
                   <th style={thStyle}>Frequency</th>
@@ -1512,7 +1522,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
+                <tr style={{ background: "#1e293b" }}>
                   <th style={thStyle}>
                     <input 
                       type="checkbox" 
