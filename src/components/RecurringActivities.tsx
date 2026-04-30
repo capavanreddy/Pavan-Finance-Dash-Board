@@ -1843,11 +1843,13 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     </td>
                   </tr>
                 ))}
-                {dailyTasks.filter(occ => {
+                {getDailyOccurrences().filter(occ => {
                   const search = dailySearch.toLowerCase();
-                  return occ.taskName.toLowerCase().includes(search) || 
+                  const matchesSearch = occ.taskName.toLowerCase().includes(search) || 
                          occ.entityName.toLowerCase().includes(search) ||
                          occ.ownerName.toLowerCase().includes(search);
+                  const matchesOwner = dailyOwnerFilter === "ALL" || occ.ownerName === dailyOwnerFilter;
+                  return matchesSearch && matchesOwner;
                 }).length === 0 && (
                   <tr>
                     <td colSpan={9} style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
