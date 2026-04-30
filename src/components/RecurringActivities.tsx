@@ -450,14 +450,13 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     }
     setShareLoading(true);
     try {
-      let buffer: ArrayBuffer | Uint8Array;
-      let contentType = "";
-      let attachmentName = "";
+      const attachments = [];
+      const dateSuffix = dateFilter.from;
 
-      if (shareData.format === 'excel') {
+      if (shareData.format === 'excel' || shareData.format === 'both') {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Recurring Report');
-        worksheet.columns = [
+        const sheet = workbook.addWorksheet("Recurring Report");
+        sheet.columns = [
           { header: 'Entity', key: 'entityName', width: 25 },
           { header: 'Task Name', key: 'taskName', width: 40 },
           { header: 'Function', key: 'financeFunction', width: 20 },
@@ -468,12 +467,17 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           { header: 'Status', key: 'status', width: 15 }
         ];
         stagingTasks.forEach(task => {
-          worksheet.addRow({ ...task, status: task.isConverted ? 'CONVERTED' : 'PENDING' });
+          sheet.addRow({ ...task, status: task.isConverted ? 'CONVERTED' : 'PENDING' });
         });
-        buffer = await workbook.xlsx.writeBuffer();
-        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        attachmentName = `Recurring_Report_${dateFilter.from}.xlsx`;
-      } else {
+        const buffer = await workbook.xlsx.writeBuffer();
+        attachments.push({
+          filename: `Recurring_Report_${dateSuffix}.xlsx`,
+          content: Buffer.from(buffer).toString('base64'),
+          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+      }
+
+      if (shareData.format === 'pdf' || shareData.format === 'both') {
         const doc = new jsPDF('l', 'mm', 'a4');
         const tableData = stagingTasks.map(t => [t.entityName, t.taskName, t.financeFunction || '--', t.frequency, t.periodKey, t.dueDate, t.ownerName, t.isConverted ? 'CONVERTED' : 'PENDING']);
         autoTable(doc, {
@@ -481,74 +485,35 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           body: tableData,
           startY: 20
         });
-        buffer = doc.output('arraybuffer');
-        contentType = 'application/pdf';
-        attachmentName = `Recurring_Report_${dateFilter.from}.pdf`;
+        const buffer = doc.output('arraybuffer');
+        attachments.push({
+          filename: `Recurring_Report_${dateSuffix}.pdf`,
+          content: Buffer.from(buffer).toString('base64'),
+          contentType: 'application/pdf'
+        });
       }
 
-      const base64 = await new Promise<string>((resolve) => {
-
-    const attachments = [];
-    
-    if (shareData.format === 'excel' || shareData.format === 'both') {
-      const workbook = new ExcelJS.Workbook();
-      const sheet = workbook.addWorksheet("Recurring Conversion Report");
-      sheet.columns = [
-        { header: "Task Name", key: "taskName", width: 40 },
-        { header: "Entity", key: "entityName", width: 20 },
-        { header: "Due Date", key: "dueDate", width: 15 },
-        { header: "Owner", key: "ownerName", width: 20 },
-        { header: "Reviewer", key: "reviewerName", width: 20 },
-        { header: "Status", key: "status", width: 15 }
-      ];
-      stagingTasks.forEach(t => {
-        sheet.addRow({
-          taskName: t.taskName,
-          entityName: t.entityName,
-          dueDate: t.dueDate,
-          ownerName: t.ownerName,
-          reviewerName: t.reviewerName,
-          status: t.isConverted ? "Converted" : "Pending"
-        });
-      });
-      const buffer = await workbook.xlsx.writeBuffer();
-      attachments.push({
-        filename: `${shareData.subject}.xlsx`,
-        content: Buffer.from(buffer).toString('base64'),
-        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-    }
-
-    if (shareData.format === 'pdf' || shareData.format === 'both') {
-      const doc = new jsPDF();
-      doc.text(shareData.subject, 14, 15);
-      autoTable(doc, {
-        startY: 25,
-        head: [["Task Name", "Entity", "Due Date", "Owner", "Status"]],
-        body: stagingTasks.map(t => [
-          t.taskName,
-          t.entityName,
-          t.dueDate,
-          t.ownerName,
-          t.isConverted ? "Converted" : "Pending"
-        ])
-      });
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
-      attachments.push({
-        filename: `${shareData.subject}.pdf`,
-        content: pdfBase64,
-        contentType: 'application/pdf'
-      });
-    }
-
-    try {
       const res = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: shareData.recipients,
           cc: shareData.cc,
-          subject: shareData.subject,
+          subject: shareData.subject || "Recurring Task Report",
+          text: `Please find attached the recurring task conversion report.`,
+          attachments
+        })
+      });
+
+      if (res.ok) {
+        showNotification("Email sent successfully!");
+        setShowShareModal(false);
+      } else {
+        showNotification("Failed to send email.");
+      }
+    } catch (err) {
+      console.error("Share error:", err);
+      showNotification("Error sending email.");
     } finally {
       setShareLoading(false);
     }
