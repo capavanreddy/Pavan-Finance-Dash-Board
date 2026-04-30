@@ -1037,8 +1037,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             </div>
           )}
 
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)" }} className="custom-scrollbar">
+            <table style={{ width: "100%", minWidth: "1300px", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f8fafc" }}>
                 <tr>
                   <th style={{ width: "40px", padding: "12px 16px" }}>
@@ -1229,8 +1229,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             </button>
           </div>
 
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }} className="custom-scrollbar">
+            <table style={{ width: "100%", minWidth: "1200px", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f8fafc" }}>
                 <tr style={{ background: "#1e293b" }}>
                   <th style={thStyle}>Rule Name / Pattern</th>
@@ -1528,8 +1528,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           )}
 
           {/* Daily Tracker Table */}
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }} className="custom-scrollbar">
+            <table style={{ width: "100%", minWidth: "1200px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1e293b" }}>
                   <th style={thStyle}>

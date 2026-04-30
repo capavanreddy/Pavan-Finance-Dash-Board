@@ -2896,8 +2896,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           </div>
 
         {/* Data Table */}
-        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflowX: "auto", overflowY: "hidden" }}>
-          <div style={{ overflowX: "auto", minWidth: "max-content" }}>
+        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
+          <div style={{ overflowX: "auto", minWidth: "1600px" }}>
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
               <thead>
                 <tr>
@@ -3502,8 +3502,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 </div>
               </div>
 
-              <div style={{ padding: "32px", overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div style={{ padding: "32px", overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
+                <table style={{ width: "100%", minWidth: "1200px", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: t.bg }}>
                       <th style={{ ...getThStyle(t), width: "50px" }}>Sl No.</th>
@@ -3824,8 +3824,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   </div>
                 </div>
              </div>
-             <div style={{ overflowX: "auto" }}>
-                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
+             <div style={{ overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
+                <table style={{ borderCollapse: "collapse", width: "100%", minWidth: "1600px", fontSize: "0.875rem", textAlign: "left" }}>
                   <thead>
                     <tr>
                       <th style={getThStyle(t)}>SI No</th>
