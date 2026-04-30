@@ -1131,10 +1131,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         const res = await fetch(`/api/tasks/${taskId}/request-delete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comment })
+          body: JSON.stringify({ reason: comment })
         });
         if (res.ok) {
-          showNotification("Deletion request sent to Master Admin successfully.");
+          showNotification("Deletion request sent successfully.");
+          fetchTasks();
         } else {
           showNotification("Failed to send deletion request.");
         }
@@ -1187,10 +1188,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const handleApproveDelete = async (taskId: number, action: 'APPROVE' | 'REJECT') => {
     showConfirm(`Are you sure you want to ${action.toLowerCase()} this deletion request?`, async () => {
       try {
-        const res = await fetch(`/api/tasks/${taskId}/approve-delete`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action })
+        const res = await fetch(`/api/tasks/${taskId}/${action === 'APPROVE' ? 'approve-delete' : 'reject-delete'}`, {
+          method: "POST"
         });
         if (res.ok) {
           showNotification(`Deletion request ${action.toLowerCase()}d successfully.`);

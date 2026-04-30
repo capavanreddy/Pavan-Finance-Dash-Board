@@ -19,6 +19,18 @@ export async function GET(req: NextRequest) {
     await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportFrequency" TEXT DEFAULT 'OFF'`;
     await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportTimes" TEXT DEFAULT '10:00'`;
     await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportEmail" TEXT DEFAULT 'pavanreddy@intellicar.in'`;
+    
+    // Payments V2 columns
+    await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "isCancelled" BOOLEAN DEFAULT FALSE`;
+    await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "cancelledReason" TEXT`;
+    await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE`;
+    await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
+    await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT`;
+
+    // Task Approval columns
+    await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE`;
+    await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
+    await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT`;
     return NextResponse.json({ message: "Migration successful!" });
   } catch (err: any) {
     console.error("Migration failed:", err);

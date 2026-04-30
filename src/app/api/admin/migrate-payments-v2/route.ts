@@ -19,6 +19,11 @@ export async function GET(req: NextRequest) {
       ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT,
       ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT;
+
+      ALTER TABLE "Task"
+      ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT,
+      ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT;
     `;
 
     return NextResponse.json({ message: "Migration successful" });

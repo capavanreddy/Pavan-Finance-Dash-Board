@@ -17,9 +17,13 @@ export async function POST(
     const taskId = parseInt(params.id);
     const sql = getDb();
 
-    // Permanently delete the task
+    // Reset delete request flags
     const result = await sql`
-      DELETE FROM "Task"
+      UPDATE "Task"
+      SET 
+        "deleteRequested" = FALSE,
+        "deleteRequestReason" = NULL,
+        "deleteRequestedBy" = NULL
       WHERE "id" = ${taskId}
       RETURNING *
     `;
@@ -28,9 +32,9 @@ export async function POST(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Task permanently deleted", task: result[0] });
+    return NextResponse.json({ message: "Task deletion request rejected", task: result[0] });
   } catch (error: any) {
-    console.error("Approve task delete error:", error);
+    console.error("Reject task delete error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

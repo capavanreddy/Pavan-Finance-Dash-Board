@@ -1,71 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { getServerSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import { sendEmail } from "@/lib/email";
 
-
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { reason } = await req.json();
+    if (!reason) {
+      return NextResponse.json({ error: "Reason is required" }, { status: 400 });
+    }
+
+    const taskId = parseInt(params.id);
     const sql = getDb();
-    const resolvedParams = await params;
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
 
-    const { comment } = await req.json();
-    const taskId = Number(resolvedParams.id);
-
-    const tasks = await sql`SELECT * FROM "Task" WHERE id = ${taskId}`;
-    const task = tasks[0];
-
-    if (!task) {
-      return NextResponse.json({ message: "Task not found" }, { status: 404 });
-    }
-
-    const adminEmail = "pavanreddy@intellicar.in";
-    const userName = (session.user as any)?.name || session.user?.email || "User";
-
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #ef4444; margin-top: 0;">Task Deletion Request</h2>
-        <p>User <strong>${userName}</strong> has requested to delete the following task:</p>
-        
-        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0; font-size: 14px;">
-          <tr><td style="background: #f8fafc; width: 30%; font-weight: bold;">Task ID</td><td>#${task.id}</td></tr>
-          <tr><td style="background: #f8fafc; font-weight: bold;">Task Name</td><td>${task.taskName}</td></tr>
-          <tr><td style="background: #f8fafc; font-weight: bold;">Owner</td><td>${task.ownerName}</td></tr>
-          <tr><td style="background: #f8fafc; font-weight: bold;">Reviewer</td><td>${task.reviewerName || "N/A"}</td></tr>
-        </table>
-
-        <div style="background: #fef2f2; padding: 16px; border-radius: 6px; border-left: 4px solid #ef4444;">
-          <h4 style="margin: 0 0 8px 0; color: #b91c1c;">Deletion Reason / Comment:</h4>
-          <p style="margin: 0; color: #7f1d1d; white-space: pre-wrap;">${comment || "No comment provided."}</p>
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app/'}" style="background: #ef4444; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Login to Admin Dashboard</a>
-        </div>
-
-        <p style="margin-top: 24px; font-size: 13px; color: #64748b; text-align: center;">You can review and approve this request in the Admin Options panel.</p>
-      </div>
-    `;
-
-    await sql`
+    // Update task with delete request info
+    const result = await sql`
       UPDATE "Task"
-      SET "deleteRequested" = true, "deleteRequestReason" = ${comment}
-      WHERE id = ${taskId}
+      SET 
+        "deleteRequested" = TRUE,
+        "deleteRequestReason" = ${reason},
+        "deleteRequestedBy" = ${session.user.email}
+      WHERE "id" = ${taskId}
+      RETURNING *
     `;
 
-    await sendEmail({
-      to: adminEmail,
-      subject: `Task Deletion Request: #${task.id} - ${task.taskName}`,
-      html,
-    });
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
 
-    return NextResponse.json({ message: "Deletion request sent to admin." }, { status: 200 });
+    // Email Admin
+    try {
+      await sendEmail({
+        to: "pavanreddy@intellicar.in",
+        subject: `Task Deletion Request: ${result[0].title}`,
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #ef4444;">Task Deletion Request</h2>
+            <p>A deletion request has been submitted for a task.</p>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0;">
+              <p><strong>Task ID:</strong> #${result[0].id}</p>
+              <p><strong>Title:</strong> ${result[0].title}</p>
+              <p><strong>Department:</strong> ${result[0].department}</p>
+              <p><strong>Requested By:</strong> ${session.user.name || session.user.email}</p>
+              <p><strong>Reason:</strong> ${reason}</p>
+            </div>
+            <p>Please review this request in the Control Center under <strong>Edit Requests > Delete Task</strong>.</p>
+          </div>
+        `
+      });
+    } catch (mailErr) {
+      console.error("Failed to send task deletion request email:", mailErr);
+    }
+
+    return NextResponse.json(result[0]);
   } catch (error: any) {
-    console.error("Failed to request delete:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    console.error("Task request delete error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
