@@ -837,7 +837,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           </div>
 
           {/* Tracker Table */}
-          <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+          <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1e293b" }}>
@@ -894,7 +894,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}>
                           <span style={{ 
                             padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700,
-                            background: style.bg, color: style.text, border: `1px solid ${style.border}`
+                            background: style.bg, color: style.text, border: `1px solid ${style.border}`,
+                            whiteSpace: "nowrap"
                           }}>
                             {status}
                           </span>
@@ -1002,7 +1003,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           </div>
 
           {/* Master Table */}
-          <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
+          <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflowX: "auto", overflowY: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1e293b" }}>
