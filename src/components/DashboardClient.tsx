@@ -2270,7 +2270,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                   setActiveView('TASKS');
                                   setActiveSubView('MAIN');
                                 }
-                                setIsTasksMenuOpen(!isTasksMenuOpen);
                                 setActiveMainView('DASHBOARD');
                               }}
                               style={{ 
@@ -2285,109 +2284,77 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             >
                               <Briefcase size={24} color={(activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
                               <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Workplace</span>
-                              <ChevronDown size={14} style={{ position: "absolute", bottom: "12px", right: "12px", transform: isTasksMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s" }} />
                             </button>
 
                             {/* Premium Hover Flyout */}
                             {showWorkplaceFlyout && (
                               <div style={{
                                 position: "absolute",
-                                left: "100px",
+                                left: "100px", // Slight overlap to ensure hover bridge
                                 top: "0",
-                                width: "220px",
-                                background: "rgba(15, 23, 42, 0.85)",
-                                backdropFilter: "blur(12px)",
-                                borderRadius: "16px",
-                                border: "1px solid rgba(255, 255, 255, 0.1)",
-                                boxShadow: "20px 0 50px rgba(0, 0, 0, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                                padding: "12px",
+                                width: "230px",
+                                paddingLeft: "10px", // The bridge
                                 zIndex: 1000,
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "4px",
                                 animation: "fadeInSlideRight 0.2s ease-out",
-                                marginLeft: "10px"
                               }}>
-                                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
-                                  Workplace Summary
-                                </div>
-                                <button 
-                                  onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
-                                  style={{ 
-                                    padding: "10px 12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
-                                    background: activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                                    color: activeView === 'TASKS' && activeSubView === 'MAIN' ? "#60a5fa" : "#e2e8f0",
-                                    cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
-                                  }}
-                                  onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#60a5fa"; }}
-                                  onMouseOut={e => { e.currentTarget.style.background = activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'TASKS' && activeSubView === 'MAIN' ? "#60a5fa" : "#e2e8f0"; }}
-                                >
-                                  <LayoutDashboard size={16} /> Task Dashboard
-                                </button>
-                                {isModuleAllowed('Recurring Activities') && (
+                                <div style={{
+                                  background: "rgba(15, 23, 42, 0.95)",
+                                  backdropFilter: "blur(16px)",
+                                  borderRadius: "16px",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  boxShadow: "20px 0 50px rgba(0, 0, 0, 0.4)",
+                                  padding: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                }}>
+                                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
+                                    Workplace Summary
+                                  </div>
                                   <button 
-                                    onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
+                                    onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
                                     style={{ 
-                                      padding: "10px 12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
-                                      background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                                      color: activeView === 'RECURRING' ? "#60a5fa" : "#e2e8f0",
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: activeView === 'TASKS' && activeSubView === 'MAIN' ? "#60a5fa" : "#e2e8f0",
                                       cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
                                     }}
-                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#60a5fa"; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'RECURRING' ? "#60a5fa" : "#e2e8f0"; }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'TASKS' && activeSubView === 'MAIN' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'TASKS' && activeSubView === 'MAIN' ? "#60a5fa" : "#e2e8f0"; }}
                                   >
-                                    <Repeat size={16} /> Recurring Activities
+                                    <LayoutDashboard size={16} /> Task Dashboard
                                   </button>
-                                )}
-                                {canSeeRequests && (
-                                  <button 
-                                    onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
-                                    style={{ 
-                                      padding: "10px 12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
-                                      background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                                      color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#e2e8f0",
-                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
-                                    }}
-                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#60a5fa"; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#e2e8f0"; }}
-                                  >
-                                    <Users size={16} /> Inter Dept Request
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                            
-                            {isTasksMenuOpen && (
-                              <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", padding: "0 8px" }}>
-                                <button 
-                                  onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); }}
-                                  style={{ 
-                                    padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                                    background: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                                    color: activeView === 'TASKS' && activeSubView === 'MAIN' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
-                                    cursor: "pointer", transition: "all 0.2s"
-                                  }}
-                                >
-                                  Task Dashboard
-                                </button>
-                                {(() => {
-                                  if (!isModuleAllowed('Recurring Activities')) return null;
-                                  return (
+                                  {isModuleAllowed('Recurring Activities') && (
                                     <button 
-                                      onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); }}
+                                      onClick={() => { setActiveView('RECURRING'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
                                       style={{ 
-                                        padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
-                                        background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                                        color: activeView === 'RECURRING' ? "#60a5fa" : "#94a3b8",
-                                        cursor: "pointer", transition: "all 0.2s"
+                                        padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                        background: activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                        color: activeView === 'RECURRING' ? "#60a5fa" : "#e2e8f0",
+                                        cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
                                       }}
+                                      onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                      onMouseOut={e => { e.currentTarget.style.background = activeView === 'RECURRING' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'RECURRING' ? "#60a5fa" : "#e2e8f0"; }}
                                     >
-                                      Recurring Activities
+                                      <Repeat size={16} /> Recurring Activities
                                     </button>
-                                  );
-                                })()}
-                                {canSeeRequests && (
-                                  <button 
+                                  )}
+                                  {canSeeRequests && (
+                                    <button 
+                                      onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
+                                      style={{ 
+                                        padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                        background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                        color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#e2e8f0",
+                                        cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                      }}
+                                      onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                      onMouseOut={e => { e.currentTarget.style.background = activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? "#60a5fa" : "#e2e8f0"; }}
+                                    >
+                                      <Users size={16} /> Inter Dept Request
+                                    </button>
+                                  )}
+                                </div>
                                     onClick={() => { setActiveView('TASKS'); setActiveSubView('OTHER_DEPT'); setActiveMainView('DASHBOARD'); }}
                                     style={{ 
                                       padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
