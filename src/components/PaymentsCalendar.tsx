@@ -132,7 +132,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const [ccTags, setCcTags] = useState<string[]>([]);
   const [shareData, setShareData] = useState({
     subject: "Finance Payment Tracker Report",
-    format: "excel" as 'excel' | 'pdf',
+    format: "excel" as 'excel' | 'pdf' | 'both',
     type: 'payments'
   });
   const [isSharing, setIsSharing] = useState(false);
