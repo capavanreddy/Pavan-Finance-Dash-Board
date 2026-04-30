@@ -44,6 +44,7 @@ type Task = {
   transferStatus: string | null;
   originalRequestType: string | null;
   frequency: string | null;
+  displayId: string | null;
 };
 
 type ExternalRequest = {
