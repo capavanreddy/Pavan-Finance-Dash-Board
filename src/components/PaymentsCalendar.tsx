@@ -417,7 +417,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       if (res.ok) {
         setShowRequestDeleteModal(false);
         setRequestDeleteData({ reason: "" });
-        fetchInitialData();
+        fetchData();
         showNotification("Deletion request sent to admin.");
       } else {
         const errorData = await res.json();
@@ -443,7 +443,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       if (res.ok) {
         setShowRequestDeleteMasterModal(false);
         setRequestDeleteData({ reason: "" });
-        fetchInitialData();
+        fetchData();
         showNotification("Master deletion request sent to admin.");
       } else {
         const errorData = await res.json();
@@ -469,7 +469,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       if (res.ok) {
         setShowRequestEditMasterModal(false);
         setRequestEditMasterData({ reason: "" });
-        fetchInitialData();
+        fetchData();
         showNotification("Master edit request sent to admin.");
       } else {
         const errorData = await res.json();
