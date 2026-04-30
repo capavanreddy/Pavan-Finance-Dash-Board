@@ -158,6 +158,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    // Sync with ExternalRequest if applicable
+    if (updatedTask.linkedRequestId && requestStatus !== existingTask.requestStatus) {
+      try {
+        await sql`
+          UPDATE "ExternalRequest"
+          SET status = ${requestStatus}
+          WHERE id = ${Number(updatedTask.linkedRequestId)}
+        `;
+      } catch (e) {
+        console.error("Failed to sync ExternalRequest status:", e);
+      }
+    }
+
     return NextResponse.json(updatedTask, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: "Failed to update task", error: error.message }, { status: 500 });

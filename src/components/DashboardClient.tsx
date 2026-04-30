@@ -1101,29 +1101,46 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const task = tasks.find(t => t.id === taskId);
       const updates: any = { [field]: value };
       
-      // Intelligent Review Lifecycle Logic
+      // Intelligent Review & Request Lifecycle Logic
       if (field === 'reviewerName') {
         if (value === 'Not Applicable' || value === 'N/A') {
           updates.reviewStatus = 'Review Not Required';
+          updates.reviewCompletionDate = null;
         } else if (value) {
-          // If a real reviewer is assigned, determine if task is already done
           const isFinished = task && (task.taskStatus === 'Completed' || COMPLETION_STATUSES.includes(task.taskStatus) || !!task.completionDate);
           updates.reviewStatus = isFinished ? 'Pending' : 'Task Pending From Owner';
         }
       }
       
+      const currentTask = tasks.find(t => t.id === taskId);
+      const tStatus = field === 'taskStatus' ? value : (currentTask?.taskStatus || '');
+      const tDate = field === 'completionDate' ? value : (currentTask?.completionDate || null);
+      const rName = field === 'reviewerName' ? value : (currentTask?.reviewerName || '');
+      const rDate = field === 'reviewCompletionDate' ? value : (currentTask?.reviewCompletionDate || null);
+
+      const isTaskFinished = !!tDate || COMPLETION_STATUSES.includes(tStatus);
+      const isReviewFinished = rName === 'Not Applicable' || rName === 'N/A' || !!rDate;
+
+      if (currentTask && currentTask.linkedRequestId) {
+        // Automatic Reversion to Pending if any condition for completion is lost
+        if (!isTaskFinished || !isReviewFinished) {
+          updates.requestStatus = 'Pending';
+        }
+      }
+
+      // Review Status Automation
       if (field === 'taskStatus' || field === 'completionDate') {
-        const newStatus = field === 'taskStatus' ? value : task?.taskStatus;
-        const newDate = field === 'completionDate' ? value : task?.completionDate;
-        const isFinished = newStatus === 'Completed' || COMPLETION_STATUSES.includes(newStatus || '') || !!newDate;
-        
-        if (isFinished && task && task.reviewerName !== 'Not Applicable' && task.reviewerName !== 'N/A' && task.reviewStatus === 'Task Pending From Owner') {
+        if (isTaskFinished && currentTask && rName !== 'Not Applicable' && rName !== 'N/A' && currentTask.reviewStatus === 'Task Pending From Owner') {
           updates.reviewStatus = 'Pending';
         }
       }
 
-      if (field === 'reviewCompletionDate' && value) {
-        updates.reviewStatus = 'Completed';
+      if (field === 'reviewCompletionDate') {
+        if (value) {
+          updates.reviewStatus = 'Completed';
+        } else if (task && task.reviewerName !== 'Not Applicable' && task.reviewerName !== 'N/A') {
+          updates.reviewStatus = 'Pending';
+        }
       }
 
       const res = await fetch(`/api/tasks/${taskId}`, {
