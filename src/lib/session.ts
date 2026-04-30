@@ -143,6 +143,16 @@ export async function authenticate(
           "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `;
+
+      // --- Task Deletion Workflow Columns ---
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT`;
+
+      // --- Payment Deletion Workflow Columns ---
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT`;
     } catch (e) {
       console.log("Migration check done/failed gracefully");
     }
