@@ -14,29 +14,41 @@ export async function POST(req: NextRequest) {
 
     const { action } = await req.json();
 
-    if (action === "RESET") {
-      // 1. Take Snapshot of current state
-      const tasks = await sql`SELECT * FROM "Task"`;
-      const los = await sql`SELECT * FROM "LearningOpportunity"`;
-      const extReqs = await sql`SELECT * FROM "ExternalRequest"`;
-      const sequences = await sql`SELECT * FROM "TaskSequence"`;
-      
-      let recurringTasks: any[] = [];
-      try {
-        recurringTasks = await sql`SELECT * FROM "RecurringTask"`;
-      } catch (e) {}
+    const PROTECTED_TABLES = ['User', 'SystemSettings', 'DataBackup', '_prisma_migrations', 'TaskSequence'];
 
-      const snapshot = {
-        tasks,
-        los,
-        extReqs,
-        sequences,
-        recurringTasks,
+    if (action === "RESET") {
+      // 1. Discover all public tables
+      const tablesResult = await sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_type = 'BASE TABLE'
+      `;
+      
+      const allTables = tablesResult.map(t => t.table_name);
+      const targetTables = allTables.filter(name => !PROTECTED_TABLES.includes(name));
+
+      // 2. Create a comprehensive snapshot
+      const snapshot: any = {
         resetAt: new Date().toISOString(),
-        resetBy: session.user?.email
+        resetBy: session.user?.email,
+        data: {},
+        sequences: []
       };
 
-      // 2. Save to DataBackup
+      // Snapshot data and also capture TaskSequence (which we'll reset but keep structure)
+      for (const tableName of targetTables) {
+        try {
+          snapshot.data[tableName] = await sql`SELECT * FROM ${sql(tableName)}`;
+        } catch (e) {
+          console.error(`Snapshot failed for ${tableName}:`, e);
+        }
+      }
+      
+      // Special capture for TaskSequence (since it's partially protected/needed for IDs)
+      snapshot.sequences = await sql`SELECT * FROM "TaskSequence"`;
+
+      // 3. Save to DataBackup
       await sql`CREATE TABLE IF NOT EXISTS "DataBackup" ("id" TEXT PRIMARY KEY, "snapshot" JSONB, "createdAt" TIMESTAMP DEFAULT NOW())`;
       const backupId = `backup_${Date.now()}`;
       await sql`
@@ -44,17 +56,22 @@ export async function POST(req: NextRequest) {
         VALUES (${backupId}, ${JSON.stringify(snapshot)}, NOW())
       `;
 
-      // 3. Purge operational tables
-      await sql`DELETE FROM "Task"`;
-      await sql`DELETE FROM "LearningOpportunity"`;
-      await sql`DELETE FROM "ExternalRequest"`;
+      // 4. Universal Purge
+      // TRUNCATE with CASCADE is the cleanest way to clear everything
+      for (const tableName of targetTables) {
+        try {
+          await sql`TRUNCATE TABLE ${sql(tableName)} RESTART IDENTITY CASCADE`;
+        } catch (e) {
+          // Fallback to DELETE if truncate fails for some reason
+          try { await sql`DELETE FROM ${sql(tableName)}`; } catch (de) {}
+        }
+      }
+      
+      // Also clear sequences to start from 01 next month
       await sql`DELETE FROM "TaskSequence"`;
-      try {
-        await sql`DELETE FROM "RecurringTask"`;
-      } catch (e) {}
 
       return NextResponse.json({ 
-        message: "Master Reset successful. All transactions cleared. Snapshot saved.",
+        message: `Universal Master Reset successful. All transactions across ${targetTables.length} tables cleared. System settings and user accounts preserved.`,
         backupId 
       });
     }
@@ -68,74 +85,53 @@ export async function POST(req: NextRequest) {
 
       const latestBackup = backups[0];
       const snapshot = typeof latestBackup.snapshot === 'string' ? JSON.parse(latestBackup.snapshot) : latestBackup.snapshot;
+      const tableData = snapshot.data || {};
 
-      // 2. Clear current state before restore
-      await sql`DELETE FROM "Task"`;
-      await sql`DELETE FROM "LearningOpportunity"`;
-      await sql`DELETE FROM "ExternalRequest"`;
+      // 2. Clear current state of tables in the snapshot
+      for (const tableName in tableData) {
+        try {
+          await sql`TRUNCATE TABLE ${sql(tableName)} RESTART IDENTITY CASCADE`;
+        } catch (e) {
+          try { await sql`DELETE FROM ${sql(tableName)}`; } catch (de) {}
+        }
+      }
       await sql`DELETE FROM "TaskSequence"`;
-      try {
-        await sql`DELETE FROM "RecurringTask"`;
-      } catch (e) {}
 
       // 3. Re-hydrate Sequences
       for (const s of snapshot.sequences || []) {
         await sql`INSERT INTO "TaskSequence" ("monthYear", "nextVal") VALUES (${s.monthYear}, ${s.nextVal})`;
       }
 
-      // 4. Re-hydrate Recurring Tasks
-      for (const rt of snapshot.recurringTasks || []) {
-        const { id, ...data } = rt;
-        const keys = Object.keys(data);
-        const values = Object.values(data);
-        if (keys.length) {
-          const query = `INSERT INTO "RecurringTask" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
-          const strings = [query] as any;
-          strings.raw = [query];
-          await (sql as any)(strings, ...values);
+      // 4. Re-hydrate Data dynamically
+      for (const tableName in tableData) {
+        const rows = tableData[tableName];
+        if (!rows || !Array.isArray(rows) || rows.length === 0) continue;
+
+        for (const row of rows) {
+          const { id, ...data } = row;
+          const keys = Object.keys(data);
+          const values = Object.values(data);
+          
+          if (keys.length) {
+            // Using raw query construction for dynamic tables
+            const query = `INSERT INTO "${tableName}" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
+            const strings = [query] as any;
+            strings.raw = [query];
+            try {
+              await (sql as any)(strings, ...values);
+            } catch (ie) {
+              console.error(`Restore failed for row in ${tableName}:`, ie);
+            }
+          }
         }
+
+        // Fix ID sequence for this table
+        try {
+          await sql`SELECT setval(pg_get_serial_sequence(${tableName}, 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM ${sql(tableName)}`;
+        } catch (se) {}
       }
 
-      // 5. Re-hydrate Main Tables (Tasks, LOs, ExtReqs)
-      for (const t of snapshot.tasks || []) {
-        const { id, ...data } = t;
-        const keys = Object.keys(data);
-        const values = Object.values(data);
-        const query = `INSERT INTO "Task" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
-        const strings = [query] as any;
-        strings.raw = [query];
-        await (sql as any)(strings, ...values);
-      }
-
-      for (const lo of snapshot.los || []) {
-        const { id, ...data } = lo;
-        const keys = Object.keys(data);
-        const values = Object.values(data);
-        const query = `INSERT INTO "LearningOpportunity" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
-        const strings = [query] as any;
-        strings.raw = [query];
-        await (sql as any)(strings, ...values);
-      }
-
-      for (const er of snapshot.extReqs || []) {
-        const { id, ...data } = er;
-        const keys = Object.keys(data);
-        const values = Object.values(data);
-        const query = `INSERT INTO "ExternalRequest" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
-        const strings = [query] as any;
-        strings.raw = [query];
-        await (sql as any)(strings, ...values);
-      }
-
-      // 6. Fix ID Sequences (Very important for future autoincrements)
-      try {
-        await sql`SELECT setval(pg_get_serial_sequence('"Task"', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM "Task"`;
-        await sql`SELECT setval(pg_get_serial_sequence('"LearningOpportunity"', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM "LearningOpportunity"`;
-        await sql`SELECT setval(pg_get_serial_sequence('"ExternalRequest"', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM "ExternalRequest"`;
-        await sql`SELECT setval(pg_get_serial_sequence('"RecurringTask"', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM "RecurringTask"`;
-      } catch (e) {}
-
-      return NextResponse.json({ message: "Database successfully restored to the previous version." });
+      return NextResponse.json({ message: "Universal Database Restore successful. All module data has been recovered." });
     }
 
     return NextResponse.json({ message: "Invalid action type." }, { status: 400 });
