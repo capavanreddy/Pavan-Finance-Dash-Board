@@ -596,9 +596,14 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           });
         });
         const buffer = await workbook.xlsx.writeBuffer();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(new Blob([buffer as any]));
+        });
         attachments.push({
           filename: `Master_Registry_${dateSuffix}.xlsx`,
-          content: Buffer.from(buffer).toString('base64'),
+          content: base64,
           contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
       }
@@ -611,9 +616,14 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           startY: 20
         });
         const buffer = doc.output('arraybuffer');
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(new Blob([buffer as any]));
+        });
         attachments.push({
           filename: `Master_Registry_${dateSuffix}.pdf`,
-          content: Buffer.from(buffer).toString('base64'),
+          content: base64,
           contentType: 'application/pdf'
         });
       }
