@@ -2290,10 +2290,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             {showWorkplaceFlyout && (
                               <div style={{
                                 position: "absolute",
-                                left: "100px", // Slight overlap to ensure hover bridge
-                                top: "0",
-                                width: "230px",
-                                paddingLeft: "10px", // The bridge
+                                left: "100%", 
+                                top: "-10px",
+                                width: "240px",
+                                paddingLeft: "20px", 
                                 zIndex: 1000,
                                 animation: "fadeInSlideRight 0.2s ease-out",
                               }}>
