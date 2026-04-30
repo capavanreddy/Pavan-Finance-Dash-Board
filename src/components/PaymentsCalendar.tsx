@@ -412,9 +412,13 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         setRequestDeleteData({ reason: "" });
         fetchData();
         showNotification("Deletion request sent to admin.");
+      } else {
+        const errorData = await res.json();
+        showNotification(`Failed to send request: ${errorData.error || 'Server Error'}`, 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Delete request error:", err);
+      showNotification(`Connection error: ${err.message}`, 'error');
     } finally {
       setIsSubmitting(false);
     }

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     `;
 
     if (result.length === 0) {
-      return NextResponse.json({ error: "Record not found" }, { status: 404 });
+      return NextResponse.json({ error: "Payment record not found in database" }, { status: 404 });
     }
 
     // Email Admin
@@ -49,13 +49,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           </div>
         `
       });
-    } catch (mailErr) {
+    } catch (mailErr: any) {
       console.error("Failed to send deletion request email:", mailErr);
+      // We don't fail the whole request just because email failed, 
+      // but we log it.
     }
 
     return NextResponse.json(result[0]);
   } catch (error: any) {
-    console.error("Request delete error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Detailed request delete error:", error);
+    return NextResponse.json({ 
+      error: error.message,
+      details: error.code === '42703' ? "Database schema mismatch. Please run migration." : "Internal Server Error"
+    }, { status: 500 });
   }
 }
