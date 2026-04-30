@@ -1308,22 +1308,27 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     });
   };
 
-  const pendingActionCount = tasks.filter(t => t.taskStatus !== "Completed").length;
+  const isFinished = (t: any) => 
+    t.taskStatus === "Completed" || 
+    COMPLETION_STATUSES.includes(t.taskStatus) || 
+    !!t.completionDate;
+
+  const pendingActionCount = tasks.filter(t => !isFinished(t)).length;
   
   const pendingReviewCount = tasks.filter(t => 
-    t.taskStatus === "Completed" && 
+    isFinished(t) && 
     (t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner") && 
     t.reviewerName !== "Not Applicable"
   ).length;
 
   const pendingStatusUpdateCount = tasks.filter(t => 
-    t.taskStatus === "Completed" && 
+    isFinished(t) && 
     (t.reviewStatus === "Completed" || t.reviewerName === "Not Applicable" || t.reviewStatus === "Review Not Required") && 
     t.requestStatus !== "Processed"
   ).length;
 
   const completedCount = tasks.filter(t => 
-    t.taskStatus === "Completed" && 
+    isFinished(t) && 
     (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required" || t.reviewerName === "Not Applicable") && 
     t.requestStatus === "Processed"
   ).length;
@@ -1369,16 +1374,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     // 1. Status Filter (Metric Cards)
     let statusMatch = true;
     if (activeFilter === 'PENDING_ACTION') {
-      statusMatch = t.taskStatus !== "Completed";
+      statusMatch = !isFinished(t);
     }
     if (activeFilter === 'PENDING_REVIEW') {
-      statusMatch = t.taskStatus === "Completed" && (t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner") && t.reviewerName !== "Not Applicable";
+      statusMatch = isFinished(t) && (t.reviewStatus === "Pending" || t.reviewStatus === "Task Pending From Owner") && t.reviewerName !== "Not Applicable";
     }
     if (activeFilter === 'PENDING_STATUS_UPDATE') {
-      statusMatch = t.taskStatus === "Completed" && (t.reviewStatus === "Completed" || t.reviewerName === "Not Applicable" || t.reviewStatus === "Review Not Required") && t.requestStatus !== "Processed";
+      statusMatch = isFinished(t) && (t.reviewStatus === "Completed" || t.reviewerName === "Not Applicable" || t.reviewStatus === "Review Not Required") && t.requestStatus !== "Processed";
     }
     if (activeFilter === 'COMPLETED') {
-      statusMatch = t.taskStatus === "Completed" && (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required" || t.reviewerName === "Not Applicable") && t.requestStatus === 'Processed';
+      statusMatch = isFinished(t) && (t.reviewStatus === "Completed" || t.reviewStatus === "Review Not Required" || t.reviewerName === "Not Applicable") && t.requestStatus === 'Processed';
     }
     
     // 2. Date Filter (by createdAt)
@@ -3139,43 +3144,38 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           </span>
                         )}
                       </td>
-
                       <td style={getTdStyle(t)}>
-                        {task.linkedRequestId ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <span style={{ 
-                              padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
-                              background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
-                              color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
-                              textAlign: "center"
-                            }}>
-                              {task.requestStatus || "Pending"}
-                            </span>
-                            {task.taskStatus === 'Completed' && task.requestStatus !== 'Processed' && 
-                             (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
-                             (isCurrentUserOwner || isAdmin) && (
-                              <button 
-                                onClick={async () => {
-                                  // Update Task
-                                  await handleUpdate(task.id, "requestStatus", "Processed");
-                                  // Update External Request
-                                  if (task.linkedRequestId) {
-                                    await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
-                                  }
-                                  showNotification("Marked as Processed and Requester notified!");
-                                }}
-                                style={{ 
-                                  padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
-                                  color: "white", border: "none", borderRadius: "4px", cursor: "pointer" 
-                                }}
-                              >
-                                Mark Processed
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                        )}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ 
+                            padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
+                            background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
+                            color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
+                            textAlign: "center"
+                          }}>
+                            {task.requestStatus || "Pending"}
+                          </span>
+                          {isFinished(task) && task.requestStatus !== 'Processed' && 
+                           (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
+                           (isCurrentUserOwner || isAdmin) && (
+                            <button 
+                              onClick={async () => {
+                                // Update Task
+                                await handleUpdate(task.id, "requestStatus", "Processed");
+                                // Update External Request
+                                if (task.linkedRequestId) {
+                                  await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
+                                }
+                                showNotification("Marked as Processed and Stakeholders notified!");
+                              }}
+                              style={{ 
+                                padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
+                                color: "white", border: "none", borderRadius: "4px", cursor: "pointer" 
+                              }}
+                            >
+                              Mark Processed
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Delete / Request Edit / Request Delete Action */}
