@@ -3005,7 +3005,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
-                      <td style={getTdStyle(t)}><span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>#{task.id}</span></td>
+                      <td style={getTdStyle(t)}><span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span></td>
                       <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
                       <td style={getTdStyle(t)}>{task.entityName}</td>
                       <td style={{ ...getTdStyle(t), fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
