@@ -1033,134 +1033,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
              </div>
           </div>
 
-          {/* Share via Email Modal */}
-          {showShareModal && (
-            <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-              <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "550px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", animation: "modalIn 0.3s ease-out" }}>
-                <div style={{ padding: "24px", background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{ background: "rgba(255,255,255,0.2)", padding: "10px", borderRadius: "12px" }}><Mail size={24} /></div>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Share via Email</h3>
-                      <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.9 }}>Send the conversion report as an attachment.</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setShowShareModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={20} /></button>
-                </div>
-                
-                <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-                  {/* Recipients Tag Input */}
-                  <div>
-                    <label style={labelStyle}>Recipient Emails *</label>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
-                      {shareData.recipients.map((email, idx) => (
-                        <div key={idx} style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                          {email}
-                          <X size={14} style={{ cursor: "pointer" }} onClick={() => removeEmail('recipients', idx)} />
-                        </div>
-                      ))}
-                        <input 
-                          type="text" 
-                          placeholder={shareData.recipients.length === 0 ? "Type email..." : ""}
-                          value={shareData.recipientInput}
-                          onChange={e => setShareData({...shareData, recipientInput: e.target.value})}
-                          onKeyDown={e => {
-                              if (e.key === 'Enter' || e.key === ',') {
-                                  e.preventDefault();
-                                  handleAddEmail('recipients', shareData.recipientInput);
-                              }
-                          }}
-                          style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
-                        />
-                      <button 
-                        onClick={() => handleAddEmail('recipients', shareData.recipientInput)}
-                        style={{ marginTop: "4px", padding: "4px 12px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}
-                      >
-                        Add Recipient
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* CC Tag Input */}
-                  <div>
-                    <label style={labelStyle}>CC Emails</label>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
-                      {shareData.cc.map((email, idx) => (
-                        <div key={idx} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                          {email}
-                          <X size={14} style={{ cursor: "pointer" }} onClick={() => removeEmail('cc', idx)} />
-                        </div>
-                      ))}
-                      <input 
-                        type="text" 
-                        placeholder={shareData.cc.length === 0 ? "Type email and press Enter..." : ""}
-                        value={shareData.ccInput}
-                        onChange={e => setShareData({...shareData, ccInput: e.target.value})}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ',') {
-                                e.preventDefault();
-                                handleAddEmail('cc', shareData.ccInput);
-                            }
-                        }}
-                        style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Subject</label>
-                    <input 
-                      type="text" 
-                      value={shareData.subject}
-                      onChange={e => setShareData({...shareData, subject: e.target.value})}
-                      style={inputStyle} 
-                    />
-                  </div>
-
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={labelStyle}>Format</label>
-                        <select 
-                            value={shareData.format} 
-                            onChange={e => setShareData({...shareData, format: e.target.value as any})}
-                            style={inputStyle}
-                        >
-                            <option value="excel">Excel Spreadsheet</option>
-                            <option value="pdf">PDF Document</option>
-                            <option value="both">Both (Excel & PDF)</option>
-                        </select>
-                    </div>
-                  </div>
-
-                  <div style={{ padding: "16px", background: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <FileSpreadsheet size={24} color="#0369a1" />
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>Attachment Ready</p>
-                      <p style={{ margin: 0, fontSize: "0.75rem", color: "#0ea5e9" }}>
-                        {shareMode === 'MASTER' ? "Master Registry rule definitions" : `Conversion report from ${dateFilter.from} to ${dateFilter.to}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                    <button 
-                      onClick={() => setShowShareModal(false)}
-                      style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={shareMode === 'MASTER' ? () => handleMasterShareViaEmail(templates) : handleShareViaEmail}
-                      disabled={shareLoading}
-                      style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: shareLoading ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                    >
-                      {shareLoading ? "Sending..." : <><Send size={18} /> Send Email</>}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          
 
           {/* Bulk Action Bar */}
           {selectedTasks.length > 0 && stagingTasks.some((t, i) => selectedTasks.includes(i) && !t.isConverted) && (
@@ -1349,7 +1222,137 @@ export default function RecurringActivities({   settings, usersList = [] , showN
         </div>
       )}
 
-      {activeSubTab === 'MASTER' && (
+
+          {/* Share via Email Modal */}
+          {showShareModal && (
+            <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
+              <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "550px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden", animation: "modalIn 0.3s ease-out" }}>
+                <div style={{ padding: "24px", background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ background: "rgba(255,255,255,0.2)", padding: "10px", borderRadius: "12px" }}><Mail size={24} /></div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Share via Email</h3>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.9 }}>Send the conversion report as an attachment.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowShareModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={20} /></button>
+                </div>
+                
+                <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                  {/* Recipients Tag Input */}
+                  <div>
+                    <label style={labelStyle}>Recipient Emails *</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
+                      {shareData.recipients.map((email, idx) => (
+                        <div key={idx} style={{ background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                          {email}
+                          <X size={14} style={{ cursor: "pointer" }} onClick={() => removeEmail('recipients', idx)} />
+                        </div>
+                      ))}
+                        <input 
+                          type="text" 
+                          placeholder={shareData.recipients.length === 0 ? "Type email..." : ""}
+                          value={shareData.recipientInput}
+                          onChange={e => setShareData({...shareData, recipientInput: e.target.value})}
+                          onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault();
+                                  handleAddEmail('recipients', shareData.recipientInput);
+                              }
+                          }}
+                          style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
+                        />
+                      <button 
+                        onClick={() => handleAddEmail('recipients', shareData.recipientInput)}
+                        style={{ marginTop: "4px", padding: "4px 12px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}
+                      >
+                        Add Recipient
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CC Tag Input */}
+                  <div>
+                    <label style={labelStyle}>CC Emails</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", minHeight: "45px", background: "#f8fafc" }}>
+                      {shareData.cc.map((email, idx) => (
+                        <div key={idx} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                          {email}
+                          <X size={14} style={{ cursor: "pointer" }} onClick={() => removeEmail('cc', idx)} />
+                        </div>
+                      ))}
+                      <input 
+                        type="text" 
+                        placeholder={shareData.cc.length === 0 ? "Type email and press Enter..." : ""}
+                        value={shareData.ccInput}
+                        onChange={e => setShareData({...shareData, ccInput: e.target.value})}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                handleAddEmail('cc', shareData.ccInput);
+                            }
+                        }}
+                        style={{ border: "none", background: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "120px" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Subject</label>
+                    <input 
+                      type="text" 
+                      value={shareData.subject}
+                      onChange={e => setShareData({...shareData, subject: e.target.value})}
+                      style={inputStyle} 
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Format</label>
+                        <select 
+                            value={shareData.format} 
+                            onChange={e => setShareData({...shareData, format: e.target.value as any})}
+                            style={inputStyle}
+                        >
+                            <option value="excel">Excel Spreadsheet</option>
+                            <option value="pdf">PDF Document</option>
+                            <option value="both">Both (Excel & PDF)</option>
+                        </select>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: "16px", background: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <FileSpreadsheet size={24} color="#0369a1" />
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>Attachment Ready</p>
+                      <p style={{ margin: 0, fontSize: "0.75rem", color: "#0ea5e9" }}>
+                        {shareMode === 'MASTER' ? "Master Registry rule definitions" : `Conversion report from ${dateFilter.from} to ${dateFilter.to}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                    <button 
+                      onClick={() => setShowShareModal(false)}
+                      style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={shareMode === 'MASTER' ? () => handleMasterShareViaEmail(templates) : handleShareViaEmail}
+                      disabled={shareLoading}
+                      style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: shareLoading ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                    >
+                      {shareLoading ? "Sending..." : <><Send size={18} /> Send Email</>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+                {activeSubTab === 'MASTER' && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
             <div>
@@ -1490,7 +1493,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>{editingTemplate ? "Edit Template" : "Add Recurring Task"}</h3>
                 <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.8 }}>Define how the system should generate this activity.</p>
               </div>
-              <button onClick={() => setShowTemplateForm(false)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px" }}>×</button>
+              <button onClick={() => setShowTemplateForm(false)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px" }}>Ã—</button>
             </div>
             
             <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
