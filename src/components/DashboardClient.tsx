@@ -408,19 +408,38 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const fetchPaymentRequests = async () => {
     try {
-      const res = await fetch("/api/payments/tracker");
-      if (res.ok) {
-        const allOccurrences = await res.json();
-        // Filter for editRequested and map fields for UI consistency
-        const requests = allOccurrences
+      const trackerRes = await fetch("/api/payments/tracker");
+      const masterRes = await fetch("/api/payments/master");
+      
+      let trackerRequests: any[] = [];
+      let masterRequests: any[] = [];
+      
+      if (trackerRes.ok) {
+        const allOccurrences = await trackerRes.json();
+        trackerRequests = allOccurrences
           .filter((occ: any) => (occ.editRequested && !occ.editApproved) || occ.deleteRequested)
           .map((occ: any) => ({
             ...occ,
+            type: 'TRACKER',
             templateVendor: occ.vendorName,
             templateDesc: occ.paymentDescription
           }));
-        setPaymentRequests(requests);
       }
+      
+      if (masterRes.ok) {
+        const allTemplates = await masterRes.json();
+        masterRequests = allTemplates
+          .filter((t: any) => t.deleteRequested || t.editRequested)
+          .map((t: any) => ({
+            ...t,
+            type: 'MASTER',
+            templateVendor: t.vendorName,
+            templateDesc: t.paymentDescription,
+            dueDate: t.startDate // Use startDate as a reference date
+          }));
+      }
+      
+      setPaymentRequests([...trackerRequests, ...masterRequests]);
     } catch (error) {
       console.error("Failed to fetch payment requests", error);
     }
@@ -456,13 +475,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const handleApproveDeletePayment = async (occId: number) => {
+  const handleApproveDeletePayment = async (req: any) => {
     try {
-      const res = await fetch(`/api/payments/tracker/${occId}/approve-delete`, {
+      const url = req.type === 'MASTER' 
+        ? `/api/payments/master/${req.id}/approve-delete`
+        : `/api/payments/tracker/${req.id}/approve-delete`;
+        
+      const res = await fetch(url, {
         method: "POST"
       });
       if (res.ok) {
-        showNotification("Payment record deleted successfully.");
+        showNotification(req.type === 'MASTER' ? "Master record deleted." : "Payment record deleted.");
         fetchPaymentRequests();
       }
     } catch (err) {
@@ -470,9 +493,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const handleRejectDeletePayment = async (occId: number) => {
+  const handleRejectDeletePayment = async (req: any) => {
     try {
-      const res = await fetch(`/api/payments/tracker/${occId}/reject-delete`, {
+      const url = req.type === 'MASTER'
+        ? `/api/payments/master/${req.id}/reject-delete`
+        : `/api/payments/tracker/${req.id}/reject-delete`;
+        
+      const res = await fetch(url, {
         method: "POST"
       });
       if (res.ok) {
@@ -5362,17 +5389,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                       <div>
                                         <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
                                         <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
-                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#3b82f6", fontWeight: 600 }}>Due Date: {new Date(req.dueDate).toLocaleDateString('en-GB')}</p>
+                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#3b82f6", fontWeight: 600 }}>
+                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
+                                        </p>
                                       </div>
                                       <div style={{ display: "flex", gap: "8px" }}>
                                         <button 
-                                          onClick={() => handleApprovePaymentEdit(req.id)}
+                                          onClick={() => handleApprovePaymentEdit(req)}
                                           style={{ background: "#22c55e", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
                                         >
-                                          Approve
+                                          {req.type === 'MASTER' ? "Approve Master Edit" : "Approve"}
                                         </button>
                                         <button 
-                                          onClick={() => handleRejectPaymentEdit(req.id)}
+                                          onClick={() => handleRejectPaymentEdit(req)}
                                           style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
                                         >
                                           Reject
@@ -5404,17 +5433,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                       <div>
                                         <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
                                         <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
-                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600 }}>Due Date: {new Date(req.dueDate).toLocaleDateString('en-GB')}</p>
+                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600 }}>
+                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
+                                        </p>
                                       </div>
                                       <div style={{ display: "flex", gap: "8px" }}>
                                         <button 
-                                          onClick={() => handleApproveDeletePayment(req.id)}
+                                          onClick={() => handleApproveDeletePayment(req)}
                                           style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
                                         >
-                                          Approve Delete
+                                          {req.type === 'MASTER' ? "Approve Master Delete" : "Approve Delete"}
                                         </button>
                                         <button 
-                                          onClick={() => handleRejectDeletePayment(req.id)}
+                                          onClick={() => handleRejectDeletePayment(req)}
                                           style={{ background: "#64748b", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
                                         >
                                           Reject

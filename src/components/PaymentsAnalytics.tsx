@@ -151,25 +151,18 @@ export default function PaymentsAnalytics({
   };
 
   const combinedData = useMemo(() => {
-    const trackerData = trackerOccurrences.map(o => {
-      let status = "";
-      if (o.isCancelled) status = "Cancelled";
-      else if (o.isHold) status = "On Hold";
-      else if (o.isPaid) {
+    const trackerData = trackerOccurrences
+      .filter(o => o.isPaid)
+      .map(o => {
+        let status = "";
         const due = new Date(o.dueDate); 
         const actual = new Date(o.actualDate);
         due.setHours(0,0,0,0); 
         actual.setHours(0,0,0,0);
-        if (actual.getTime() <= due.getTime()) status = "Paid On Time";
+        
+        if (actual.getTime() < due.getTime()) status = "Paid Before due date";
+        else if (actual.getTime() === due.getTime()) status = "Paid on due date";
         else status = "Paid After due date";
-      } else {
-        const due = new Date(o.dueDate); 
-        const today = new Date();
-        due.setHours(0,0,0,0); 
-        today.setHours(0,0,0,0);
-        if (today.getTime() > due.getTime()) status = "Overdue";
-        else status = "Not Yet Due";
-      }
 
       return {
         id: `tracker-${o.id}`, 
@@ -177,14 +170,15 @@ export default function PaymentsAnalytics({
         department_name: o.departmentName || 'N/A',
         payment_type: o.paymentType, 
         frequency: o.frequency, 
-        amount: Number(o.isPaid ? o.amountPaid : (o.amount || 0)),
+        amount: Number(o.amountPaid),
         status,
         transaction_count: 1, 
         payment_date: o.actualDate ? new Date(o.actualDate).toISOString().split('T')[0] : new Date(o.dueDate).toISOString().split('T')[0], 
         isTracker: true,
-        isPaid: !!o.isPaid
+        isPaid: true
       };
-    });
+    })
+    .filter(d => ["Paid Before due date", "Paid on due date", "Paid After due date"].includes(d.status));
 
     const manual = manualEntries.map(e => ({ ...e, id: `manual-${e.id}`, amount: Number(e.amount), isTracker: false, isPaid: true }));
     return [...trackerData, ...manual];

@@ -28,6 +28,9 @@ interface PaymentTemplate {
   stopDate: string;
   isStopped: boolean;
   lastGeneratedPeriod?: string;
+  editRequested?: boolean;
+  editApproved?: boolean;
+  editRequestReason?: string;
 }
 
 interface PaymentOccurrence {
@@ -150,7 +153,11 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const [cancelData, setCancelData] = useState({ reason: "" });
   
   const [showRequestDeleteModal, setShowRequestDeleteModal] = useState(false);
+  const [showRequestDeleteMasterModal, setShowRequestDeleteMasterModal] = useState(false);
+  const [showRequestEditMasterModal, setShowRequestEditMasterModal] = useState(false);
   const [requestDeleteData, setRequestDeleteData] = useState({ reason: "" });
+  const [requestEditData, setRequestEditData] = useState({ reason: "" });
+  const [activeMaster, setActiveMaster] = useState<PaymentTemplate | null>(null);
 
   useEffect(() => {
     if (settings?.paymentReportEmail) {
@@ -410,7 +417,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       if (res.ok) {
         setShowRequestDeleteModal(false);
         setRequestDeleteData({ reason: "" });
-        fetchData();
+        fetchInitialData();
         showNotification("Deletion request sent to admin.");
       } else {
         const errorData = await res.json();
@@ -418,6 +425,58 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       }
     } catch (err: any) {
       console.error("Delete request error:", err);
+      showNotification(`Connection error: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestDeleteMaster = async () => {
+    if (!activeMaster || !requestDeleteData.reason.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/payments/master/${activeMaster.id}/request-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: requestDeleteData.reason })
+      });
+      if (res.ok) {
+        setShowRequestDeleteMasterModal(false);
+        setRequestDeleteData({ reason: "" });
+        fetchInitialData();
+        showNotification("Master deletion request sent to admin.");
+      } else {
+        const errorData = await res.json();
+        showNotification(`Failed to send request: ${errorData.error || 'Server Error'}`, 'error');
+      }
+    } catch (err: any) {
+      console.error("Master delete request error:", err);
+      showNotification(`Connection error: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestEditMaster = async () => {
+    if (!activeMaster || !requestEditData.reason.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/payments/master/${activeMaster.id}/request-edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: requestEditData.reason })
+      });
+      if (res.ok) {
+        setShowRequestEditMasterModal(false);
+        setRequestEditData({ reason: "" });
+        fetchInitialData();
+        showNotification("Master edit request sent to admin.");
+      } else {
+        const errorData = await res.json();
+        showNotification(`Failed to send request: ${errorData.error || 'Server Error'}`, 'error');
+      }
+    } catch (err: any) {
+      console.error("Master edit request error:", err);
       showNotification(`Connection error: ${err.message}`, 'error');
     } finally {
       setIsSubmitting(false);
@@ -1038,12 +1097,29 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         </span>
                       </td>
                       <td style={tdStyle}>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button onClick={() => { setEditingTemplate(temp); setFormData(temp as any); setShowForm(true); }} style={iconBtnStyle}><Edit2 size={16} /></button>
-                          {!temp.isStopped && <button onClick={() => { setStoppingTemplate(temp); setShowStopModal(true); }} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Stop Recurring Payment"><StopCircle size={16} /></button>}
-                          {isAdmin && (
-                            <button onClick={() => handleDeleteMaster(temp.id)} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Delete Template & All Transactions"><Trash2 size={16} /></button>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          {/* Edit logic */}
+                          {isAdmin || temp.editApproved ? (
+                            <button onClick={() => { setEditingTemplate(temp); setFormData(temp as any); setShowForm(true); }} style={iconBtnStyle}><Edit2 size={16} /></button>
+                          ) : (
+                            !temp.editRequested && (
+                              <button onClick={() => { setActiveMaster(temp); setShowRequestEditMasterModal(true); }} style={{ ...iconBtnStyle, color: "#3b82f6" }} title="Request Edit"><Edit2 size={16} /></button>
+                            )
                           )}
+                          {temp.editRequested && !temp.editApproved && <span style={{ fontSize: "0.65rem", color: "#3b82f6", fontWeight: 700 }}>EDIT PENDING</span>}
+
+                          {/* Stop logic */}
+                          {!temp.isStopped && <button onClick={() => { setStoppingTemplate(temp); setShowStopModal(true); }} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Stop Recurring Payment"><StopCircle size={16} /></button>}
+                          
+                          {/* Delete logic */}
+                          {isAdmin ? (
+                            <button onClick={() => handleDeleteMaster(temp.id)} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Delete Template & All Transactions"><Trash2 size={16} /></button>
+                          ) : (
+                            !temp.deleteRequested && (
+                              <button onClick={() => { setActiveMaster(temp); setShowRequestDeleteMasterModal(true); }} style={{ ...iconBtnStyle, color: "#f97316" }} title="Request Deletion"><Trash2 size={16} /></button>
+                            )
+                          )}
+                          {temp.deleteRequested && <span style={{ fontSize: "0.65rem", color: "#f97316", fontWeight: 700 }}>DEL PENDING</span>}
                         </div>
                       </td>
                     </tr>
@@ -1585,6 +1661,62 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                 <button onClick={() => setShowRequestDeleteModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Back</button>
                 <button onClick={handleRequestDelete} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#ef4444", color: "white", fontWeight: 600 }}>
                   {isSubmitting ? "Sending..." : "Send Request to Admin"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Delete Master Modal */}
+      {showRequestDeleteMasterModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: "450px" }}>
+            <div style={{ padding: "20px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff7ed" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: "#f97316" }}>Request Master Deletion</h3>
+              <button onClick={() => setShowRequestDeleteMasterModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X /></button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              <p style={{ fontSize: "0.875rem", color: t.textMuted, marginBottom: "16px" }}>Request to permanently delete this master template and ALL its linked transactions.</p>
+              <label style={labelStyle}>Reason for Deletion</label>
+              <textarea 
+                value={requestDeleteData.reason}
+                onChange={e => setRequestDeleteData({ reason: e.target.value })}
+                style={{ ...inputStyle, minHeight: "100px", resize: "none" }}
+                placeholder="e.g. Master record created by mistake..."
+              />
+              <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowRequestDeleteMasterModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Back</button>
+                <button onClick={handleRequestDeleteMaster} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#f97316", color: "white", fontWeight: 600 }}>
+                  {isSubmitting ? "Sending..." : "Submit Master Delete Request"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Edit Master Modal */}
+      {showRequestEditMasterModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: "450px" }}>
+            <div style={{ padding: "20px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eff6ff" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: "#3b82f6" }}>Request Master Edit</h3>
+              <button onClick={() => setShowRequestEditMasterModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X /></button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              <p style={{ fontSize: "0.875rem", color: t.textMuted, marginBottom: "16px" }}>This will send a request to the admin to unlock this master template for editing.</p>
+              <label style={labelStyle}>Reason for Editing</label>
+              <textarea 
+                value={requestEditData.reason}
+                onChange={e => setRequestEditData({ reason: e.target.value })}
+                style={{ ...inputStyle, minHeight: "100px", resize: "none" }}
+                placeholder="e.g. Need to update vendor email or frequency..."
+              />
+              <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowRequestEditMasterModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Back</button>
+                <button onClick={handleRequestEditMaster} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#3b82f6", color: "white", fontWeight: 600 }}>
+                  {isSubmitting ? "Sending..." : "Submit Edit Request"}
                 </button>
               </div>
             </div>
