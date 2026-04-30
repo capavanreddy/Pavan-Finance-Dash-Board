@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         AND table_type = 'BASE TABLE'
       `;
       
-      const allTables = tablesResult.map(t => t.table_name);
+      const allTables = (tablesResult as any[]).map(t => t.table_name);
       const targetTables = allTables.filter(name => !PROTECTED_TABLES.includes(name));
 
       // 2. Create a comprehensive snapshot
@@ -36,16 +36,17 @@ export async function POST(req: NextRequest) {
         sequences: []
       };
 
-      // Snapshot data and also capture TaskSequence (which we'll reset but keep structure)
       for (const tableName of targetTables) {
         try {
-          snapshot.data[tableName] = await sql`SELECT * FROM ${sql(tableName)}`;
+          const query = `SELECT * FROM "${tableName}"`;
+          const strings = [query] as any;
+          strings.raw = [query];
+          snapshot.data[tableName] = await (sql as any)(strings);
         } catch (e) {
           console.error(`Snapshot failed for ${tableName}:`, e);
         }
       }
       
-      // Special capture for TaskSequence (since it's partially protected/needed for IDs)
       snapshot.sequences = await sql`SELECT * FROM "TaskSequence"`;
 
       // 3. Save to DataBackup
@@ -57,17 +58,22 @@ export async function POST(req: NextRequest) {
       `;
 
       // 4. Universal Purge
-      // TRUNCATE with CASCADE is the cleanest way to clear everything
       for (const tableName of targetTables) {
         try {
-          await sql`TRUNCATE TABLE ${sql(tableName)} RESTART IDENTITY CASCADE`;
+          const query = `TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE`;
+          const strings = [query] as any;
+          strings.raw = [query];
+          await (sql as any)(strings);
         } catch (e) {
-          // Fallback to DELETE if truncate fails for some reason
-          try { await sql`DELETE FROM ${sql(tableName)}`; } catch (de) {}
+          try { 
+            const delQuery = `DELETE FROM "${tableName}"`;
+            const dStrings = [delQuery] as any;
+            dStrings.raw = [delQuery];
+            await (sql as any)(dStrings); 
+          } catch (de) {}
         }
       }
       
-      // Also clear sequences to start from 01 next month
       await sql`DELETE FROM "TaskSequence"`;
 
       return NextResponse.json({ 
@@ -77,7 +83,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "REVERSE") {
-      // 1. Fetch latest backup
       const backups = await sql`SELECT * FROM "DataBackup" ORDER BY "createdAt" DESC LIMIT 1`;
       if (!backups.length) {
         return NextResponse.json({ message: "No restore points found." }, { status: 404 });
@@ -87,22 +92,27 @@ export async function POST(req: NextRequest) {
       const snapshot = typeof latestBackup.snapshot === 'string' ? JSON.parse(latestBackup.snapshot) : latestBackup.snapshot;
       const tableData = snapshot.data || {};
 
-      // 2. Clear current state of tables in the snapshot
       for (const tableName in tableData) {
         try {
-          await sql`TRUNCATE TABLE ${sql(tableName)} RESTART IDENTITY CASCADE`;
+          const query = `TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE`;
+          const strings = [query] as any;
+          strings.raw = [query];
+          await (sql as any)(strings);
         } catch (e) {
-          try { await sql`DELETE FROM ${sql(tableName)}`; } catch (de) {}
+          try { 
+            const delQuery = `DELETE FROM "${tableName}"`;
+            const dStrings = [delQuery] as any;
+            dStrings.raw = [delQuery];
+            await (sql as any)(dStrings); 
+          } catch (de) {}
         }
       }
       await sql`DELETE FROM "TaskSequence"`;
 
-      // 3. Re-hydrate Sequences
       for (const s of snapshot.sequences || []) {
         await sql`INSERT INTO "TaskSequence" ("monthYear", "nextVal") VALUES (${s.monthYear}, ${s.nextVal})`;
       }
 
-      // 4. Re-hydrate Data dynamically
       for (const tableName in tableData) {
         const rows = tableData[tableName];
         if (!rows || !Array.isArray(rows) || rows.length === 0) continue;
@@ -113,7 +123,6 @@ export async function POST(req: NextRequest) {
           const values = Object.values(data);
           
           if (keys.length) {
-            // Using raw query construction for dynamic tables
             const query = `INSERT INTO "${tableName}" (${keys.map(k => `"${k}"`).join(',')}) VALUES (${values.map((_, i) => `$${i+1}`).join(',')})`;
             const strings = [query] as any;
             strings.raw = [query];
@@ -125,9 +134,11 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Fix ID sequence for this table
         try {
-          await sql`SELECT setval(pg_get_serial_sequence(${tableName}, 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM ${sql(tableName)}`;
+          const seqQuery = `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id), 1), max(id) IS NOT NULL) FROM "${tableName}"`;
+          const sStrings = [seqQuery] as any;
+          sStrings.raw = [seqQuery];
+          await (sql as any)(sStrings);
         } catch (se) {}
       }
 
