@@ -453,6 +453,34 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
+  const handleApproveDeletePayment = async (occId: number) => {
+    try {
+      const res = await fetch(`/api/payments/tracker/${occId}/approve-delete`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        showNotification("Payment record deleted successfully.");
+        fetchPaymentRequests();
+      }
+    } catch (err) {
+      console.error("Approve delete error:", err);
+    }
+  };
+
+  const handleRejectDeletePayment = async (occId: number) => {
+    try {
+      const res = await fetch(`/api/payments/tracker/${occId}/reject-delete`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        showNotification("Deletion request rejected.");
+        fetchPaymentRequests();
+      }
+    } catch (err) {
+      console.error("Reject delete error:", err);
+    }
+  };
+
   const fetchLOs = async () => {
     setLoLoading(true);
     try {
@@ -4987,9 +5015,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         }}
                       >
                         <Wallet size={16} /> Edit Payment
-                        {paymentRequests.length > 0 && (
+                        {paymentRequests.filter(r => r.editRequested).length > 0 && (
                           <span style={{ background: editRequestSubTab === 'PAYMENT' ? "white" : "#ef4444", color: editRequestSubTab === 'PAYMENT' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
-                            {paymentRequests.length}
+                            {paymentRequests.filter(r => r.editRequested).length}
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => setEditRequestSubTab('DELETE_PAYMENT')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: editRequestSubTab === 'DELETE_PAYMENT' ? "#ef4444" : "#f1f5f9",
+                          color: editRequestSubTab === 'DELETE_PAYMENT' ? "white" : "#64748b",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
+                        }}
+                      >
+                        <Trash2 size={16} /> Delete Payment
+                        {paymentRequests.filter(r => r.deleteRequested).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'DELETE_PAYMENT' ? "white" : "#ef4444", color: editRequestSubTab === 'DELETE_PAYMENT' ? "#ef4444" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {paymentRequests.filter(r => r.deleteRequested).length}
                           </span>
                         )}
                       </button>
@@ -5123,19 +5167,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               )}
                             </div>
                           </div>
-                        ) : (
+                        ) : editRequestSubTab === 'PAYMENT' ? (
                           <div>
                             <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Edit Requests</h3>
                             <p style={{ color: t.textMuted, marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to update payment dates or amounts for processed payments.</p>
                             
-                            {paymentRequests.length === 0 ? (
+                            {paymentRequests.filter(r => r.editRequested).length === 0 ? (
                               <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
                                 <p style={{ color: t.textMuted, margin: 0 }}>No pending payment edit requests.</p>
                               </div>
                             ) : (
                               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                {paymentRequests.map(req => (
-                                  <div key={`pay-req-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                {paymentRequests.filter(r => r.editRequested).map(req => (
+                                  <div key={`pay-edit-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                                       <div>
                                         <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
@@ -5159,6 +5203,49 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     </div>
                                     <div style={{ padding: "12px", background: t.bg, borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #f59e0b" }}>
                                       <strong>Request Reason:</strong> {req.editRequestReason}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Deletion Requests</h3>
+                            <p style={{ color: t.textMuted, marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to permanently remove specific payment records created by mistake.</p>
+                            
+                            {paymentRequests.filter(r => r.deleteRequested).length === 0 ? (
+                              <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                <p style={{ color: t.textMuted, margin: 0 }}>No pending payment deletion requests.</p>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                {paymentRequests.filter(r => r.deleteRequested).map(req => (
+                                  <div key={`pay-del-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                                      <div>
+                                        <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
+                                        <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
+                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600 }}>Due Date: {new Date(req.dueDate).toLocaleDateString('en-GB')}</p>
+                                      </div>
+                                      <div style={{ display: "flex", gap: "8px" }}>
+                                        <button 
+                                          onClick={() => handleApproveDeletePayment(req.id)}
+                                          style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
+                                        >
+                                          Approve Delete
+                                        </button>
+                                        <button 
+                                          onClick={() => handleRejectDeletePayment(req.id)}
+                                          style={{ background: "#64748b", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #ef4444" }}>
+                                      <div><strong>Requested By:</strong> {req.deleteRequestedBy || "User"}</div>
+                                      <div style={{ marginTop: "4px" }}><strong>Reason:</strong> {req.deleteRequestReason}</div>
                                     </div>
                                   </div>
                                 ))}

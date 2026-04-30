@@ -49,6 +49,10 @@ interface PaymentOccurrence {
   editRequested: boolean;
   editApproved: boolean;
   editRequestReason?: string;
+  isCancelled: boolean;
+  cancelledReason?: string;
+  deleteRequested: boolean;
+  deleteRequestReason?: string;
 }
 
 import { resolveTaskName, getPeriodKey, getOccurrencesBetween } from "@/lib/recurringUtils";
@@ -141,6 +145,12 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   
   const [showEditOccModal, setShowEditOccModal] = useState(false);
   const [editOccData, setEditOccData] = useState({ actualDate: "", amountPaid: "" });
+
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelData, setCancelData] = useState({ reason: "" });
+  
+  const [showRequestDeleteModal, setShowRequestDeleteModal] = useState(false);
+  const [requestDeleteData, setRequestDeleteData] = useState({ reason: "" });
 
   useEffect(() => {
     if (settings?.paymentReportEmail) {
@@ -366,7 +376,66 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     }
   };
 
+  const handleCancelPayment = async () => {
+    if (!activeOccurrence || !cancelData.reason.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/payments/tracker/${activeOccurrence.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isCancelled: true, cancelledReason: cancelData.reason })
+      });
+      if (res.ok) {
+        setShowCancelModal(false);
+        setCancelData({ reason: "" });
+        fetchData();
+        showNotification("Payment cancelled successfully.");
+      }
+    } catch (err) {
+      console.error("Cancel error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestDelete = async () => {
+    if (!activeOccurrence || !requestDeleteData.reason.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/payments/tracker/${activeOccurrence.id}/request-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: requestDeleteData.reason })
+      });
+      if (res.ok) {
+        setShowRequestDeleteModal(false);
+        setRequestDeleteData({ reason: "" });
+        fetchData();
+        showNotification("Deletion request sent to admin.");
+      }
+    } catch (err) {
+      console.error("Delete request error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteMaster = async (id: number) => {
+    showConfirm("Are you sure you want to delete this payment master? All pending transactions in the tracker will also be removed.", async () => {
+      try {
+        const res = await fetch(`/api/payments/master/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchData();
+          showNotification("Payment master and associated transactions deleted.");
+        }
+      } catch (err) {
+        console.error("Delete master error:", err);
+      }
+    });
+  };
+
   const getStatus = (occ: PaymentOccurrence) => {
+    if (occ.isCancelled) return "CANCELLED";
     if (occ.isHold) return "ON HOLD";
     if (occ.isPaid) {
       const due = new Date(occ.dueDate);
@@ -389,6 +458,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
 
   const getStatusStyle = (status: string) => {
     switch (status) {
+      case "CANCELLED": return { bg: "#fef2f2", text: "#991b1b", border: "#fee2e2" };
       case "OVERDUE": return { bg: "#fee2e2", text: "#ef4444", border: "#fecaca" };
       case "Paid on due date": return { bg: "#dcfce7", text: "#22c55e", border: "#bbf7d0" };
       case "Paid Before due date": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
@@ -476,7 +546,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         actual: occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
         amount: occ.amountPaid || 0,
         status: getStatus(occ),
-        remarks: occ.isHold ? `HOLD: ${occ.holdReason}` : (occ.editRequested ? `EDIT REQ: ${occ.editRequestReason}` : "")
+        remarks: occ.isCancelled ? `CANCELLED: ${occ.cancelledReason}` : (occ.isHold ? `HOLD: ${occ.holdReason}` : (occ.editRequested ? `EDIT REQ: ${occ.editRequestReason}` : ""))
       });
     });
 
@@ -513,7 +583,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
         occ.amountPaid ? formatCurrency(occ.amountPaid) : "--",
         getStatus(occ),
-        occ.holdReason || ""
+        occ.isCancelled ? `CANCELLED: ${occ.cancelledReason}` : (occ.isHold ? `HOLD: ${occ.holdReason}` : "")
       ]),
       startY: 20,
       theme: 'grid',
@@ -826,33 +896,58 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                           </span>
                         </td>
                         <td style={tdStyle}>
-                          {occ.isHold ? (
-                            <button 
-                              onClick={() => handleReleaseHold(occ)}
-                              style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: "0.7rem", cursor: "pointer" }}
-                            >
-                              Release
-                            </button>
-                          ) : (
-                            !occ.isPaid && (
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            {occ.isHold ? (
                               <button 
-                                onClick={() => { setActiveOccurrence(occ); setShowHoldModal(true); }}
-                                style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "white", color: "#ef4444", fontSize: "0.7rem", cursor: "pointer" }}
+                                onClick={() => handleReleaseHold(occ)}
+                                style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: "0.7rem", cursor: "pointer" }}
                               >
-                                Hold
+                                Release
                               </button>
-                            )
-                          )}
+                            ) : (
+                              !occ.isPaid && !occ.isCancelled && (
+                                <>
+                                  <button 
+                                    onClick={() => { setActiveOccurrence(occ); setShowHoldModal(true); }}
+                                    style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "white", color: "#ef4444", fontSize: "0.7rem", cursor: "pointer" }}
+                                  >
+                                    Hold
+                                  </button>
+                                  <button 
+                                    onClick={() => { setActiveOccurrence(occ); setShowCancelModal(true); }}
+                                    style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fef2f2", color: "#991b1b", fontSize: "0.7rem", cursor: "pointer" }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )
+                            )}
+                          </div>
                         </td>
                         <td style={tdStyle}>
                           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            {!occ.isPaid && !occ.isHold && (
+                            {!occ.isPaid && !occ.isHold && !occ.isCancelled && (
                               <button 
                                 onClick={() => { setActiveOccurrence(occ); setShowPayModal(true); }}
                                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#2563eb", color: "white", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
                               >
                                 Mark Paid
                               </button>
+                            )}
+
+                            {/* Delete Request Option */}
+                            {!occ.isPaid && !occ.deleteRequested && (
+                              <button 
+                                onClick={() => { setActiveOccurrence(occ); setShowRequestDeleteModal(true); }}
+                                style={{ padding: "6px", borderRadius: "8px", border: "1px solid #fee2e2", background: "white", color: "#ef4444", cursor: "pointer" }}
+                                title="Request Deletion"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                            
+                            {occ.deleteRequested && (
+                              <span style={{ fontSize: "0.65rem", color: "#ef4444", fontStyle: "italic" }}>Del Req Pending</span>
                             )}
                             
                             {occ.isPaid && !occ.editRequested && !occ.editApproved && (
@@ -939,6 +1034,9 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button onClick={() => { setEditingTemplate(temp); setFormData(temp as any); setShowForm(true); }} style={iconBtnStyle}><Edit2 size={16} /></button>
                           {!temp.isStopped && <button onClick={() => { setStoppingTemplate(temp); setShowStopModal(true); }} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Stop Recurring Payment"><StopCircle size={16} /></button>}
+                          {isAdmin && (
+                            <button onClick={() => handleDeleteMaster(temp.id)} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Delete Template & All Transactions"><Trash2 size={16} /></button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1425,6 +1523,60 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                 <button onClick={() => setShowEditOccModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Cancel</button>
                 <button onClick={handleSaveEditOcc} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600 }}>
                   {isSubmitting ? "Saving..." : "Update Payment"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Cancel Payment Modal */}
+      {showCancelModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: "450px" }}>
+            <div style={{ padding: "20px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fef2f2" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: "#991b1b" }}>Cancel Payment</h3>
+              <button onClick={() => setShowCancelModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X /></button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              <label style={labelStyle}>Reason for Cancellation</label>
+              <textarea 
+                value={cancelData.reason}
+                onChange={e => setCancelData({ reason: e.target.value })}
+                style={{ ...inputStyle, minHeight: "100px", resize: "none" }}
+                placeholder="e.g., Service terminated, Duplicate record..."
+              />
+              <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowCancelModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Back</button>
+                <button onClick={handleCancelPayment} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#991b1b", color: "white", fontWeight: 600 }}>
+                  {isSubmitting ? "Processing..." : "Cancel this Payment"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Delete Modal */}
+      {showRequestDeleteModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: "450px" }}>
+            <div style={{ padding: "20px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fef2f2" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, color: "#ef4444" }}>Request Record Deletion</h3>
+              <button onClick={() => setShowRequestDeleteModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}><X /></button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              <p style={{ fontSize: "0.875rem", color: t.textMuted, marginBottom: "16px" }}>This will send a request to the admin to permanently delete this record.</p>
+              <label style={labelStyle}>Reason for Deletion</label>
+              <textarea 
+                value={requestDeleteData.reason}
+                onChange={e => setRequestDeleteData({ reason: e.target.value })}
+                style={{ ...inputStyle, minHeight: "100px", resize: "none" }}
+                placeholder="e.g., Created by mistake, Wrong vendor..."
+              />
+              <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowRequestDeleteModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Back</button>
+                <button onClick={handleRequestDelete} disabled={isSubmitting} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#ef4444", color: "white", fontWeight: 600 }}>
+                  {isSubmitting ? "Sending..." : "Send Request to Admin"}
                 </button>
               </div>
             </div>
