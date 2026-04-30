@@ -1037,7 +1037,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             </div>
           )}
 
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f8fafc" }}>
                 <tr>
@@ -1160,6 +1160,15 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         />
                       )}
                     </td>
+                    <td style={tdStyle}>
+                      <span style={{ 
+                        padding: "4px 8px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700, whiteSpace: "nowrap",
+                        background: task.isConverted ? "#dcfce7" : "#fef3c7",
+                        color: task.isConverted ? "#15803d" : "#b45309"
+                      }}>
+                        {task.isConverted ? "CONVERTED" : "PENDING"}
+                      </span>
+                    </td>
                     <td style={{...tdStyle, textAlign: "right"}}>
                         {!task.isConverted && (
                             <button 
@@ -1220,7 +1229,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             </button>
           </div>
 
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f8fafc" }}>
                 <tr style={{ background: "#1e293b" }}>
@@ -1519,7 +1528,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           )}
 
           {/* Daily Tracker Table */}
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1e293b" }}>

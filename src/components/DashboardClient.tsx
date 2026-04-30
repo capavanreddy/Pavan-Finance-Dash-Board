@@ -2896,8 +2896,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           </div>
 
         {/* Data Table */}
-        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
+        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflowX: "auto", overflowY: "hidden" }}>
+          <div style={{ overflowX: "auto", minWidth: "max-content" }}>
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
               <thead>
                 <tr>
@@ -3196,7 +3196,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                             padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
                             background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
                             color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
-                            textAlign: "center"
+                            textAlign: "center", whiteSpace: "nowrap"
                           }}>
                             {task.requestStatus || "Pending"}
                           </span>
@@ -6929,6 +6929,7 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: s
     fontSize: "0.75rem",
     fontWeight: 600,
     display: "inline-block",
+    whiteSpace: "nowrap",
     border: "none",
     outline: "none",
     appearance: "none" as const,
