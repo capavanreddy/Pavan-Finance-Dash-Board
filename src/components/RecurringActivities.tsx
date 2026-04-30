@@ -1390,6 +1390,16 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                   </div>
                 )}
               </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "240px" }}>
+              <Search size={16} color="#64748b" />
+              <input 
+                type="text" 
+                placeholder="Search master..." 
+                value={searchMaster}
+                onChange={e => setSearchMaster(e.target.value)}
+                style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", width: "100%", color: "#334155" }}
+              />
+            </div>
             <button 
               onClick={() => { 
                 setEditingTemplate(null); 
@@ -1431,7 +1441,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 </tr>
               </thead>
               <tbody>
-                {templates.map(t => (
+                {templates
+                  .filter(t => t.taskNamePattern.toLowerCase().includes(searchMaster.toLowerCase()) || t.entityName.toLowerCase().includes(searchMaster.toLowerCase()))
+                  .map(t => (
                   <tr key={t.id} style={{ borderBottom: "1px solid #f1f5f9" }} className="table-row">
                     <td style={{...tdStyle, fontWeight: 600, color: "#0f172a"}}>{t.taskNamePattern}</td>
                     <td style={tdStyle}>
@@ -1439,45 +1451,47 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{t.financeFunction || "--"}</div>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ padding: "4px 10px", background: "#eff6ff", color: "#2563eb", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700 }}>{t.frequency}</span>
+                        <div style={{ fontWeight: 600, color: "#2563eb" }}>{t.frequency}</div>
+                        <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Day {t.dayOffset}</div>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                        Starts: {t.startDate ? new Date(t.startDate).toLocaleDateString() : "--"}<br/>
-                        Ends: {t.endDate ? new Date(t.endDate).toLocaleDateString() : "Ongoing"}
-                      </div>
+                        <div style={{ fontSize: "0.8125rem" }}>{t.startDate ? new Date(t.startDate).toLocaleDateString('en-GB') : "--"} to</div>
+                        <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? new Date(t.endDate).toLocaleDateString('en-GB') : "Forever"}</div>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ fontSize: "0.75rem" }}><strong>Owner:</strong> {t.defaultOwner || "--"}</span>
-                        <span style={{ fontSize: "0.75rem" }}><strong>Rev:</strong> {t.defaultReviewer || "--"}</span>
-                      </div>
+                        <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Users size={14} color="#64748b" /> {t.defaultOwner}</div>
+                        <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Briefcase size={14} color="#64748b" /> {t.defaultReviewer}</div>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ 
-                            padding: "4px 8px", borderRadius: "6px", fontSize: "0.65rem", fontWeight: 800, width: "fit-content",
-                            background: t.isActive ? "#dcfce7" : "#fee2e2",
-                            color: t.isActive ? "#15803d" : "#b91c1c"
+                            padding: "4px 8px", borderRadius: "12px", fontSize: "0.7rem", fontWeight: 700,
+                            background: t.isActive && !t.isStopped ? "#dcfce7" : "#fee2e2",
+                            color: t.isActive && !t.isStopped ? "#16a34a" : "#ef4444"
                         }}>
-                            {t.isActive ? "ACTIVE" : "INACTIVE"}
+                            {t.isStopped ? "STOPPED" : (t.isActive ? "ACTIVE" : "INACTIVE")}
                         </span>
-                        {t.isStopped && (
-                            <span style={{ fontSize: "0.65rem", color: "#ef4444", fontWeight: 700 }}>STOPPED ({new Date(t.stopDate!).toLocaleDateString()})</span>
-                        )}
-                      </div>
                     </td>
                     <td style={{...tdStyle, textAlign: "right"}}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                        <button onClick={() => openEditTemplate(t)} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} title="Edit"><Edit2 size={16} /></button>
                         {!t.isStopped && (
-                            <button onClick={() => handleStopTemplate(t.id)} title="Stop this recurring rule" style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><StopCircle size={16} /></button>
+                          <button onClick={() => handleStopTemplate(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }} title="Stop">
+                            <StopCircle size={16} />
+                          </button>
                         )}
-                        <button onClick={() => openEditTemplate(t)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}><Edit2 size={16} /></button>
-                        <button onClick={() => handleDeleteTemplate(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>
+                        <button onClick={() => handleDeleteTemplate(t.id)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }} title="Delete"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
                 ))}
+                {templates.filter(t => t.taskNamePattern.toLowerCase().includes(searchMaster.toLowerCase()) || t.entityName.toLowerCase().includes(searchMaster.toLowerCase())).length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
+                      <Calendar size={40} style={{ opacity: 0.3, marginBottom: "12px" }} />
+                      <p>No recurring tasks found.</p>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -1829,6 +1843,19 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     </td>
                   </tr>
                 ))}
+                {dailyTasks.filter(occ => {
+                  const search = dailySearch.toLowerCase();
+                  return occ.taskName.toLowerCase().includes(search) || 
+                         occ.entityName.toLowerCase().includes(search) ||
+                         occ.ownerName.toLowerCase().includes(search);
+                }).length === 0 && (
+                  <tr>
+                    <td colSpan={9} style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
+                      <Calendar size={40} style={{ opacity: 0.3, marginBottom: "12px" }} />
+                      <p>No daily tasks found for the selected period.</p>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
