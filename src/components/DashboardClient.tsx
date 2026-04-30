@@ -2392,7 +2392,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     style={{ 
                                       padding: "10px", borderRadius: "8px", border: "none", textAlign: "left", fontSize: "0.7rem", fontWeight: 600,
                                       background: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.2)" : "transparent",
-                                      color: activeView === 'TASKS' && activeSubView['OTHER_DEPT'] && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
+                                      color: activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8",
                                       cursor: "pointer", transition: "all 0.2s"
                                     }}
                                   >
