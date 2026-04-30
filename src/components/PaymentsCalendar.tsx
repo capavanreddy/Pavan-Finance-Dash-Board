@@ -130,6 +130,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
 
   // Report Export & Share State
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showMasterDownloadMenu, setShowMasterDownloadMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [recipientInput, setRecipientInput] = useState("");
   const [recipientTags, setRecipientTags] = useState<string[]>([]);
@@ -659,6 +660,63 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     setShowDownloadMenu(false);
   };
 
+  const handleDownloadMasterExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Master Templates");
+
+    worksheet.columns = [
+      { header: "Entity", key: "entity", width: 20 },
+      { header: "Description", key: "desc", width: 40 },
+      { header: "Vendor", key: "vendor", width: 30 },
+      { header: "Type", key: "type", width: 15 },
+      { header: "Frequency", key: "freq", width: 15 },
+      { header: "Start Date", key: "start", width: 15 },
+      { header: "End Date", key: "end", width: 15 },
+      { header: "Status", key: "status", width: 15 }
+    ];
+
+    templates.forEach(t => {
+      worksheet.addRow({
+        entity: t.entityName,
+        desc: t.paymentDescription,
+        vendor: t.vendorName,
+        type: t.paymentType,
+        freq: t.frequency,
+        start: new Date(t.startDate).toLocaleDateString('en-GB'),
+        end: new Date(t.endDate).toLocaleDateString('en-GB'),
+        status: t.isStopped ? "STOPPED" : "ACTIVE"
+      });
+    });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Payment_Templates_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setShowMasterDownloadMenu(false);
+  };
+
+  const handleDownloadMasterPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    doc.text("Payment Master Sheet Report", 14, 15);
+    
+    autoTable(doc, {
+      head: [['Entity', 'Description', 'Vendor', 'Type', 'Freq', 'Start Date', 'End Date', 'Status']],
+      body: templates.map(t => [
+        t.entityName, t.paymentDescription, t.vendorName, t.paymentType, t.frequency,
+        new Date(t.startDate).toLocaleDateString('en-GB'),
+        new Date(t.endDate).toLocaleDateString('en-GB'),
+        t.isStopped ? "STOPPED" : "ACTIVE"
+      ]),
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+
+    doc.save(`Payment_Templates_${new Date().toISOString().split('T')[0]}.pdf`);
+    setShowMasterDownloadMenu(false);
+  };
+
   const handleShareReport = async () => {
     if (recipientTags.length === 0) {
       showNotification("Please add at least one recipient email");
@@ -768,33 +826,6 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", alignItems: "center", gap: "12px" }}>
-        <div style={{ position: "relative" }}>
-          <button 
-            onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-            style={{ 
-              padding: "8px", borderRadius: "10px", border: "none", background: "#dcfce7", color: "#16a34a", 
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" 
-            }}
-            title="Download/Share Reports"
-          >
-            <Download size={20} />
-          </button>
-          
-          {showDownloadMenu && (
-            <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", border: `1px solid ${t.border}`, zIndex: 100, minWidth: "180px", overflow: "hidden" }}>
-              <button onClick={handleDownloadExcel} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
-                <FileSpreadsheet size={16} color="#16a34a" /> Download Excel
-              </button>
-              <button onClick={handleDownloadPDF} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
-                <FileText size={16} color="#ef4444" /> Download PDF
-              </button>
-              <button onClick={() => { setShowShareModal(true); setShowDownloadMenu(false); }} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
-                <Mail size={16} color="#2563eb" /> Share via Email
-              </button>
-            </div>
-          )}
-        </div>
-
         <div style={{ display: "flex", background: t.card, padding: "4px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
           <button 
             onClick={() => setActiveTab('TRACKER')}
@@ -897,6 +928,33 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
               <option value="ALL">All Entities</option>
               {settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}
             </select>
+
+            <div style={{ position: "relative" }}>
+              <button 
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                style={{ 
+                  padding: "8px", borderRadius: "10px", border: "none", background: "#dcfce7", color: "#16a34a", 
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" 
+                }}
+                title="Download Tracker Reports"
+              >
+                <Download size={20} />
+              </button>
+              
+              {showDownloadMenu && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", border: `1px solid ${t.border}`, zIndex: 100, minWidth: "180px", overflow: "hidden" }}>
+                  <button onClick={handleDownloadExcel} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                    <FileSpreadsheet size={16} color="#16a34a" /> Download Excel
+                  </button>
+                  <button onClick={handleDownloadPDF} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                    <FileText size={16} color="#ef4444" /> Download PDF
+                  </button>
+                  <button onClick={() => { setShowShareModal(true); setShowDownloadMenu(false); }} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                    <Mail size={16} color="#2563eb" /> Share via Email
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tracker Table */}
@@ -1056,7 +1114,31 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       ) : activeTab === 'MASTER' ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {/* Master Actions */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", alignItems: "center" }}>
+            <div style={{ position: "relative" }}>
+              <button 
+                onClick={() => setShowMasterDownloadMenu(!showMasterDownloadMenu)}
+                style={{ 
+                  padding: "10px", borderRadius: "10px", border: "none", background: "#dcfce7", color: "#16a34a", 
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" 
+                }}
+                title="Download Master Templates"
+              >
+                <Download size={20} />
+              </button>
+              
+              {showMasterDownloadMenu && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "white", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", border: `1px solid ${t.border}`, zIndex: 100, minWidth: "180px", overflow: "hidden" }}>
+                  <button onClick={handleDownloadMasterExcel} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                    <FileSpreadsheet size={16} color="#16a34a" /> Download Master Excel
+                  </button>
+                  <button onClick={handleDownloadMasterPDF} style={{ width: "100%", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", border: "none", borderTop: `1px solid ${t.border}`, background: "none", cursor: "pointer", textAlign: "left", fontSize: "0.875rem", color: t.text }}>
+                    <FileText size={16} color="#ef4444" /> Download Master PDF
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button 
               onClick={() => { setEditingTemplate(null); setFormData({ ...formData, entityName: "", paymentDescription: "", vendorName: "", vendorEmail: "", startDate: "", endDate: "" }); setShowForm(true); }}
               style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: "pointer" }}
