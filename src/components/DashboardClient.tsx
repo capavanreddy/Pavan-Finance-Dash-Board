@@ -2686,50 +2686,66 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                                     Learning Modules
                                   </div>
                                   <button 
-                                    onClick={() => { setActiveView('LOS'); setLoActiveFilter('ALL'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
+                                    onClick={() => { setIsAnalyticsOpen(false); setActiveView('LOS'); setLoActiveFilter('ALL'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
                                     style={{ 
                                       padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
-                                      background: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                                      color: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "#60a5fa" : "#e2e8f0",
+                                      background: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' && !isAnalyticsOpen ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' && !isAnalyticsOpen ? "#60a5fa" : "#e2e8f0",
                                       cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
                                     }}
                                     onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "#60a5fa" : "#e2e8f0"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' && !isAnalyticsOpen ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' && !isAnalyticsOpen ? "#60a5fa" : "#e2e8f0"; }}
                                   >
                                     <Lightbulb size={16} /> Learning Opportunities
                                   </button>
                                   <button 
-                                    onClick={() => { setActiveView('LOS'); setLoActiveFilter('RESOURCES'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
+                                    onClick={() => { setIsAnalyticsOpen(false); setActiveView('LOS'); setLoActiveFilter('RESOURCES'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
                                     style={{ 
                                       padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
-                                      background: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent",
-                                      color: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#e2e8f0",
+                                      background: activeView === 'LOS' && loActiveFilter === 'RESOURCES' && !isAnalyticsOpen ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                                      color: activeView === 'LOS' && loActiveFilter === 'RESOURCES' && !isAnalyticsOpen ? "#10b981" : "#e2e8f0",
                                       cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
                                     }}
                                     onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#10b981"; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#e2e8f0"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter === 'RESOURCES' && !isAnalyticsOpen ? "rgba(16, 185, 129, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter === 'RESOURCES' && !isAnalyticsOpen ? "#10b981" : "#e2e8f0"; }}
                                   >
                                     <BookOpen size={16} /> Knowledge Base
                                   </button>
+                                  {isAdmin && (
+                                    <button 
+                                      onClick={() => { setIsAnalyticsOpen(true); setShowLearningFlyout(false); }}
+                                      style={{ 
+                                        padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                        background: isAnalyticsOpen ? "rgba(99, 102, 241, 0.15)" : "transparent",
+                                        color: isAnalyticsOpen ? "#6366f1" : "#e2e8f0",
+                                        cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                      }}
+                                      onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#6366f1"; }}
+                                      onMouseOut={e => { e.currentTarget.style.background = isAnalyticsOpen ? "rgba(99, 102, 241, 0.15)" : "transparent"; e.currentTarget.style.color = isAnalyticsOpen ? "#6366f1" : "#e2e8f0"; }}
+                                    >
+                                      <Rocket size={16} /> Growth Hub
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
 
-                        {isAdmin && (
+                        {canSeePayments && (
                           <button 
-                            onClick={() => setIsAnalyticsOpen(true)}
+                            onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
                             style={{ 
                               display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                              background: isAnalyticsOpen ? "rgba(99, 102, 241, 0.15)" : "transparent", 
-                              border: "none", color: isAnalyticsOpen ? "#6366f1" : "#94a3b8", 
+                              background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                              border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
                               cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                              width: "100%", borderRadius: "16px", marginTop: "4px"
+                              width: "100%", borderRadius: "16px",
+                              boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
                             }}
                           >
-                            <Rocket size={24} color={isAnalyticsOpen ? "#6366f1" : "#94a3b8"} />
-                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Growth</span>
+                            <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
                           </button>
                         )}
                       </>
