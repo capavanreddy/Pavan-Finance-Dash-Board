@@ -7705,79 +7705,211 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
       {/* --- GROWTH HUB: ANALYTICS HUB OVERLAY --- */}
       {isAnalyticsOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(20px)", zIndex: 3000, display: "flex", flexDirection: "column", padding: "40px", animation: "fadeIn 0.4s ease-out" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: "32px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.9)", backdropFilter: "blur(20px)", zIndex: 3000, display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out" }}>
+          {/* Header & Command Bar */}
+          <div style={{ background: "rgba(30, 41, 59, 0.5)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "20px 40px" }}>
+            <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "2.5rem", fontWeight: 800, color: "white", letterSpacing: "-0.04em" }}>Growth Analytics Hub</h2>
-                <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.6)", fontSize: "1.1rem" }}>Visualizing organizational improvement and knowledge acquisition.</p>
+                <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>LO Analytics & Reporting</h2>
+                <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.5)", fontSize: "0.875rem" }}>Detailed insights and performance tracking for Learning Opportunities.</p>
               </div>
-              <button 
-                onClick={() => setIsAnalyticsOpen(false)}
-                style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", cursor: "pointer", width: "48px", height: "48px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}
-              >
-                <X size={24} />
-              </button>
+              
+              {/* Filters Area */}
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "8px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Filter size={16} color="rgba(255,255,255,0.4)" />
+                  <select 
+                    value={anaEntityFilter}
+                    onChange={(e) => setAnaEntityFilter(e.target.value)}
+                    style={{ background: "transparent", border: "none", color: "white", fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                  >
+                    <option value="ALL" style={{ background: "#0f172a" }}>All Entities</option>
+                    {uniqueLOEntities.map(ent => <option key={ent} value={ent} style={{ background: "#0f172a" }}>{ent}</option>)}
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "8px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <User size={16} color="rgba(255,255,255,0.4)" />
+                  <select 
+                    value={anaUserFilter}
+                    onChange={(e) => setAnaUserFilter(e.target.value)}
+                    style={{ background: "transparent", border: "none", color: "white", fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                  >
+                    <option value="ALL" style={{ background: "#0f172a" }}>All Users</option>
+                    {Array.from(new Set(los.map(l => l.identifiedBy))).map(user => <option key={user} value={user} style={{ background: "#0f172a" }}>{user}</option>)}
+                  </select>
+                </div>
+
+                <button 
+                  onClick={() => setIsAnalyticsOpen(false)}
+                  style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "#ef4444", cursor: "pointer", width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
+          </div>
 
-            {/* Metrics Row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
-              {[
-                { label: "Total Findings", value: los.length, icon: <AlertCircle />, color: "#6366f1" },
-                { label: "Acknowledged", value: los.filter(l => l.isAcknowledged).length, icon: <CheckCircle2 />, color: "#10b981" },
-                { label: "Resources Shared", value: resources.length, icon: <BookOpen />, color: "#f59e0b" },
-                { label: "Pending Acknowledgment", value: los.filter(l => !l.isAcknowledged).length, icon: <Clock />, color: "#ef4444" }
-              ].map((m, i) => (
-                <div key={i} className="glass-panel" style={{ padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ color: "white", opacity: 0.5, marginBottom: "12px" }}>{m.icon}</div>
-                  <div style={{ fontSize: "2rem", fontWeight: 800, color: "white", marginBottom: "4px" }}>{m.value}</div>
-                  <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase" }}>{m.label}</div>
-                </div>
-              ))}
-            </div>
+          {/* Main Dashboard Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "40px" }}>
+            <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "32px" }}>
+              
+              {/* Analytics Data Calculation */}
+              {(() => {
+                const filteredData = los.filter(lo => {
+                  const matchesEntity = anaEntityFilter === 'ALL' || lo.entity === anaEntityFilter;
+                  const matchesUser = anaUserFilter === 'ALL' || lo.identifiedBy === anaUserFilter || lo.committedBy === anaUserFilter;
+                  return matchesEntity && matchesUser;
+                });
 
-            {/* Visual Grid */}
-            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px", overflow: "hidden" }}>
-              {/* Findings Chart Skeleton */}
-              <div className="glass-panel" style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column" }}>
-                <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Finding Trends (By Entity)</h3>
-                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "12px", paddingBottom: "20px" }}>
-                  {uniqueLOEntities.slice(0, 10).map((ent, idx) => {
-                    const count = los.filter(l => l.entity === ent).length;
-                    const height = Math.max((count / los.length) * 100, 10);
-                    return (
-                      <div key={ent} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                        <div style={{ width: "100%", height: `${height}%`, background: "linear-gradient(to top, #6366f1, #a855f7)", borderRadius: "8px 8px 0 0", minHeight: "40px", position: "relative" }}>
-                           <div style={{ position: "absolute", top: "-25px", width: "100%", textAlign: "center", color: "white", fontSize: "0.75rem", fontWeight: 700 }}>{count}</div>
+                const total = filteredData.length;
+                const ack = filteredData.filter(l => l.isAcknowledged).length;
+                const pending = total - ack;
+                const resourcesCount = resources.length;
+
+                return (
+                  <>
+                    {/* Scorecards */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+                      {[
+                        { label: "Total Findings", value: total, icon: <AlertCircle />, color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
+                        { label: "Acknowledged", value: ack, icon: <CheckCircle2 />, color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
+                        { label: "Pending Review", value: pending, icon: <Clock />, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
+                        { label: "Knowledge Assets", value: resourcesCount, icon: <BookOpen />, color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" }
+                      ].map((m, i) => (
+                        <div key={i} style={{ padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
+                          <div style={{ position: "absolute", top: 0, right: 0, width: "100px", height: "100px", background: `radial-gradient(circle at center, ${m.color}20 0%, transparent 70%)`, pointerEvents: "none" }} />
+                          <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: m.bg, color: m.color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>{m.icon}</div>
+                          <div style={{ fontSize: "2.25rem", fontWeight: 800, color: "white", marginBottom: "4px" }}>{m.value}</div>
+                          <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{m.label}</div>
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", transform: "rotate(-45deg)", whiteSpace: "nowrap", width: "20px", height: "40px" }}>{ent}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      ))}
+                    </div>
 
-              {/* User Contribution List */}
-              <div className="glass-panel" style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", overflowY: "auto" }}>
-                <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Top Contributors</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {(() => {
-                    const contributors = los.reduce((acc: any, lo) => {
-                      acc[lo.identifiedBy] = (acc[lo.identifiedBy] || 0) + 1;
-                      return acc;
-                    }, {});
-                    return Object.entries(contributors).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5).map(([name, count]: any, i) => (
-                      <div key={name} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "16px", borderRadius: "16px", background: "rgba(255,255,255,0.05)" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#6366f1", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>{i+1}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ color: "white", fontWeight: 600, fontSize: "0.9375rem" }}>{name}</div>
-                          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>{count} Findings Reported</div>
+                    {/* Main Charts Row */}
+                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
+                      {/* Entity Trends */}
+                      <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                          <h3 style={{ margin: 0, color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Findings by Entity</h3>
+                          <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)", padding: "4px 12px", borderRadius: "20px" }}>Distribution Analysis</div>
+                        </div>
+                        <div style={{ height: "300px", display: "flex", alignItems: "flex-end", gap: "16px", paddingBottom: "20px" }}>
+                          {(() => {
+                            const entities = Array.from(new Set(filteredData.map(l => l.entity)));
+                            const max = Math.max(...entities.map(e => filteredData.filter(l => l.entity === e).length), 1);
+                            return entities.slice(0, 10).map(ent => {
+                              const count = filteredData.filter(l => l.entity === ent).length;
+                              const height = (count / max) * 100;
+                              return (
+                                <div key={ent} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                                  <div style={{ width: "100%", height: `${height}%`, background: "linear-gradient(to top, #6366f1, #8b5cf6)", borderRadius: "8px", minHeight: "4px", position: "relative", transition: "height 0.6s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+                                    <div style={{ position: "absolute", top: "-28px", width: "100%", textAlign: "center", color: "white", fontSize: "0.875rem", fontWeight: 700 }}>{count}</div>
+                                  </div>
+                                  <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{ent.split('-')[1] || ent}</div>
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
-                    ));
-                  })()}
-                </div>
-              </div>
+
+                      {/* Status Distribution */}
+                      <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                        <h3 style={{ margin: "0 0 32px 0", alignSelf: "flex-start", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Resolution Status</h3>
+                        <div style={{ position: "relative", width: "180px", height: "180px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="180" height="180" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" strokeWidth="12" 
+                                    strokeDasharray={`${(ack/total)*251.2} 251.2`} strokeDashoffset="0" strokeLinecap="round" 
+                                    style={{ transition: "stroke-dasharray 1s ease-out" }} />
+                          </svg>
+                          <div style={{ position: "absolute", textAlign: "center" }}>
+                            <div style={{ fontSize: "2rem", fontWeight: 800, color: "white" }}>{total > 0 ? Math.round((ack/total)*100) : 0}%</div>
+                            <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>RESOLVED</div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: "32px", width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
+                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                               <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#10b981" }} />
+                               <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.6)" }}>Acknowledged</span>
+                             </div>
+                             <span style={{ color: "white", fontWeight: 600 }}>{ack}</span>
+                           </div>
+                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                               <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "rgba(255,255,255,0.1)" }} />
+                               <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.6)" }}>Pending Review</span>
+                             </div>
+                             <span style={{ color: "white", fontWeight: 600 }}>{pending}</span>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Reporting Tables */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                      {/* User-wise Report */}
+                      <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Performance by User</h3>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>
+                            <div>User Name</div>
+                            <div style={{ textAlign: "center" }}>Found</div>
+                            <div style={{ textAlign: "center" }}>Resolved</div>
+                          </div>
+                          {(() => {
+                            const users = Array.from(new Set(filteredData.map(l => l.identifiedBy)));
+                            return users.slice(0, 10).map(user => {
+                              const reported = filteredData.filter(l => l.identifiedBy === user).length;
+                              const resolved = filteredData.filter(l => l.identifiedBy === user && l.isAcknowledged).length;
+                              return (
+                                <div key={user} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "16px", borderRadius: "12px", borderBottom: "1px solid rgba(255,255,255,0.02)", alignItems: "center" }}>
+                                  <div style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{user}</div>
+                                  <div style={{ textAlign: "center", color: "#6366f1", fontWeight: 700 }}>{reported}</div>
+                                  <div style={{ textAlign: "center", color: "#10b981", fontWeight: 700 }}>{resolved}</div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Entity-wise Report */}
+                      <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Entity Tracker Summary</h3>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>
+                            <div>Entity</div>
+                            <div style={{ textAlign: "center" }}>Total LOs</div>
+                            <div style={{ textAlign: "center" }}>% Resolved</div>
+                          </div>
+                          {(() => {
+                            const entities = Array.from(new Set(filteredData.map(l => l.entity)));
+                            return entities.slice(0, 10).map(ent => {
+                              const totalEnt = filteredData.filter(l => l.entity === ent).length;
+                              const resolvedEnt = filteredData.filter(l => l.entity === ent && l.isAcknowledged).length;
+                              const perc = totalEnt > 0 ? Math.round((resolvedEnt / totalEnt) * 100) : 0;
+                              return (
+                                <div key={ent} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "16px", borderRadius: "12px", borderBottom: "1px solid rgba(255,255,255,0.02)", alignItems: "center" }}>
+                                  <div style={{ color: "white", fontWeight: 600, fontSize: "0.8125rem" }}>{ent}</div>
+                                  <div style={{ textAlign: "center", color: "white", fontWeight: 700 }}>{totalEnt}</div>
+                                  <div style={{ textAlign: "center" }}>
+                                    <span style={{ padding: "4px 8px", borderRadius: "6px", background: perc === 100 ? "rgba(16, 185, 129, 0.1)" : "rgba(255,255,255,0.05)", color: perc === 100 ? "#10b981" : "white", fontSize: "0.75rem", fontWeight: 700 }}>{perc}%</span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
