@@ -7481,9 +7481,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         </div>
       )}
 
-        </div>
-      )}
-
       {/* --- GROWTH HUB: ANALYTICS HUB OVERLAY --- */}
       {isAnalyticsOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(20px)", zIndex: 3000, display: "flex", flexDirection: "column", padding: "40px", animation: "fadeIn 0.4s ease-out" }}>
