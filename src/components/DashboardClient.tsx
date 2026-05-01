@@ -2593,7 +2593,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             {/* --- NEW INSPIRATION WALL --- */}
             {(() => {
               const content = JSON.parse(settings.homeContent || '{}');
-              const mission = content.mission || settings.missionStatement || "Empowering the Finance Team through transparency, real-time collaboration, and operational excellence.";
+              const mission = content.mission || "Empowering the Finance Team through transparency, real-time collaboration, and operational excellence.";
               const vision = content.vision || "To be the global benchmark for financial integrity and agile business partnership.";
               const quote = content.quote || { 
                 text: "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.",
@@ -6378,13 +6378,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               value={(() => {
                                 try {
                                   const content = JSON.parse(settings.homeContent || '{}');
-                                  return content.mission || settings.missionStatement || "";
-                                } catch { return settings.missionStatement || ""; }
+                                  return content.mission || "";
+                                } catch { return ""; }
                               })()}
                               onChange={(e) => {
                                 const content = JSON.parse(settings.homeContent || '{}');
                                 content.mission = e.target.value;
-                                setSettings({ ...settings, missionStatement: e.target.value, homeContent: JSON.stringify(content) });
+                                setSettings({ ...settings, homeContent: JSON.stringify(content) });
                               }}
                               placeholder="Describe your daily mission..."
                               style={{ ...getInputStyle(t), minHeight: "100px", resize: "vertical", fontSize: "0.9375rem" }}
