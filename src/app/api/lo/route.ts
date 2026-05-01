@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     query += ` ORDER BY "createdAt" DESC`;
     
-    const los = await (sql as any).unsafe(query, params);
+    const los = await sql(query, params);
     return NextResponse.json(los);
   } catch (error) {
     console.error("Fetch LOs error:", error);
