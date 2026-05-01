@@ -2783,7 +2783,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             alignItems: "flex-end",
             transition: "all 0.3s ease"
           }}>
-            {(activeView === 'HOME' || activeView === 'LOS') ? null : (
+            {(activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? null : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
@@ -2809,6 +2809,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
                     <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                       <Plus size={18} /> New Task
+                    </button>
+                  ) : (activeView as string) === 'LOS' ? (
+                    <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "12px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
+                      <Lightbulb size={18} color="#f59e0b" /> Update LO
                     </button>
                   ) : null}
                 </div>
@@ -4096,28 +4100,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 </div>
               ) : (
                 <div style={{ minHeight: "600px" }}>
-                  {/* Internal Filter Header */}
-                  <div style={{ height: "200px", background: "linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)", padding: "40px", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "relative", zIndex: 1 }}>
-                      <h2 style={{ color: "white", margin: 0, fontSize: "2.5rem", fontWeight: 800 }}>Learning Opportunities</h2>
-                      <p style={{ color: "rgba(255,255,255,0.8)", margin: "8px 0 24px 0", fontSize: "1.1rem" }}>"We don't track mistakes, we track learning and improvement"</p>
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        <button 
-                          onClick={() => setLoActiveFilter('ALL')}
-                          style={{ padding: "10px 24px", borderRadius: "12px", border: "none", background: loActiveFilter === 'ALL' ? "white" : "rgba(255,255,255,0.15)", color: loActiveFilter === 'ALL' ? "#4f46e5" : "white", fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}
-                        >All Findings</button>
-                        <button 
-                          onClick={() => setLoActiveFilter('REPORTS')}
-                          style={{ padding: "10px 24px", borderRadius: "12px", border: "none", background: loActiveFilter === 'REPORTS' ? "white" : "rgba(255,255,255,0.15)", color: loActiveFilter === 'REPORTS' ? "#4f46e5" : "white", fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}
-                        >My Findings</button>
-                        <button 
-                          onClick={() => setLoActiveFilter('LEARNINGS')}
-                          style={{ padding: "10px 24px", borderRadius: "12px", border: "none", background: loActiveFilter === 'LEARNINGS' ? "white" : "rgba(255,255,255,0.15)", color: loActiveFilter === 'LEARNINGS' ? "#4f46e5" : "white", fontWeight: 700, cursor: "pointer", backdropFilter: "blur(4px)" }}
-                        >My Learnings</button>
-                      </div>
+                  <div style={{ padding: "32px 32px 0 32px" }}>
+                    <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+                      <button 
+                        onClick={() => setLoActiveFilter('ALL')}
+                        style={{ padding: "8px 20px", borderRadius: "100px", border: `1px solid ${loActiveFilter === 'ALL' ? "#4f46e5" : t.border}`, background: loActiveFilter === 'ALL' ? "#4f46e5" : "transparent", color: loActiveFilter === 'ALL' ? "white" : t.textMuted, fontWeight: 700, cursor: "pointer", fontSize: "0.8125rem", transition: "all 0.2s" }}
+                      >All Findings</button>
+                      <button 
+                        onClick={() => setLoActiveFilter('REPORTS')}
+                        style={{ padding: "8px 20px", borderRadius: "100px", border: `1px solid ${loActiveFilter === 'REPORTS' ? "#4f46e5" : t.border}`, background: loActiveFilter === 'REPORTS' ? "#4f46e5" : "transparent", color: loActiveFilter === 'REPORTS' ? "white" : t.textMuted, fontWeight: 700, cursor: "pointer", fontSize: "0.8125rem", transition: "all 0.2s" }}
+                      >My Findings</button>
+                      <button 
+                        onClick={() => setLoActiveFilter('LEARNINGS')}
+                        style={{ padding: "8px 20px", borderRadius: "100px", border: `1px solid ${loActiveFilter === 'LEARNINGS' ? "#4f46e5" : t.border}`, background: loActiveFilter === 'LEARNINGS' ? "#4f46e5" : "transparent", color: loActiveFilter === 'LEARNINGS' ? "white" : t.textMuted, fontWeight: 700, cursor: "pointer", fontSize: "0.8125rem", transition: "all 0.2s" }}
+                      >My Learnings</button>
                     </div>
-                    <Quote size={120} style={{ position: "absolute", right: "40px", bottom: "-20px", color: "rgba(255,255,255,0.1)" }} />
-                    <button onClick={() => setShowLOForm(true)} style={{ position: "absolute", top: "40px", right: "40px", background: "white", color: "#4f46e5", padding: "12px 24px", borderRadius: "12px", border: "none", fontWeight: 800, cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}>Update LO</button>
                   </div>
 
                   <div style={{ padding: "32px" }}>
