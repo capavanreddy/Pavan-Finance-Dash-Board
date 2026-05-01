@@ -304,6 +304,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [matrixDeptFilter, setMatrixDeptFilter] = useState("ALL");
   const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
   const [loEntityFilter, setLoEntityFilter] = useState("ALL");
+  const [loIdentifiedByFilter, setLoIdentifiedByFilter] = useState("ALL");
+  const [loCommittedByFilter, setLoCommittedByFilter] = useState("ALL");
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO' | 'PAYMENT' | 'DELETE_PAYMENT'>('TASK_EDIT');
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
@@ -1643,7 +1645,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (loDateTo && loDateLocal > loDateTo) dateMatch = false;
     }
 
-    return typeMatch && searchMatch && entityMatch && dateMatch;
+    // 5. Identified By Filter
+    let identifiedByMatch = true;
+    if (loIdentifiedByFilter !== "ALL" && lo.identifiedBy !== loIdentifiedByFilter) identifiedByMatch = false;
+
+    // 6. Committed By Filter
+    let committedByMatch = true;
+    if (loCommittedByFilter !== "ALL" && lo.committedBy !== loCommittedByFilter) committedByMatch = false;
+
+    return typeMatch && searchMatch && entityMatch && dateMatch && identifiedByMatch && committedByMatch;
   });
 
   const sortedLOs = [...filteredLOsToDisplay].sort((a, b) => {
@@ -4118,32 +4128,101 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   </div>
 
                   <div style={{ padding: "32px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                      <h3 style={{ margin: 0, fontWeight: 700, color: t.text }}>Internal Audit Log</h3>
-                      <div style={{ position: "relative", width: "300px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", marginBottom: "24px", background: t.card, padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)" }}>
+                      <div style={{ position: "relative", minWidth: "280px", flex: 1 }}>
                         <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
                         <input 
                           type="text" 
                           placeholder="Search opportunities..." 
                           value={loSearchQuery} 
                           onChange={e => setLoSearchQuery(e.target.value)} 
-                          style={{ width: "100%", padding: "12px 12px 12px 40px", borderRadius: "12px", border: `1px solid ${t.border}`, background: t.card, outline: "none" }} 
+                          style={{ width: "100%", padding: "10px 12px 10px 40px", borderRadius: "10px", border: `1px solid ${t.border}`, background: t.bg, outline: "none", fontSize: "0.875rem" }} 
                         />
                       </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>From:</span>
+                        <input 
+                          type="date" 
+                          value={loDateFrom} 
+                          onChange={e => setLoDateFrom(e.target.value)}
+                          style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>To:</span>
+                        <input 
+                          type="date" 
+                          value={loDateTo} 
+                          onChange={e => setLoDateTo(e.target.value)}
+                          style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.text }}
+                        />
+                      </div>
+
+                      <select 
+                        value={loIdentifiedByFilter} 
+                        onChange={e => setLoIdentifiedByFilter(e.target.value)}
+                        style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted, minWidth: "160px" }}
+                      >
+                        <option value="ALL">All Identified By</option>
+                        {uniqueLOIdentifiedBy.map(name => <option key={name} value={name}>{name}</option>)}
+                      </select>
+
+                      <select 
+                        value={loCommittedByFilter} 
+                        onChange={e => setLoCommittedByFilter(e.target.value)}
+                        style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted, minWidth: "160px" }}
+                      >
+                        <option value="ALL">All Committed By</option>
+                        {Array.from(new Set(los.map(l => l.committedBy))).sort().map(name => <option key={name} value={name}>{name}</option>)}
+                      </select>
                     </div>
 
                     <div style={{ overflowX: "auto", background: t.card, borderRadius: "16px", border: `1px solid ${t.border}` }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1000px" }}>
                         <thead>
                           <tr style={{ borderBottom: `1px solid ${t.border}`, background: theme === 'DARK' ? "#1e293b" : "#f8fafc" }}>
-                            <th style={{ ...getThStyle(t), padding: "20px" }}>SI No</th>
-                            <th style={getThStyle(t)}>Date</th>
-                            <th style={getThStyle(t)}>Entity</th>
-                            <th style={getThStyle(t)}>Identified By</th>
-                            <th style={getThStyle(t)}>Opportunity</th>
-                            <th style={getThStyle(t)}>Resolution</th>
-                            <th style={getThStyle(t)}>Committed By</th>
-                            <th style={getThStyle(t)}>Status</th>
+                            <th style={{ ...getThStyle(t), padding: "20px", cursor: "pointer" }} onClick={() => handleLOSort('id')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                SI No {loSortConfig?.key === 'id' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('entity')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Entity {loSortConfig?.key === 'entity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('identifiedBy')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('learningOpportunity')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Opportunity {loSortConfig?.key === 'learningOpportunity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('resolutionProvided')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Resolution {loSortConfig?.key === 'resolutionProvided' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('committedBy')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('isAcknowledged' as any)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Status {loSortConfig?.key === 'isAcknowledged' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
                             <th style={getThStyle(t)}>Actions</th>
                           </tr>
                         </thead>
