@@ -926,28 +926,80 @@ export default function RecurringActivities({   settings, usersList = [] , showN
       if (valA < valB) return direction === 'asc' ? -1 : 1;
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
-    });
 
   return (
     <div style={{ padding: "24px" }}>
       {/* Sub-Tabs */}
-      <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid #e2e8f0", marginBottom: "24px" }}>
-        <button 
+      <div style={{ 
+        display: "flex", 
+        background: "#f1f5f9", 
+        padding: "6px", 
+        borderRadius: "16px", 
+        gap: "6px", 
+        marginBottom: "32px",
+        width: "fit-content",
+        border: "1px solid #e2e8f0"
+      }}>
+        <button
           onClick={() => setActiveSubTab('STAGING')}
-          style={{ padding: "12px 4px", fontSize: "0.875rem", fontWeight: 600, color: activeSubTab === 'STAGING' ? "#2563eb" : "#64748b", borderBottom: activeSubTab === 'STAGING' ? "2px solid #2563eb" : "none", background: "none", cursor: "pointer" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "10px 20px",
+            borderRadius: "12px",
+            border: "none",
+            background: activeSubTab === 'STAGING' ? "white" : "transparent",
+            color: activeSubTab === 'STAGING' ? "#2563eb" : "#64748b",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: activeSubTab === 'STAGING' ? "0 4px 6px -1px rgba(0,0,0,0.1)" : "none"
+          }}
         >
+          <ListChecks size={18} />
           Pending to Task Conversion
         </button>
-        <button 
+
+        <button
           onClick={() => setActiveSubTab('MASTER')}
-          style={{ padding: "12px 4px", fontSize: "0.875rem", fontWeight: 600, color: activeSubTab === 'MASTER' ? "#2563eb" : "#64748b", borderBottom: activeSubTab === 'MASTER' ? "2px solid #2563eb" : "none", background: "none", cursor: "pointer" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "10px 20px",
+            borderRadius: "12px",
+            border: "none",
+            background: activeSubTab === 'MASTER' ? "white" : "transparent",
+            color: activeSubTab === 'MASTER' ? "#2563eb" : "#64748b",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: activeSubTab === 'MASTER' ? "0 4px 6px -1px rgba(0,0,0,0.1)" : "none"
+          }}
         >
+          <Settings2 size={18} />
           Recurring Tasks-Master Data
         </button>
-        <button 
+
+        <button
           onClick={() => setActiveSubTab('D')}
-          style={{ padding: "12px 4px", fontSize: "0.875rem", fontWeight: 600, color: activeSubTab === 'D' ? "#2563eb" : "#64748b", borderBottom: activeSubTab === 'D' ? "2px solid #2563eb" : "none", background: "none", cursor: "pointer" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "10px 20px",
+            borderRadius: "12px",
+            border: "none",
+            background: activeSubTab === 'D' ? "white" : "transparent",
+            color: activeSubTab === 'D' ? "#2563eb" : "#64748b",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: activeSubTab === 'D' ? "0 4px 6px -1px rgba(0,0,0,0.1)" : "none"
+          }}
         >
+          <LayoutDashboard size={18} />
           Daily Tasks
         </button>
       </div>
@@ -1564,7 +1616,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>{editingTemplate ? "Edit Template" : "Add Recurring Task"}</h3>
                 <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", opacity: 0.8 }}>Define how the system should generate this activity.</p>
               </div>
-              <button onClick={() => setShowTemplateForm(false)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px" }}>Ã—</button>
+              <button onClick={() => setShowTemplateForm(false)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px" }}>×</button>
             </div>
             
             <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -1681,22 +1733,14 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     {financeUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                   </select>
                 </div>
-
-                <div style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "12px" }}>
-                  <input type="checkbox" checked={templateForm.isActive} onChange={e => setTemplateForm({...templateForm, isActive: e.target.checked})} style={{ width: "20px", height: "20px" }} />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1e293b" }}>Template is Active</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Inactive templates will not appear for conversion.</div>
-                  </div>
-                </div>
               </div>
 
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-                <button onClick={() => setShowTemplateForm(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "white", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "12px" }}>
+                <button onClick={() => setShowTemplateForm(false)} style={{ padding: "12px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                 <button 
                   onClick={handleSaveTemplate} 
                   disabled={isSaving}
-                  style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+                  style={{ padding: "12px 24px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
                 >
                   {isSaving ? "Saving..." : editingTemplate ? "Update Template" : "Save Template"}
                 </button>
