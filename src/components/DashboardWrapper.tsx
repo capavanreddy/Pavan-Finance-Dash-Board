@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react";
 import DashboardClient from "@/components/DashboardClient";
+import dynamic from "next/dynamic";
+
+const DynamicDashboardClient = dynamic(() => import("@/components/DashboardClient"), { 
+  ssr: false,
+  loading: () => <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>Loading dashboard...</div>
+});
 
 export default function DashboardWrapper({ user }: { user: any }) {
   const [showHome, setShowHome] = useState(false);
@@ -120,5 +126,5 @@ export default function DashboardWrapper({ user }: { user: any }) {
     );
   }
 
-  return <DashboardClient user={user} />;
+  return <DynamicDashboardClient user={user} />;
 }
