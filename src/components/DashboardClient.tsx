@@ -430,7 +430,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const res = await fetch("/api/tasks");
       if (res.ok) {
         const data = await res.json();
-        setTasks(data);
+        setTasks(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Failed to fetch tasks", error);
@@ -449,7 +449,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       
       if (trackerRes.ok) {
         const allOccurrences = await trackerRes.json();
-        trackerRequests = allOccurrences
+        trackerRequests = Array.isArray(allOccurrences) ? allOccurrences
           .filter((occ: any) => (occ.editRequested && !occ.editApproved) || occ.deleteRequested)
           .map((occ: any) => ({
             ...occ,
@@ -550,7 +550,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const res = await fetch("/api/lo");
       if (res.ok) {
         const data = await res.json();
-        setLos(data);
+        setLos(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Failed to fetch LOs", error);
@@ -565,7 +565,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const res = await fetch("/api/resources");
       if (res.ok) {
         const data = await res.json();
-        setResources(data);
+        setResources(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Failed to fetch resources", error);
@@ -585,7 +585,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const res = await fetch(`/api/external-requests?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setExternalRequests(data);
+        setExternalRequests(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Failed to fetch external requests", error);
@@ -968,7 +968,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
-        setUsersList(data);
+        setUsersList(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Failed to fetch users", error);
