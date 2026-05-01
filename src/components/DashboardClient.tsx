@@ -151,6 +151,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
+  const [showLearningFlyout, setShowLearningFlyout] = useState(false);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
@@ -2639,53 +2640,82 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         )}
 
                         {canSeeLearning && (
-                          <button 
-                            onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                              background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                              border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                              width: "100%", borderRadius: "16px",
-                              boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                            }}
+                          <div 
+                            style={{ width: "100%", position: "relative" }}
+                            onMouseEnter={() => setShowLearningFlyout(true)}
+                            onMouseLeave={() => setShowLearningFlyout(false)}
                           >
-                            <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
-                          </button>
-                        )}
+                            <button 
+                              onClick={() => { setActiveView('LOS'); setActiveMainView('DASHBOARD'); }}
+                              style={{ 
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                                background: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                                border: "none", color: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                                cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                                width: "100%", borderRadius: "16px",
+                                boxShadow: activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                              }}
+                            >
+                              <Lightbulb size={24} color={activeView === 'LOS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Learning</span>
+                            </button>
 
-                        {canSeePayments && (
-                          <button 
-                            onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                              background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                              border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                              width: "100%", borderRadius: "16px",
-                              boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                            }}
-                          >
-                            <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
-                          </button>
+                            {/* Learning Flyout */}
+                            {showLearningFlyout && (
+                              <div style={{
+                                position: "absolute",
+                                left: "100%", 
+                                top: "-10px",
+                                width: "240px",
+                                paddingLeft: "20px", 
+                                zIndex: 1000,
+                                animation: "fadeInSlideRight 0.2s ease-out",
+                              }}>
+                                <div style={{
+                                  background: "rgba(15, 23, 42, 0.95)",
+                                  backdropFilter: "blur(16px)",
+                                  borderRadius: "16px",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  boxShadow: "20px 0 50px rgba(0, 0, 0, 0.4)",
+                                  padding: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                }}>
+                                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
+                                    Learning Modules
+                                  </div>
+                                  <button 
+                                    onClick={() => { setActiveView('LOS'); setLoActiveFilter('ALL'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "#60a5fa" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? "#60a5fa" : "#e2e8f0"; }}
+                                  >
+                                    <Lightbulb size={16} /> Learning Opportunities
+                                  </button>
+                                  <button 
+                                    onClick={() => { setActiveView('LOS'); setLoActiveFilter('RESOURCES'); setActiveMainView('DASHBOARD'); setShowLearningFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                                      color: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#10b981"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#e2e8f0"; }}
+                                  >
+                                    <BookOpen size={16} /> Knowledge Base
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
-                        
-                        {/* Growth Hub & Knowledge Links */}
-                        <button 
-                          onClick={() => { setActiveView('LOS'); setLoActiveFilter('RESOURCES'); setActiveMainView('DASHBOARD'); }}
-                          style={{ 
-                            display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                            background: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent", 
-                            border: "none", color: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#94a3b8", 
-                            cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                            width: "100%", borderRadius: "16px", marginTop: "8px"
-                          }}
-                        >
-                          <BookOpen size={24} color={activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#94a3b8"} />
-                          <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Knowledge</span>
-                        </button>
 
                         {isAdmin && (
                           <button 
