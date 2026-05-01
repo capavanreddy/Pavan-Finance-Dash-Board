@@ -25,6 +25,13 @@ export async function POST(req: NextRequest) {
     const { name, type, url, data, category } = await req.json();
     const uploadedBy = session.user.name || session.user.email;
     
+    // Self-healing migration for category field
+    try {
+      await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Miscellaneous'`;
+    } catch (e) {
+      console.log("Resource category migration failed/skipped", e);
+    }
+
     const resource = await sql`
       INSERT INTO "LearningResource" ("name", "type", "url", "data", "category", "uploadedBy", "createdAt")
       VALUES (${name}, ${type}, ${url}, ${data}, ${category || 'Miscellaneous'}, ${uploadedBy}, NOW())

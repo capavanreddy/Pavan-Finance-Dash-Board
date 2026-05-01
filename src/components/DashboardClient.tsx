@@ -1786,6 +1786,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const handleResourceUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!resourceName.trim()) {
+      showNotification("Please enter a resource name.", "error");
+      return;
+    }
+    if (resourceType === 'LINK' && !resourceLink.trim()) {
+      showNotification("Please enter a valid link.", "error");
+      return;
+    }
+    if (resourceType === 'FILE' && !resourceFile) {
+      showNotification("Please select a file to upload.", "error");
+      return;
+    }
+
     setResourcesLoading(true);
     try {
       let dataStr = "";
@@ -1796,8 +1809,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           return;
         }
         const reader = new FileReader();
-        dataStr = await new Promise((resolve) => {
+        dataStr = await new Promise((resolve, reject) => {
           reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error("Failed to read file"));
           reader.readAsDataURL(resourceFile);
         });
       }
@@ -1815,19 +1829,24 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       });
 
       if (res.ok) {
-        showNotification("Resource added successfully!");
+        showNotification("Resource added successfully!", "success");
         setShowResourceModal(false);
         setResourceName("");
         setResourceLink("");
         setResourceFile(null);
         fetchResources();
+      } else {
+        const errorData = await res.json();
+        showNotification(`Failed to save resource: ${errorData.message || "Unknown error"}`, "error");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to upload resource", error);
+      showNotification(`Upload error: ${error.message}`, "error");
     } finally {
       setResourcesLoading(false);
     }
   };
+
 
   const handleUserSort = (key: string) => {
     setUserSortConfig(prev => {

@@ -5,6 +5,14 @@ import { getDb } from '@/lib/db';
 export async function GET() {
   try {
     const sql = getDb();
+    
+    // Self-healing migration for masterResourceCategories
+    try {
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterResourceCategories" TEXT DEFAULT 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous'`;
+    } catch (e) {
+      console.log("Settings migration failed/skipped", e);
+    }
+
     const settings = await sql`SELECT * FROM "SystemSettings" LIMIT 1`;
     return NextResponse.json(settings[0] || null);
   } catch (error) {
