@@ -2609,24 +2609,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     <div style={{ 
                       padding: "32px", 
                       borderRadius: "24px", 
-                      background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", 
-                      color: "white",
+                      background: "white", 
+                      border: "1px solid #e0f2fe",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)"
-                    }}>
-                      <div style={{ position: "absolute", right: "-20px", top: "-20px", opacity: 0.1 }}>
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.03)"
+                    }} className="hover-card">
+                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "#f8fafc", opacity: 0.5 }}>
                         <Compass size={140} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-                          <div style={{ background: "rgba(59, 130, 246, 0.2)", padding: "8px", borderRadius: "10px" }}>
-                            <Building2 size={20} color="#60a5fa" />
+                          <div style={{ background: "#f0f9ff", padding: "8px", borderRadius: "10px" }}>
+                            <Building2 size={20} color="#0ea5e9" />
                           </div>
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#93c5fd" }}>Our Mission</span>
+                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#0369a1" }}>Our Mission</span>
                         </div>
-                        <h2 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 16px 0", lineHeight: 1.2 }}>{mission}</h2>
-                        <p style={{ margin: 0, fontSize: "0.9375rem", opacity: 0.8, lineHeight: 1.6 }}>Driving daily excellence through disciplined execution and data-driven insights.</p>
+                        <h2 style={{ fontSize: "1.625rem", fontWeight: 800, color: "#0f172a", margin: "0 0 16px 0", lineHeight: 1.3, letterSpacing: "-0.02em" }}>{mission}</h2>
+                        <div style={{ height: "2px", width: "40px", background: "#0ea5e9", borderRadius: "2px", marginBottom: "16px" }}></div>
+                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6 }}>Driving daily excellence through disciplined execution and data-driven insights.</p>
                       </div>
                     </div>
 
@@ -2635,23 +2636,24 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       padding: "32px", 
                       borderRadius: "24px", 
                       background: "white", 
-                      border: `1px solid ${t.border}`,
+                      border: "1px solid #f0fdf4",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)"
-                    }}>
-                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "#f1f5f9" }}>
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.03)"
+                    }} className="hover-card">
+                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "#f8fafc", opacity: 0.5 }}>
                         <Rocket size={140} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-                          <div style={{ background: "#eff6ff", padding: "8px", borderRadius: "10px" }}>
-                            <Compass size={20} color="#3b82f6" />
+                          <div style={{ background: "#f0fdf4", padding: "8px", borderRadius: "10px" }}>
+                            <Compass size={20} color="#10b981" />
                           </div>
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b" }}>Our Vision</span>
+                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#15803d" }}>Our Vision</span>
                         </div>
-                        <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#1e293b", margin: "0 0 16px 0", lineHeight: 1.2 }}>{vision}</h2>
-                        <p style={{ margin: 0, fontSize: "0.9375rem", color: t.textMuted, lineHeight: 1.6 }}>Building a future where finance is the engine of innovation and sustainable growth.</p>
+                        <h2 style={{ fontSize: "1.625rem", fontWeight: 800, color: "#0f172a", margin: "0 0 16px 0", lineHeight: 1.3, letterSpacing: "-0.02em" }}>{vision}</h2>
+                        <div style={{ height: "2px", width: "40px", background: "#10b981", borderRadius: "2px", marginBottom: "16px" }}></div>
+                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6 }}>Building a future where finance is the engine of innovation and sustainable growth.</p>
                       </div>
                     </div>
                   </div>
