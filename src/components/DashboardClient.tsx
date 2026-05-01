@@ -298,6 +298,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [loSearchQuery, setLoSearchQuery] = useState("");
   const [anaEntityFilter, setAnaEntityFilter] = useState("ALL");
   const [anaUserFilter, setAnaUserFilter] = useState("ALL");
+  const [showAnaShareModal, setShowAnaShareModal] = useState(false);
+  const [anaShareConfig, setAnaShareConfig] = useState({
+    recipients: [] as string[],
+    ccEmails: [] as string[],
+    recipientInput: "",
+    ccInput: "",
+    format: "excel" as "excel" | "pdf" | "both",
+    subject: "LO Analytics Report"
+  });
+  const [anaShareLoading, setAnaShareLoading] = useState(false);
 
   // External Requests State
   const [externalRequests, setExternalRequests] = useState<ExternalRequest[]>([]);
@@ -1786,7 +1796,231 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const handleResourceUpload = async (e: React.FormEvent) => {
+  
+  const generateLOReportData = () => {
+    const filtered = los.filter(lo => {
+      const matchesEntity = anaEntityFilter === 'ALL' || lo.entity === anaEntityFilter;
+      const matchesUser = anaUserFilter === 'ALL' || lo.identifiedBy === anaUserFilter || lo.committedBy === anaUserFilter;
+      return matchesEntity && matchesUser;
+    });
+    
+    const stats = {
+      total: filtered.length,
+      ack: filtered.filter(l => l.isAcknowledged).length,
+      pending: filtered.length - filtered.filter(l => l.isAcknowledged).length,
+      resources: resources.length
+    };
+
+    const userSummary = Array.from(new Set(filtered.map(l => l.identifiedBy))).map(user => ({
+      name: user,
+      reported: filtered.filter(l => l.identifiedBy === user).length,
+      resolved: filtered.filter(l => l.identifiedBy === user && l.isAcknowledged).length
+    }));
+
+    const entitySummary = Array.from(new Set(filtered.map(l => l.entity))).map(ent => ({
+      name: ent,
+      total: filtered.filter(l => l.entity === ent).length,
+      resolved: filtered.filter(l => l.entity === ent && l.isAcknowledged).length
+    }));
+
+    return { filtered, stats, userSummary, entitySummary };
+  };
+
+  const handleAnaExportExcel = async () => {
+    const { filtered, stats, userSummary, entitySummary } = generateLOReportData();
+    const workbook = new ExcelJS.Workbook();
+    
+    // Sheet 1: Executive Summary
+    const summarySheet = workbook.addWorksheet('Executive Summary');
+    summarySheet.columns = [{ header: 'Category', key: 'cat', width: 30 }, { header: 'Value', key: 'val', width: 20 }];
+    summarySheet.addRow({ cat: 'TOTAL FINDINGS', val: stats.total });
+    summarySheet.addRow({ cat: 'ACKNOWLEDGED', val: stats.ack });
+    summarySheet.addRow({ cat: 'PENDING REVIEW', val: stats.pending });
+    summarySheet.addRow({});
+    
+    summarySheet.addRow({ cat: 'USER PERFORMANCE' });
+    userSummary.forEach(u => summarySheet.addRow({ cat: u.name, val: `${u.resolved}/${u.reported} Resolved` }));
+    summarySheet.addRow({});
+
+    summarySheet.addRow({ cat: 'ENTITY SUMMARY' });
+    entitySummary.forEach(e => summarySheet.addRow({ cat: e.name, val: `${e.total} Total` }));
+
+    // Sheet 2: Detailed Log
+    const logSheet = workbook.addWorksheet('Detailed LO Log');
+    logSheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Entity', key: 'entity', width: 20 },
+      { header: 'Finding', key: 'finding', width: 50 },
+      { header: 'Identified By', key: 'by', width: 20 },
+      { header: 'Status', key: 'status', width: 15 }
+    ];
+    filtered.forEach(lo => logSheet.addRow({
+      date: new Date(lo.dateOfIdentification).toLocaleDateString(),
+      entity: lo.entity,
+      finding: lo.learningOpportunity,
+      by: lo.identifiedBy,
+      status: lo.isAcknowledged ? 'Acknowledged' : 'Pending'
+    }));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `LO_Report_${new Date().toLocaleDateString()}.xlsx`);
+  };
+
+  const handleAnaExportPDF = async () => {
+    const { filtered, stats, userSummary, entitySummary } = generateLOReportData();
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(79, 70, 229);
+    doc.text('LO Analytics & Reporting', 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Filters: Entity: ${anaEntityFilter} | User: ${anaUserFilter}`, 14, 35);
+
+    // KPI Cards
+    autoTable(doc, {
+      startY: 45,
+      head: [['Metric', 'Count']],
+      body: [
+        ['Total Findings', stats.total],
+        ['Acknowledged', stats.ack],
+        ['Pending Review', stats.pending]
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [79, 70, 229] }
+    });
+
+    // User Table
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('User Performance', 14, (doc as any).lastAutoTable.finalY + 15);
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [['User', 'Found', 'Resolved']],
+      body: userSummary.map(u => [u.name, u.reported, u.resolved]),
+      headStyles: { fillColor: [16, 185, 129] }
+    });
+
+    doc.save(`LO_Report_${new Date().toLocaleDateString()}.pdf`);
+    return doc.output('blob');
+  };
+
+  const handleAnaShareEmail = async () => {
+    if (anaShareConfig.recipients.length === 0) return;
+    setAnaShareLoading(true);
+    try {
+      const { filtered, stats, userSummary, entitySummary } = generateLOReportData();
+      const attachments: any[] = [];
+
+      if (anaShareConfig.format === 'excel' || anaShareConfig.format === 'both') {
+        const workbook = new ExcelJS.Workbook();
+        const summarySheet = workbook.addWorksheet('Executive Summary');
+        summarySheet.columns = [{ header: 'Category', key: 'cat', width: 30 }, { header: 'Value', key: 'val', width: 20 }];
+        summarySheet.addRow({ cat: 'TOTAL FINDINGS', val: stats.total });
+        summarySheet.addRow({ cat: 'ACKNOWLEDGED', val: stats.ack });
+        summarySheet.addRow({ cat: 'PENDING REVIEW', val: stats.pending });
+        summarySheet.addRow({});
+        summarySheet.addRow({ cat: 'USER PERFORMANCE' });
+        userSummary.forEach((u: any) => summarySheet.addRow({ cat: u.name, val: u.resolved + '/' + u.reported + ' Resolved' }));
+        const logSheet = workbook.addWorksheet('Detailed LO Log');
+        logSheet.columns = [
+          { header: 'Date', key: 'date', width: 15 },
+          { header: 'Entity', key: 'entity', width: 20 },
+          { header: 'Finding', key: 'finding', width: 50 },
+          { header: 'Identified By', key: 'by', width: 20 },
+          { header: 'Status', key: 'status', width: 15 }
+        ];
+        filtered.forEach((lo: any) => logSheet.addRow({
+          date: new Date(lo.dateOfIdentification).toLocaleDateString(),
+          entity: lo.entity,
+          finding: lo.learningOpportunity,
+          by: lo.identifiedBy,
+          status: lo.isAcknowledged ? 'Acknowledged' : 'Pending'
+        }));
+        const buffer = await workbook.xlsx.writeBuffer();
+        attachments.push({ filename: 'LO_Analytics_Report.xlsx', content: Buffer.from(buffer).toString('base64'), encoding: 'base64' });
+      }
+
+      if (anaShareConfig.format === 'pdf' || anaShareConfig.format === 'both') {
+        const doc = new jsPDF();
+        doc.setFontSize(20);
+        doc.setTextColor(79, 70, 229);
+        doc.text('LO Analytics & Reporting', 14, 20);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Generated: ' + new Date().toLocaleString(), 14, 28);
+        autoTable(doc, {
+          startY: 36,
+          head: [['Metric', 'Count']],
+          body: [['Total Findings', stats.total], ['Acknowledged', stats.ack], ['Pending Review', stats.pending]],
+          headStyles: { fillColor: [79, 70, 229] }
+        });
+        doc.text('User Performance', 14, (doc as any).lastAutoTable.finalY + 12);
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 16,
+          head: [['User', 'Found', 'Resolved']],
+          body: userSummary.map((u: any) => [u.name, u.reported, u.resolved]),
+          headStyles: { fillColor: [16, 185, 129] }
+        });
+        doc.text('Entity Summary', 14, (doc as any).lastAutoTable.finalY + 12);
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 16,
+          head: [['Entity', 'Total LOs', '% Resolved']],
+          body: entitySummary.map((e: any) => [e.name, e.total, e.total > 0 ? Math.round((e.resolved / e.total) * 100) + '%' : '0%']),
+          headStyles: { fillColor: [245, 158, 11] }
+        });
+        const pdfBlob = doc.output('arraybuffer');
+        attachments.push({ filename: 'LO_Analytics_Report.pdf', content: Buffer.from(pdfBlob).toString('base64'), encoding: 'base64' });
+      }
+
+      const emailHtml = '<div style="font-family:Arial,sans-serif;background:#0f172a;padding:32px;border-radius:16px;color:#fff">' +
+        '<h2 style="color:#6366f1;margin:0 0 8px 0">LO Analytics & Reporting</h2>' +
+        '<p style="color:#94a3b8;margin:0 0 28px 0;font-size:14px">Report generated on ' + new Date().toLocaleString() + ' | Filters: Entity: ' + anaEntityFilter + ' | User: ' + anaUserFilter + '</p>' +
+        '<table style="width:100%;border-collapse:separate;border-spacing:12px;margin-bottom:24px"><tr>' +
+        '<td style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;text-align:center"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px">Total Findings</div><div style="font-size:28px;font-weight:800;color:#fff">' + stats.total + '</div></td>' +
+        '<td style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;text-align:center"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px">Acknowledged</div><div style="font-size:28px;font-weight:800;color:#10b981">' + stats.ack + '</div></td>' +
+        '<td style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;text-align:center"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px">Pending Review</div><div style="font-size:28px;font-weight:800;color:#f59e0b">' + stats.pending + '</div></td>' +
+        '</tr></table>' +
+        '<h3 style="color:#fff;border-bottom:1px solid #334155;padding-bottom:10px;font-size:15px">Performance by User</h3>' +
+        '<table style="width:100%;border-collapse:collapse;margin-top:12px">' +
+        '<tr style="background:#1e293b"><th style="padding:12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">User</th><th style="padding:12px;text-align:center;font-size:11px;color:#94a3b8;text-transform:uppercase">Found</th><th style="padding:12px;text-align:center;font-size:11px;color:#94a3b8;text-transform:uppercase">Resolved</th></tr>' +
+        userSummary.map((u: any) => '<tr style="border-bottom:1px solid #1e293b"><td style="padding:12px;color:#e2e8f0">' + u.name + '</td><td style="padding:12px;text-align:center;color:#6366f1;font-weight:700">' + u.reported + '</td><td style="padding:12px;text-align:center;color:#10b981;font-weight:700">' + u.resolved + '</td></tr>').join('') +
+        '</table>' +
+        '<h3 style="color:#fff;border-bottom:1px solid #334155;padding-bottom:10px;font-size:15px;margin-top:24px">Entity Tracker Summary</h3>' +
+        '<table style="width:100%;border-collapse:collapse;margin-top:12px">' +
+        '<tr style="background:#1e293b"><th style="padding:12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Entity</th><th style="padding:12px;text-align:center;font-size:11px;color:#94a3b8;text-transform:uppercase">Total LOs</th><th style="padding:12px;text-align:center;font-size:11px;color:#94a3b8;text-transform:uppercase">% Resolved</th></tr>' +
+        entitySummary.map((e: any) => '<tr style="border-bottom:1px solid #1e293b"><td style="padding:12px;color:#e2e8f0">' + e.name + '</td><td style="padding:12px;text-align:center;color:#fff;font-weight:700">' + e.total + '</td><td style="padding:12px;text-align:center;color:#f59e0b;font-weight:700">' + (e.total > 0 ? Math.round((e.resolved / e.total) * 100) : 0) + '%</td></tr>').join('') +
+        '</table>' +
+        '<div style="margin-top:32px;text-align:center"><a href="https://v0-finpulse.vercel.app" style="background:#6366f1;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">View Live Dashboard →</a></div>' +
+        '</div>';
+
+      const res = await fetch('/api/admin/send-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: anaShareConfig.recipients.join(','),
+          cc: anaShareConfig.ccEmails.join(',') || undefined,
+          subject: anaShareConfig.subject,
+          html: emailHtml,
+          attachments
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to send mail');
+      showNotification('LO Analytics report shared successfully!');
+      setShowAnaShareModal(false);
+      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report' });
+    } catch (err: any) {
+      showNotification('Error sharing report: ' + err.message);
+    } finally {
+      setAnaShareLoading(false);
+    }
+  };
+
+const handleResourceUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resourceName.trim()) {
       showNotification("Please enter a resource name.", "error");
@@ -7604,6 +7838,97 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       `}} />
             </>
           )}
+
+
+      {/* ── LO Analytics Share Modal (Payments-style) ─────────────────── */}
+      {showAnaShareModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "520px", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "white" }}>Share LO Analytics Report</h3>
+                <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.8125rem" }}>Send the current LO analytics as an attachment.</p>
+              </div>
+              <button onClick={() => setShowAnaShareModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "20px" }}>
+
+              {/* TO Recipients - Chip Input */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>RECIPIENT EMAILS <span style={{ color: "#ef4444" }}>*</span></label>
+                <div style={{ border: "1px solid #d1d5db", borderRadius: "10px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "46px", alignItems: "center", cursor: "text" }}
+                     onClick={() => (document.getElementById('ana-to-input') as HTMLInputElement)?.focus()}>
+                  {anaShareConfig.recipients.map((email: string) => (
+                    <span key={email} style={{ background: "#dcfce7", color: "#166534", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                      {email}
+                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, recipients: anaShareConfig.recipients.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: "#166534", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
+                    </span>
+                  ))}
+                  <input id="ana-to-input" type="email" placeholder={anaShareConfig.recipients.length === 0 ? "Type email and press Enter..." : "Add more..."} value={anaShareConfig.recipientInput}
+                    onChange={(e) => setAnaShareConfig({...anaShareConfig, recipientInput: e.target.value})}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ',') && anaShareConfig.recipientInput.includes('@')) { e.preventDefault(); setAnaShareConfig({...anaShareConfig, recipients: [...anaShareConfig.recipients, anaShareConfig.recipientInput.trim()], recipientInput: ''}); } }}
+                    style={{ border: "none", outline: "none", fontSize: "0.875rem", minWidth: "180px", flex: 1, color: "#111827" }} />
+                </div>
+              </div>
+
+              {/* CC Emails - Chip Input */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>CC EMAILS (OPTIONAL)</label>
+                <div style={{ border: "1px solid #d1d5db", borderRadius: "10px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "46px", alignItems: "center", cursor: "text" }}
+                     onClick={() => (document.getElementById('ana-cc-input') as HTMLInputElement)?.focus()}>
+                  {anaShareConfig.ccEmails.map((email: string) => (
+                    <span key={email} style={{ background: "#e0f2fe", color: "#075985", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                      {email}
+                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, ccEmails: anaShareConfig.ccEmails.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: "#075985", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
+                    </span>
+                  ))}
+                  <input id="ana-cc-input" type="email" placeholder="Type email and press Enter..." value={anaShareConfig.ccInput}
+                    onChange={(e) => setAnaShareConfig({...anaShareConfig, ccInput: e.target.value})}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ',') && anaShareConfig.ccInput.includes('@')) { e.preventDefault(); setAnaShareConfig({...anaShareConfig, ccEmails: [...anaShareConfig.ccEmails, anaShareConfig.ccInput.trim()], ccInput: ''}); } }}
+                    style={{ border: "none", outline: "none", fontSize: "0.875rem", minWidth: "180px", flex: 1, color: "#111827" }} />
+                </div>
+              </div>
+
+              {/* Format Dropdown */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>REPORT FORMAT</label>
+                <div style={{ position: "relative" }}>
+                  <select value={anaShareConfig.format} onChange={(e) => setAnaShareConfig({...anaShareConfig, format: e.target.value as "excel" | "pdf" | "both"})}
+                    style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: "10px", padding: "12px 40px 12px 16px", fontSize: "0.9375rem", color: "#111827", background: "white", appearance: "none", cursor: "pointer", outline: "none" }}>
+                    <option value="excel">Excel Spreadsheet (.xlsx)</option>
+                    <option value="pdf">PDF Report (.pdf)</option>
+                    <option value="both">Both Excel + PDF</option>
+                  </select>
+                  <ChevronDown size={18} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "#6b7280", pointerEvents: "none" }} />
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>SUBJECT</label>
+                <input type="text" value={anaShareConfig.subject} onChange={(e) => setAnaShareConfig({...anaShareConfig, subject: e.target.value})}
+                  style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: "10px", padding: "12px 16px", fontSize: "0.9375rem", color: "#111827", outline: "none", boxSizing: "border-box" }} />
+              </div>
+
+              {/* Buttons */}
+              <div style={{ display: "flex", gap: "12px", paddingTop: "4px" }}>
+                <button onClick={() => setShowAnaShareModal(false)} style={{ flex: 1, height: "46px", background: "white", border: "1px solid #d1d5db", borderRadius: "10px", color: "#374151", fontWeight: 600, cursor: "pointer", fontSize: "0.9375rem" }}>Cancel</button>
+                <button disabled={anaShareLoading || anaShareConfig.recipients.length === 0} onClick={handleAnaShareEmail}
+                  style={{ flex: 2, height: "46px", background: (anaShareLoading || anaShareConfig.recipients.length === 0) ? "#86efac" : "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", border: "none", borderRadius: "10px", color: "white", fontWeight: 700, cursor: (anaShareLoading || anaShareConfig.recipients.length === 0) ? "not-allowed" : "pointer", fontSize: "0.9375rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  {anaShareLoading ? <RefreshCw size={18} /> : <Send size={18} />}
+                  {anaShareLoading ? "Sending..." : "Share Report"}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
         </main>
       {notification.type && (
         <div style={{
@@ -7742,14 +8067,43 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                   </select>
                 </div>
 
-                <button 
-                  onClick={() => setIsAnalyticsOpen(false)}
-                  style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "#ef4444", cursor: "pointer", width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
-                >
-                  <X size={20} />
-                </button>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button 
+                    onClick={handleAnaExportExcel}
+                    title="Download Excel"
+                    style={{ background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#10b981", cursor: "pointer", padding: "0 14px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8125rem", fontWeight: 700, transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(16, 185, 129, 0.2)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(16, 185, 129, 0.1)"; }}
+                  >
+                    <FileSpreadsheet size={16} /> Excel
+                  </button>
+                  <button 
+                    onClick={handleAnaExportPDF}
+                    title="Download PDF"
+                    style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444", cursor: "pointer", padding: "0 14px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8125rem", fontWeight: 700, transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; }}
+                  >
+                    <FileText size={16} /> PDF
+                  </button>
+                  <button 
+                    onClick={() => setShowAnaShareModal(true)}
+                    title="Share via Email"
+                    style={{ background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "#6366f1", cursor: "pointer", padding: "0 14px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8125rem", fontWeight: 700, transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(99, 102, 241, 0.2)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(99, 102, 241, 0.1)"; }}
+                  >
+                    <Share2 size={16} /> Share
+                  </button>
+                  <button 
+                    onClick={() => setIsAnalyticsOpen(false)}
+                    style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
