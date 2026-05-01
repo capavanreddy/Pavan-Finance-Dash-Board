@@ -53,6 +53,11 @@ model Task {
   linkedRequestId     Int?
   requestStatus       String?   @default("Pending")
   frequency           String?
+  templateId          Int?
+  periodKey           String?
+  financeFunction     String?
+
+  @@unique([templateId, periodKey])
 }
 
 model TaskSequence {
@@ -85,6 +90,31 @@ model LearningOpportunity {
   deleteRequested     Boolean   @default(false)
   deleteRequestReason String?
   createdByEmail      String?
+}
+
+model RecurringTemplate {
+  id                    Int      @id @default(autoincrement())
+  taskNamePattern       String
+  entityName            String
+  taskType              String?  @default("External")
+  departmentName        String?  @default("Finance")
+  financeFunction       String?
+  frequency             String
+  dayOffset             Int?     @default(0)
+  monthOffset           Int?     @default(0)
+  defaultOwner          String?
+  defaultReviewer       String?
+  isActive              Boolean  @default(true)
+  startDate             DateTime?
+  endDate               DateTime?
+  stopDate              DateTime?
+  isStopped             Boolean  @default(false)
+  weeklyDay             String?
+  excludedDates         String?  // JSON string
+  freqLabel             String?
+  lastGeneratedPeriod   String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model ExternalRequest {
@@ -120,6 +150,11 @@ model SystemSettings {
   paymentReportFrequency String  @default("OFF")
   paymentReportTimes     String  @default("10:00")
   paymentReportEmail     String  @default("pavanreddy@intellicar.in")
+  
+  // Task Automation
+  dailyTaskGenerationTime String   @default("06:00")
+  holidayList            String   @default("[]") // JSON array of YYYY-MM-DD strings
+  lastDailyGenerationAt  DateTime?
 
   // Master Data Lists (Comma separated)
   masterDepartments     String   @default("Finance,HR,IT,Operations,Sales,Marketing,Admin")

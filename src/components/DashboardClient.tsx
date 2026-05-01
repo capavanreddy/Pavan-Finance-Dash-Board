@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
@@ -143,7 +143,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET'>('ACCOUNT');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION'>('ACCOUNT');
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
@@ -159,6 +159,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     loReportTimes: '10:00',
     managerEmail: '',
     loReportEmail: '',
+    dailyTaskGenerationTime: '06:00',
+    holidayList: '[]',
+    lastDailyGenerationAt: null as string | null,
     paymentReportFrequency: 'OFF',
     paymentReportTimes: '10:00',
     paymentReportEmail: '',
@@ -619,16 +622,31 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  // FINAL LOADING RELEASE
+  // Automated Daily Task Generation Trigger
   useEffect(() => {
-    if (!settingsLoading) {
-      // Small delay to allow the Redirection useEffect to fire
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 50);
-      return () => clearTimeout(timer);
+    if (!settingsLoading && isHydrated && settings && user) {
+      const today = new Date();
+      // Skip weekends automatically for the trigger
+      const dayOfWeek = today.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) return;
+      
+      const todayStr = today.toISOString().split('T')[0];
+      const lastGenStr = settings.lastDailyGenerationAt ? new Date(settings.lastDailyGenerationAt).toISOString().split('T')[0] : null;
+      
+      // If today is different from last generation date, try triggering
+      if (todayStr !== lastGenStr) {
+        fetch("/api/cron/daily-tasks", { method: "POST" })
+          .then(res => res.json())
+          .then(data => {
+             if (data.success && data.count > 0) {
+               console.log(`Auto-generated ${data.count} daily tasks.`);
+               fetchTasks(); // Refresh dashboard
+             }
+          })
+          .catch(err => console.error("Auto-generation trigger failed", err));
+      }
     }
-  }, [settingsLoading, activeView, activeSubView]);
+  }, [settingsLoading, isHydrated, settings, user]);
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
@@ -4198,6 +4216,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                       Master Data
                     </button>
                     <button 
+                      onClick={() => setActiveOptionsTab('AUTOMATION')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'AUTOMATION' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'AUTOMATION' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    >
+                      <Zap size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Task Automation
+                    </button>
+                    <button 
                       onClick={() => setActiveOptionsTab('DATA')} 
                       style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                     >
@@ -5927,7 +5951,203 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </div>
                   </div>
                 )}
-                
+
+                {activeOptionsTab === 'AUTOMATION' && (
+                  <div className="animate-in fade-in duration-500">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                      <div>
+                        <h3 style={{ margin: 0, color: t.text, fontSize: "1.5rem", fontWeight: 700 }}>Task Automation</h3>
+                        <p style={{ color: t.textMuted, marginTop: "4px", fontSize: "0.875rem" }}>Configure rules for automatic recurring task generation.</p>
+                      </div>
+                      <button 
+                        onClick={handleSaveSettings}
+                        disabled={isSavingSettings}
+                        style={{ 
+                          padding: "10px 24px", 
+                          background: "#2563eb", 
+                          color: "white", 
+                          borderRadius: "10px", 
+                          border: "none", 
+                          fontWeight: 600, 
+                          cursor: isSavingSettings ? "not-allowed" : "pointer",
+                          boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseOver={e => !isSavingSettings && (e.currentTarget.style.background = "#1d4ed8")}
+                        onMouseOut={e => !isSavingSettings && (e.currentTarget.style.background = "#2563eb")}
+                      >
+                        {isSavingSettings ? "Saving..." : "Save Configuration"}
+                      </button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                      {/* Generation Settings */}
+                      <div style={{ padding: "28px", background: "white", borderRadius: "20px", border: `1px solid ${t.border}`, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                          <div style={{ padding: "10px", background: "#eff6ff", borderRadius: "12px" }}>
+                            <Clock size={20} color="#2563eb" />
+                          </div>
+                          <h4 style={{ margin: 0, color: t.text, fontSize: "1.125rem", fontWeight: 600 }}>Generation Settings</h4>
+                        </div>
+                        
+                        <div style={{ marginBottom: "24px" }}>
+                          <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "8px" }}>Preferred Daily Generation Time</label>
+                          <p style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "12px" }}>The system will automatically generate tasks for the day once this time is reached (Monday to Friday).</p>
+                          <input 
+                            type="time"
+                            value={settings.dailyTaskGenerationTime}
+                            onChange={(e) => setSettings({...settings, dailyTaskGenerationTime: e.target.value})}
+                            style={{ 
+                              width: "100%", 
+                              padding: "12px", 
+                              borderRadius: "10px", 
+                              border: `1px solid ${t.border}`, 
+                              outline: "none",
+                              fontSize: "1rem",
+                              color: "#0f172a",
+                              fontWeight: 500
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "28px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.025em" }}>System Status</div>
+                              <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9375rem", marginTop: "4px" }}>
+                                {settings.lastDailyGenerationAt ? `Last Ran: ${new Date(settings.lastDailyGenerationAt).toLocaleString()}` : "Not yet run today"}
+                              </div>
+                            </div>
+                            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.1)" }}></div>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={async () => {
+                            if (!confirm("Are you sure you want to trigger daily task generation manually? This will create today's tasks immediately.")) return;
+                            try {
+                              setIsSavingSettings(true);
+                              const res = await fetch("/api/cron/daily-tasks", { 
+                                method: "POST",
+                                headers: { "x-manual-trigger": "true" }
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                showNotification(`Success! Automated engine generated ${data.count} tasks.`);
+                                fetchSettings();
+                                fetchTasks();
+                              } else {
+                                showNotification(`Error: ${data.message || "Unknown error"}`);
+                              }
+                            } catch (e) { showNotification("Trigger failed."); }
+                            finally { setIsSavingSettings(false); }
+                          }}
+                          disabled={isSavingSettings}
+                          style={{ 
+                            width: "100%", 
+                            padding: "14px", 
+                            background: "#f1f5f9", 
+                            color: "#475569", 
+                            border: "1px solid #e2e8f0", 
+                            borderRadius: "12px", 
+                            fontWeight: 600, 
+                            cursor: isSavingSettings ? "not-allowed" : "pointer", 
+                            transition: "all 0.2s",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px"
+                          }}
+                          onMouseOver={e => !isSavingSettings && (e.currentTarget.style.background = "#e2e8f0")}
+                          onMouseOut={e => !isSavingSettings && (e.currentTarget.style.background = "#f1f5f9")}
+                        >
+                          <Zap size={16} /> Generate Today's Tasks Now
+                        </button>
+                      </div>
+
+                      {/* Holiday Manager */}
+                      <div style={{ padding: "28px", background: "white", borderRadius: "20px", border: `1px solid ${t.border}`, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                          <div style={{ padding: "10px", background: "#fef2f2", borderRadius: "12px" }}>
+                            <Calendar size={20} color="#ef4444" />
+                          </div>
+                          <h4 style={{ margin: 0, color: t.text, fontSize: "1.125rem", fontWeight: 600 }}>Holiday Manager</h4>
+                        </div>
+                        
+                        <p style={{ fontSize: "0.8125rem", color: "#64748b", marginBottom: "20px", lineHeight: "1.5" }}>
+                          The system skips weekends (Sat/Sun) automatically. Add any public holidays, festivals, or office closures here to prevent task generation on those dates.
+                        </p>
+                        
+                        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+                          <input 
+                            type="date"
+                            id="new-holiday-date"
+                            style={{ 
+                              flex: 1, 
+                              padding: "10px 14px", 
+                              borderRadius: "10px", 
+                              border: `1px solid ${t.border}`,
+                              fontSize: "0.875rem",
+                              outline: "none"
+                            }}
+                          />
+                          <button 
+                            onClick={() => {
+                              const el = document.getElementById('new-holiday-date') as HTMLInputElement;
+                              if (!el.value) return;
+                              const current = JSON.parse(settings.holidayList || "[]");
+                              if (!current.includes(el.value)) {
+                                const updated = [...current, el.value].sort();
+                                setSettings({...settings, holidayList: JSON.stringify(updated)});
+                              }
+                              el.value = "";
+                            }}
+                            style={{ 
+                              padding: "10px 20px", 
+                              background: "#ef4444", 
+                              color: "white", 
+                              border: "none", 
+                              borderRadius: "10px", 
+                              fontWeight: 600, 
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = "#dc2626"}
+                            onMouseOut={e => e.currentTarget.style.background = "#ef4444"}
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        <div style={{ maxHeight: "220px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", padding: "2px" }} className="custom-scrollbar">
+                          {JSON.parse(settings.holidayList || "[]").map((date: string) => (
+                            <div key={date} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#fff5f5", borderRadius: "10px", border: "1px solid #fee2e2", transition: "transform 0.1s" }}>
+                              <span style={{ fontSize: "0.875rem", color: "#b91c1c", fontWeight: 600 }}>{new Date(date).toDateString()}</span>
+                              <button 
+                                onClick={() => {
+                                  const current = JSON.parse(settings.holidayList || "[]");
+                                  const updated = current.filter((d: string) => d !== date);
+                                  setSettings({...settings, holidayList: JSON.stringify(updated)});
+                                }}
+                                style={{ background: "transparent", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", borderRadius: "6px" }}
+                                onMouseOver={e => e.currentTarget.style.background = "#fee2e2"}
+                                onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                          {JSON.parse(settings.holidayList || "[]").length === 0 && (
+                            <div style={{ textAlign: "center", padding: "30px", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1", color: "#94a3b8", fontSize: "0.8125rem" }}>
+                              No holidays scheduled yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {activeOptionsTab === 'DATA' && (
                   <div>
                     <h3 style={{ margin: "0 0 24px 0" }}>Bulk Data Import</h3>

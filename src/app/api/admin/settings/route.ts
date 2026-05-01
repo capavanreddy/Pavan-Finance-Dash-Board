@@ -27,6 +27,9 @@ export async function PATCH(request: Request) {
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterFrequencies" TEXT DEFAULT 'Ad,M,Y,2Y,H,Q,W,BW,D'`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterPaymentTypes" TEXT DEFAULT 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "userModuleExceptions" TEXT DEFAULT '{}'`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "dailyTaskGenerationTime" TEXT DEFAULT '06:00'`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "holidayList" TEXT DEFAULT '[]'`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "lastDailyGenerationAt" TIMESTAMP`;
     } catch (e) {
       console.log("Migration for settings fields failed/skipped");
     }
@@ -56,7 +59,9 @@ export async function PATCH(request: Request) {
           "loReportEmail",
           "masterFrequencies",
           "masterPaymentTypes",
-          "userModuleExceptions"
+          "userModuleExceptions",
+          "dailyTaskGenerationTime",
+          "holidayList"
         ) VALUES (
           'singleton',
           ${body.masterDepartments || ''},
@@ -79,7 +84,9 @@ export async function PATCH(request: Request) {
           ${body.loReportEmail || ''},
           ${body.masterFrequencies || 'Ad,M,Y,2Y,H,Q,W,BW,D'},
           ${body.masterPaymentTypes || 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'},
-          ${body.userModuleExceptions || '{}'}
+          ${body.userModuleExceptions || '{}'},
+          ${body.dailyTaskGenerationTime || '06:00'},
+          ${body.holidayList || '[]'}
         )
         RETURNING *
       `;
@@ -113,7 +120,9 @@ export async function PATCH(request: Request) {
         "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
         "masterFrequencies" = ${body.masterFrequencies ?? existingSettings[0].masterFrequencies},
         "masterPaymentTypes" = ${body.masterPaymentTypes ?? existingSettings[0].masterPaymentTypes},
-        "userModuleExceptions" = ${body.userModuleExceptions ?? existingSettings[0].userModuleExceptions}
+        "userModuleExceptions" = ${body.userModuleExceptions ?? existingSettings[0].userModuleExceptions},
+        "dailyTaskGenerationTime" = ${body.dailyTaskGenerationTime ?? existingSettings[0].dailyTaskGenerationTime},
+        "holidayList" = ${body.holidayList ?? existingSettings[0].holidayList}
       WHERE id = ${settingsId}
       RETURNING *
     `;

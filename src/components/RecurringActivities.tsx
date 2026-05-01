@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff, ArrowUp, ArrowDown, ChevronDown, Mail, X, FileSpreadsheet, Send } from "lucide-react";
+import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff, ArrowUp, ArrowDown, ChevronDown, Mail, X, FileSpreadsheet, Send, Zap } from "lucide-react";
 import { resolveTaskName, getPeriodKey, isWithinLeadTime, FREQUENCIES, Frequency, getOccurrencesBetween } from "@/lib/recurringUtils";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -77,10 +77,10 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     to: formatDate(lastDay) 
   });
   const [freqFilter, setFreqFilter] = useState<string>("ALL");
-  const [showConverted, setShowConverted] = useState(true);
-  const [searchStaging, setSearchStaging] = useState("");
   const [entityFilterStaging, setEntityFilterStaging] = useState("ALL");
+  const [searchStaging, setSearchStaging] = useState("");
   const [searchMaster, setSearchMaster] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CONVERTED'>('PENDING');
   const [stagingSortConfig, setStagingSortConfig] = useState<{ key: keyof StagingTask; direction: 'asc' | 'desc' } | null>(null);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -161,7 +161,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
   useEffect(() => {
     fetchTemplates();
     if (activeSubTab === 'D') fetchDailyData();
-  }, [dateFilter, freqFilter, showConverted, activeSubTab, dailyDateFilter]);
+  }, [dateFilter, freqFilter, statusFilter, activeSubTab, dailyDateFilter]);
 
   const fetchDailyData = async () => {
     try {
@@ -215,7 +215,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
         );
 
         if (converted) {
-          if (!showConverted) return; // Skip if user doesn't want to see history
+          if (statusFilter === 'PENDING') return; // Skip if user only wants pending
           
           staging.push({
             templateId: t.id,
@@ -235,6 +235,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             freqLabel: converted.frequency || t.freqLabel
           });
         } else {
+          if (statusFilter === 'CONVERTED') return; // Skip if user only wants converted
           // It's a pending task
           const dueDate = new Date(occ.date);
           // Only apply dayOffset override for monthly/longer frequencies
@@ -971,13 +972,21 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                </select>
              </div>
              
-             <button 
-                onClick={() => setShowConverted(!showConverted)}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: showConverted ? "#f0fdf4" : "white", color: showConverted ? "#15803d" : "#64748b", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
-             >
-                {showConverted ? <Eye size={16} /> : <EyeOff size={16} />}
-                {showConverted ? "History" : "History"}
-             </button>
+             {/* 3-Way Filter Segmented Control */}
+             <div style={{ display: "flex", background: "#f1f5f9", padding: "4px", borderRadius: "10px", gap: "2px" }}>
+               <button 
+                 onClick={() => setStatusFilter('ALL')}
+                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'ALL' ? "white" : "transparent", color: statusFilter === 'ALL' ? "#0f172a" : "#64748b", boxShadow: statusFilter === 'ALL' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
+               >Show All</button>
+               <button 
+                 onClick={() => setStatusFilter('PENDING')}
+                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'PENDING' ? "white" : "transparent", color: statusFilter === 'PENDING' ? "#2563eb" : "#64748b", boxShadow: statusFilter === 'PENDING' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
+               >Pending Conversions</button>
+               <button 
+                 onClick={() => setStatusFilter('CONVERTED')}
+                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'CONVERTED' ? "white" : "transparent", color: statusFilter === 'CONVERTED' ? "#059669" : "#64748b", boxShadow: statusFilter === 'CONVERTED' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
+               >Converted</button>
+             </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "240px" }}>
                 <Search size={16} color="#64748b" />
@@ -1698,263 +1707,74 @@ export default function RecurringActivities({   settings, usersList = [] , showN
       )}
 
       {activeSubTab === 'D' && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Daily Filters Bar */}
-          <div style={{ background: "white", padding: "16px 20px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b" }}>FROM:</label>
-               <input type="date" value={dailyDateFilter.from} onChange={e => setDailyDateFilter({...dailyDateFilter, from: e.target.value})} style={{...inputStyle, width: "135px"}} />
-             </div>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b" }}>TO:</label>
-               <input type="date" value={dailyDateFilter.to} onChange={e => setDailyDateFilter({...dailyDateFilter, to: e.target.value})} style={{...inputStyle, width: "135px"}} />
-             </div>
-
-             <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "240px" }}>
-               <Search size={16} color="#64748b" />
-               <input 
-                 type="text" 
-                 placeholder="Search daily tasks..." 
-                 value={dailySearch}
-                 onChange={e => setDailySearch(e.target.value)}
-                 style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", width: "100%", color: "#334155" }}
-               />
-             </div>
-
-             <select 
-               value={dailyOwnerFilter} 
-               onChange={e => setDailyOwnerFilter(e.target.value)} 
-               style={{ ...inputStyle, width: "130px" }}
-             >
-               <option value="ALL">All Owners</option>
-               {Array.from(new Set(templates.filter(t => t.frequency === 'D').map(t => t.defaultOwner))).filter(Boolean).map(owner => (
-                 <option key={owner} value={owner!}>{owner}</option>
-               ))}
-             </select>
-
-             <div style={{ flex: 1 }}></div>
-
-             <div style={{ position: "relative" }}>
-                <button 
-                  onClick={() => setDailyDownloadMenu(!dailyDownloadMenu)}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#334155", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}
-                >
-                  <Download size={18} /> Download
-                  <ChevronDown size={16} />
-                </button>
-                {dailyDownloadMenu && (
-                  <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: "200px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 100, padding: "8px" }}>
-                    <button onClick={() => { exportDailyExcel(getDailyOccurrences()); setDailyDownloadMenu(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "8px", border: "none", background: "none", color: "#166534", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
-                      <TableIcon size={18} /> Excel
-                    </button>
-                    <button onClick={() => { exportDailyPDF(getDailyOccurrences()); setDailyDownloadMenu(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "8px", border: "none", background: "none", color: "#991b1b", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
-                      <FileText size={18} /> PDF
-                    </button>
-                    <button onClick={() => { setDailyShareModal(true); setDailyDownloadMenu(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "8px", border: "none", background: "none", color: "#075985", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
-                      <Mail size={18} /> Share Email
-                    </button>
-                  </div>
-                )}
-             </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }} className="animate-in slide-in-from-bottom-4 duration-500">
+          {/* Unique Daily Directory Header */}
+          <div style={{ background: "white", padding: "28px", borderRadius: "24px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                <Zap size={20} color="#2563eb" />
+                <h3 style={{ margin: 0, color: "#0f172a", fontSize: "1.5rem", fontWeight: 700 }}>Unique Daily Responsibilities</h3>
+              </div>
+              <p style={{ margin: 0, color: "#64748b", fontSize: "0.9375rem" }}>A central directory of all automated daily operational tasks being handled by the team.</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f0fdf4", padding: "8px 16px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.1)" }}></div>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#166534", textTransform: "uppercase", letterSpacing: "0.05em" }}>Engine Online</span>
+              </div>
+              <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500 }}>Tasks flow directly to Dashboard at {settings?.dailyTaskGenerationTime || "06:00"} AM</span>
+            </div>
           </div>
 
-          {/* Bulk Action for Daily */}
-          {selectedDailyOccs.length > 0 && (
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "12px 20px", display: "flex", alignItems: "center", gap: "16px", animation: "slideDown 0.3s ease" }}>
-               <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#166534" }}>{selectedDailyOccs.length} occurrences selected</span>
-               <button 
-                 onClick={() => handleBulkDailyStatus('Completed')}
-                 style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "#16a34a", color: "white", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
-               >
-                 Mark as Completed
-               </button>
-               <button 
-                 onClick={() => setSelectedDailyOccs([])}
-                 style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #bbf7d0", background: "white", color: "#166534", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
-               >
-                 Cancel
-               </button>
-            </div>
-          )}
-
-          {/* Daily Tracker Table */}
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", overflowX: "auto", overflowY: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }} className="custom-scrollbar">
-            <table style={{ width: "100%", minWidth: "1200px", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#1e293b" }}>
-                  <th style={thStyle}>
-                    <input 
-                      type="checkbox" 
-                      onChange={e => {
-                        const all = getDailyOccurrences().filter(o => o.status !== 'Completed').map(o => o.id);
-                        setSelectedDailyOccs(e.target.checked ? all : []);
-                      }}
-                      checked={selectedDailyOccs.length > 0 && selectedDailyOccs.length === getDailyOccurrences().filter(o => o.status !== 'Completed').length}
-                    />
-                  </th>
-                  <th style={thStyle}>Sl No</th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('taskName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task Details {dailySortConfig.key === 'taskName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('taskType')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Type {dailySortConfig.key === 'taskType' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('ownerName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Owner {dailySortConfig.key === 'ownerName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('reviewerName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Reviewer {dailySortConfig.key === 'reviewerName' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('targetDate')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Target Date {dailySortConfig.key === 'targetDate' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleDailySort('status')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Status {dailySortConfig.key === 'status' && (dailySortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={thStyle}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getDailyOccurrences()
-                  .filter(o => {
-                    const search = dailySearch.toLowerCase();
-                    const matchesSearch = o.taskName.toLowerCase().includes(search) || o.entityName.toLowerCase().includes(search) || o.ownerName?.toLowerCase().includes(search);
-                    const matchesOwner = dailyOwnerFilter === "ALL" || o.ownerName === dailyOwnerFilter;
-                    return matchesSearch && matchesOwner;
-                  })
-                  .sort((a, b) => {
-                    const key = dailySortConfig.key;
-                    const dir = dailySortConfig.direction === 'asc' ? 1 : -1;
-                    
-                    if (key === 'targetDate') {
-                      return (new Date(a[key]).getTime() - new Date(b[key]).getTime()) * dir;
-                    }
-                    
-                    const valA = (a as any)[key] || "";
-                    const valB = (b as any)[key] || "";
-                    if (valA < valB) return -1 * dir;
-                    if (valA > valB) return 1 * dir;
-                    return 0;
-                  })
-                  .map((occ, idx) => (
-                  <tr key={occ.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={tdStyle}>
-                      <input 
-                        type="checkbox" 
-                        disabled={occ.status === 'Completed'}
-                        checked={selectedDailyOccs.includes(occ.id)}
-                        onChange={e => {
-                          if (e.target.checked) setSelectedDailyOccs([...selectedDailyOccs, occ.id]);
-                          else setSelectedDailyOccs(selectedDailyOccs.filter(id => id !== occ.id));
-                        }}
-                      />
-                    </td>
-                    <td style={tdStyle}>{idx + 1}</td>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: 600 }}>{occ.taskName}</div>
-                      <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{occ.entityName}</div>
-                    </td>
-                    <td style={tdStyle}>{occ.taskType}</td>
-                    <td style={tdStyle}>{occ.ownerName}</td>
-                    <td style={tdStyle}>{occ.reviewerName}</td>
-                    <td style={tdStyle}>{new Date(occ.targetDate).toLocaleDateString('en-GB')}</td>
-                    <td style={tdStyle}>
-                      <span style={{ 
-                        padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700,
-                        background: occ.status === 'Completed' ? "#dcfce7" : "#fee2e2",
-                        color: occ.status === 'Completed' ? "#16a34a" : "#ef4444"
-                      }}>
-                        {occ.status}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      {occ.status !== 'Completed' ? (
-                        <button 
-                          onClick={() => handleUpdateDailyStatus(occ.templateId, occ.targetDate, 'Completed')}
-                          style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#2563eb", color: "white", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Mark Completed
-                        </button>
-                      ) : (
-                        <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-                          By {occ.completedBy} at {new Date(occ.completedAt).toLocaleTimeString()}
+          <div style={{ background: "white", borderRadius: "24px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.05)" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.9375rem", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <th style={{ ...thStyle, width: "70px", background: "transparent", color: "#64748b", padding: "20px 24px" }}>SI</th>
+                    <th style={{ ...thStyle, background: "transparent", color: "#64748b", padding: "20px" }}>Entity & Department</th>
+                    <th style={{ ...thStyle, background: "transparent", color: "#64748b", padding: "20px" }}>Task Name Pattern</th>
+                    <th style={{ ...thStyle, background: "transparent", color: "#64748b", padding: "20px" }}>Function</th>
+                    <th style={{ ...thStyle, background: "transparent", color: "#64748b", padding: "20px" }}>Current Owner</th>
+                    <th style={{ ...thStyle, background: "transparent", color: "#64748b", padding: "20px" }}>Reviewer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {templates.filter(t => t.frequency === 'D' && !t.isStopped && t.isActive).length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "80px", textAlign: "center" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", color: "#94a3b8" }}>
+                          <Search size={40} style={{ opacity: 0.2 }} />
+                          <p style={{ margin: 0, fontStyle: "italic" }}>No active daily task rules found.</p>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {getDailyOccurrences().filter(occ => {
-                  const search = dailySearch.toLowerCase();
-                  const matchesSearch = occ.taskName.toLowerCase().includes(search) || 
-                         occ.entityName.toLowerCase().includes(search) ||
-                         occ.ownerName.toLowerCase().includes(search);
-                  const matchesOwner = dailyOwnerFilter === "ALL" || occ.ownerName === dailyOwnerFilter;
-                  return matchesSearch && matchesOwner;
-                }).length === 0 && (
-                  <tr>
-                    <td colSpan={9} style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
-                      <Calendar size={40} style={{ opacity: 0.3, marginBottom: "12px" }} />
-                      <p>No daily tasks found for the selected period.</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Daily Share Modal */}
-      {dailyShareModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
-          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "550px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
-            <div style={{ padding: "24px", background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <Mail size={24} />
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Share Daily Report</h3>
-              </div>
-              <button onClick={() => setDailyShareModal(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
-            </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div>
-                <label style={labelStyle}>Recipients</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", background: "#f8fafc" }}>
-                  {shareData.recipients.map((email, idx) => (
-                    <div key={idx} style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                      {email} <X size={14} style={{ cursor: "pointer" }} onClick={() => removeEmail('recipients', idx)} />
-                    </div>
-                  ))}
-                  <input 
-                    type="text" 
-                    value={shareData.recipientInput}
-                    onChange={e => setShareData({...shareData, recipientInput: e.target.value})}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddEmail('recipients', shareData.recipientInput); }}
-                    style={{ border: "none", background: "none", outline: "none", flex: 1 }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Subject</label>
-                <input type="text" value={shareData.subject} onChange={e => setShareData({...shareData, subject: e.target.value})} style={inputStyle} />
-              </div>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button onClick={() => setDailyShareModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button onClick={handleDailyShareViaEmail} disabled={shareLoading} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#16a34a", color: "white", fontWeight: 600, cursor: "pointer" }}>
-                  {shareLoading ? "Sending..." : "Send Email"}
-                </button>
-              </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    templates.filter(t => t.frequency === 'D' && !t.isStopped && t.isActive).map((t, idx) => (
+                      <tr key={t.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                        <td style={{ ...tdStyle, padding: "20px 24px", color: "#94a3b8", fontWeight: 600 }}>{String(idx + 1).padStart(2, '0')}</td>
+                        <td style={{ ...tdStyle, padding: "20px" }}>
+                          <div style={{ fontWeight: 700, color: "#0f172a" }}>{t.entityName}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{t.departmentName}</div>
+                        </td>
+                        <td style={{ ...tdStyle, padding: "20px", color: "#334155", fontWeight: 500 }}>{t.taskNamePattern}</td>
+                        <td style={{ ...tdStyle, padding: "20px" }}>
+                          <span style={{ padding: "6px 12px", background: "#f1f5f9", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#475569" }}>{t.financeFunction || "GENERAL"}</span>
+                        </td>
+                        <td style={{ ...tdStyle, padding: "20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800 }}>
+                              {t.defaultOwner?.charAt(0)}
+                            </div>
+                            <span style={{ fontWeight: 600, color: "#334155" }}>{t.defaultOwner}</span>
+                          </div>
+                        </td>
+                        <td style={{ ...tdStyle, padding: "20px", color: "#64748b" }}>{t.defaultReviewer || "Not Applicable"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
