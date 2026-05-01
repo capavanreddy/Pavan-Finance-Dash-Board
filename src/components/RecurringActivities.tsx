@@ -109,6 +109,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
   const [dailyShareModal, setDailyShareModal] = useState(false);
   const [dailySortConfig, setDailySortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'targetDate', direction: 'desc' });
   const [masterSortConfig, setMasterSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [stopModal, setStopModal] = useState<{ isOpen: boolean; templateId: number | null; templateName: string }>({ isOpen: false, templateId: null, templateName: '' });
+  const [stopDate, setStopDate] = useState(new Date().toISOString().split('T')[0]);
+  const [stopLoading, setStopLoading] = useState(false);
 
   const handleDailySort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -347,20 +350,34 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     }
   };
 
-  const handleStopTemplate = async (id: number) => {
-    showPrompt("Enter the effective Stop Date (YYYY-MM-DD):", async (stopDate: string) => {
-      try {
-        await fetch(`/api/recurring-templates/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isStopped: true, stopDate: stopDate, isActive: false })
-        });
+  const handleStopTemplate = (id: number) => {
+    const template = templates.find(t => t.id === id);
+    setStopDate(new Date().toISOString().split('T')[0]);
+    setStopModal({ isOpen: true, templateId: id, templateName: template?.taskNamePattern || 'this template' });
+  };
+
+  const confirmStopTemplate = async () => {
+    if (!stopModal.templateId) return;
+    setStopLoading(true);
+    try {
+      const res = await fetch(`/api/recurring-templates/${stopModal.templateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isStopped: true, stopDate: stopDate, isActive: false })
+      });
+      if (res.ok) {
         fetchTemplates();
-        showNotification("Template stopped successfully.");
-      } catch (err) {
-        console.error("Stop error:", err);
+        showNotification("Recurring template paused successfully.");
+        setStopModal({ isOpen: false, templateId: null, templateName: '' });
+      } else {
+        showNotification("Failed to pause template.");
       }
-    }, new Date().toISOString().split('T')[0]);
+    } catch (err) {
+      console.error("Stop error:", err);
+      showNotification("An error occurred.");
+    } finally {
+      setStopLoading(false);
+    }
   };
 
   const handleDeleteTemplate = async (id: number) => {
@@ -1824,6 +1841,78 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           </div>
         </div>
       )}
+
+      {/* ── Pause / Stop Template Modal ─────────────────────────────────── */}
+      {stopModal.isOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "460px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", padding: "24px 28px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <StopCircle size={24} color="white" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 800, color: "white" }}>Pause Recurring Template</h3>
+                  <p style={{ margin: "3px 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.8125rem" }}>Set an effective stop date for this rule</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "28px" }}>
+
+              {/* Template name chip */}
+              <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: "10px", padding: "12px 16px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <Settings2 size={16} color="#d97706" />
+                <span style={{ fontWeight: 600, color: "#92400e", fontSize: "0.875rem" }}>{stopModal.templateName}</span>
+              </div>
+
+              {/* Date picker */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+                  Effective Stop Date
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Calendar size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                  <input
+                    type="date"
+                    value={stopDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setStopDate(e.target.value)}
+                    style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: "12px", padding: "13px 16px 13px 44px", fontSize: "1rem", color: "#111827", outline: "none", boxSizing: "border-box", cursor: "pointer" }}
+                    onFocus={e => e.currentTarget.style.borderColor = "#f59e0b"}
+                    onBlur={e => e.currentTarget.style.borderColor = "#e5e7eb"}
+                  />
+                </div>
+                <p style={{ margin: "8px 0 0 0", fontSize: "0.75rem", color: "#6b7280" }}>
+                  No new tasks will be generated for this rule from this date onward.
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "12px", marginTop: "28px" }}>
+                <button
+                  onClick={() => setStopModal({ isOpen: false, templateId: null, templateName: '' })}
+                  style={{ flex: 1, height: "46px", background: "white", border: "1.5px solid #e5e7eb", borderRadius: "12px", color: "#374151", fontWeight: 600, fontSize: "0.9375rem", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={stopLoading || !stopDate}
+                  onClick={confirmStopTemplate}
+                  style={{ flex: 2, height: "46px", background: (stopLoading || !stopDate) ? "#fcd34d" : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", border: "none", borderRadius: "12px", color: "white", fontWeight: 700, fontSize: "0.9375rem", cursor: (stopLoading || !stopDate) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  <StopCircle size={18} />
+                  {stopLoading ? "Pausing..." : "Confirm Pause"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
