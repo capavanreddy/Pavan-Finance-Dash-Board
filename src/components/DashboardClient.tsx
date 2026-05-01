@@ -1742,6 +1742,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     try {
       let dataStr = "";
       if (resourceType === 'FILE' && resourceFile) {
+        if (resourceFile.size > 25 * 1024 * 1024) {
+          showNotification("File too large. Maximum size is 25MB.", "error");
+          setResourcesLoading(false);
+          return;
+        }
         const reader = new FileReader();
         dataStr = await new Promise((resolve) => {
           reader.onload = (e) => resolve(e.target?.result as string);
@@ -3016,7 +3021,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
               <MetricCard t={t} title="Fully Completed" value={completedCount} icon={<CheckCircle2 size={20} color="#ffffff" />} bg="linear-gradient(135deg, #10b981 0%, #059669 100%)" isActive={activeFilter === 'COMPLETED'} onClick={() => setActiveFilter('COMPLETED')} />
             </div>
           ) : null
-        ) : activeView === 'LOS' ? (
+        ) : activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? (
           <div style={{ 
             marginBottom: "32px", 
             padding: "40px", 
@@ -4064,11 +4069,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           
           <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
              <div style={{ padding: "28px 32px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: theme === 'DARK' ? "#1e293b" : "#fafafa" }}>
-                {loActiveFilter === 'RESOURCES' ? (
-                  <div style={{ width: "100%" }}>
-                    <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Library</h3>
-                  </div>
-                ) : (
+                {loActiveFilter === 'RESOURCES' ? null : (
                   <>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -4206,27 +4207,43 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                               <h5 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: t.text, marginBottom: "4px" }}>{res.name}</h5>
                               <p style={{ margin: 0, fontSize: "0.75rem", color: t.textMuted }}>Uploaded by {res.uploadedBy}</p>
                             </div>
-                            <div style={{ marginTop: "auto", display: "flex", gap: "10px" }}>
+                            <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", gap: "10px" }}>
                               <button 
                                 onClick={() => {
                                   if (res.type === 'LINK') {
                                     window.open(res.url, '_blank');
                                   } else {
+                                    const win = window.open();
+                                    if (win) {
+                                      win.document.write(`<iframe src="${res.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                    }
+                                  }
+                                }}
+                                style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                              >
+                                <Eye size={14} /> View
+                              </button>
+                              
+                              {res.type === 'FILE' && (
+                                <button 
+                                  onClick={() => {
                                     const link = document.createElement('a');
                                     link.href = res.data;
                                     link.download = res.name;
                                     link.click();
-                                  }
-                                }}
-                                style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", background: t.bg, color: t.text, fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                              >
-                                {res.type === 'LINK' ? <ExternalLink size={14} /> : <Download size={14} />}
-                                {res.type === 'LINK' ? 'Open Link' : 'Download'}
-                              </button>
+                                  }}
+                                  style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, background: t.card, color: t.text, cursor: "pointer" }}
+                                  title="Download File"
+                                >
+                                  <Download size={14} />
+                                </button>
+                              )}
+
                               {isAdmin && (
                                 <button 
                                   onClick={() => handleDeleteResource(res.id)}
                                   style={{ padding: "10px", borderRadius: "10px", border: "none", background: "#fee2e2", color: "#ef4444", cursor: "pointer" }}
+                                  title="Delete Resource (Admin Only)"
                                 >
                                   <Trash2 size={14} />
                                 </button>
@@ -7623,7 +7640,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       {showAckModal && acknowledgingLO && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "24px" }}>
           <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "550px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
-            <div style={{ padding: "32px", background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)", color: "white" }}>
+            <div style={{ padding: "32px", background: "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)", color: "white" }}>
               <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800 }}>Acknowledge Learning</h3>
               <p style={{ margin: "8px 0 0 0", opacity: 0.9, fontSize: "0.9375rem" }}>Confirm your understanding of the finding and the resolution provided.</p>
             </div>
@@ -7656,7 +7673,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                 <button 
                   onClick={handleAcknowledgeLO}
                   disabled={!ackComments.trim()}
-                  style={{ flex: 2, padding: "14px", borderRadius: "12px", border: "none", background: "#ef4444", color: "white", fontWeight: 700, cursor: !ackComments.trim() ? "not-allowed" : "pointer", boxShadow: "0 10px 15px -3px rgba(239, 68, 68, 0.3)" }}
+                  style={{ flex: 2, padding: "14px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", fontWeight: 700, cursor: !ackComments.trim() ? "not-allowed" : "pointer", boxShadow: "0 10px 15px -3px rgba(79, 70, 229, 0.3)" }}
                 >
                   Submit Acknowledgment
                 </button>
@@ -7721,7 +7738,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     onChange={e => setResourceFile(e.target.files?.[0] || null)}
                     style={{ ...getInputStyle(t), padding: "8px" }} 
                   />
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.65rem", color: t.textMuted }}>Supported: PDF, JPG, PNG (Max 5MB)</p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.65rem", color: t.textMuted }}>Supported: PDF, JPG, PNG (Max 25MB)</p>
                 </div>
               )}
 
