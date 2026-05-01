@@ -243,6 +243,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [dateFilterPreset, setDateFilterPreset] = useState("ALL_TIME");
   const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS' | 'RESOURCES'>('ALL');
   const [loDateFrom, setLoDateFrom] = useState(() => {
     const d = new Date();
