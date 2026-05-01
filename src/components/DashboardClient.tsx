@@ -252,11 +252,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS' | 'RESOURCES'>('ALL');
   const [loDateFrom, setLoDateFrom] = useState(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]; // 1st of current month
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
   });
   const [loDateTo, setLoDateTo] = useState(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]; // Last day of current month
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
   });
   const [resources, setResources] = useState<any[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
@@ -1629,19 +1634,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     // 4. Date Filter (Universal)
     let dateMatch = true;
     if (loDateFrom || loDateTo) {
-      const loDate = new Date(lo.dateOfIdentification);
-      loDate.setHours(0, 0, 0, 0);
+      const loDateStr = lo.dateOfIdentification.split('T')[0];
       
-      if (loDateFrom) {
-        const from = new Date(loDateFrom);
-        from.setHours(0, 0, 0, 0);
-        if (loDate < from) dateMatch = false;
-      }
-      if (loDateTo) {
-        const to = new Date(loDateTo);
-        to.setHours(0, 0, 0, 0);
-        if (loDate > to) dateMatch = false;
-      }
+      if (loDateFrom && loDateStr < loDateFrom) dateMatch = false;
+      if (loDateTo && loDateStr > loDateTo) dateMatch = false;
     }
 
     return typeMatch && searchMatch && entityMatch && dateMatch;
@@ -4065,99 +4061,102 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           
           <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
              <div style={{ padding: "28px 32px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: theme === 'DARK' ? "#1e293b" : "#fafafa" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Learning Opportunities</h3>
+                {loActiveFilter === 'RESOURCES' ? (
+                  <div style={{ width: "100%" }}>
+                    <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Library</h3>
                   </div>
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                    {[
-                      { id: 'ALL', label: 'All Findings', color: '#2563eb' },
-                      { id: 'REPORTS', label: 'My Findings', color: '#3b82f6' },
-                      { id: 'LEARNINGS', label: 'My Learnings', color: '#ef4444' }
-                    ].map(tab => (
-                      <button 
-                        key={tab.id}
-                        onClick={() => setLoActiveFilter(tab.id as any)}
-                        style={{ 
-                          padding: "6px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600, 
-                          border: "1px solid", cursor: "pointer", transition: "all 0.2s",
-                          background: loActiveFilter === tab.id ? tab.color : t.card,
-                          borderColor: loActiveFilter === tab.id ? tab.color : t.border,
-                          color: loActiveFilter === tab.id ? "white" : t.textMuted,
-                          boxShadow: loActiveFilter === tab.id ? `0 4px 6px -1px ${tab.color}33` : "none"
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
-                  {/* Universal Date Filter */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: t.bg, padding: "6px 12px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
-                    <Calendar size={14} color={t.accent} />
-                    <input 
-                      type="date" 
-                      value={loDateFrom} 
-                      onChange={e => setLoDateFrom(e.target.value)}
-                      style={{ border: "none", background: "transparent", fontSize: "0.75rem", outline: "none", color: t.text }}
-                    />
-                    <span style={{ color: t.textMuted, fontSize: "0.75rem" }}>to</span>
-                    <input 
-                      type="date" 
-                      value={loDateTo} 
-                      onChange={e => setLoDateTo(e.target.value)}
-                      style={{ border: "none", background: "transparent", fontSize: "0.75rem", outline: "none", color: t.text }}
-                    />
-                  </div>
-
-                  <div style={{ position: "relative", minWidth: "200px" }}>
-                    <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Search..." 
-                      value={loSearchQuery}
-                      onChange={e => setLoSearchQuery(e.target.value)}
-                      style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.8125rem", width: "100%", background: t.card }} 
-                    />
-                  </div>
-
-                  <div className="download-container" style={{ position: "relative" }}>
-                    <button 
-                      onClick={() => setShowLODownloadDropdown(!showLODownloadDropdown)}
-                      style={{ 
-                        display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
-                        padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
-                        cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, transition: "all 0.2s" 
-                      }} 
-                    >
-                      <Download size={16} color="#2563eb" />
-                    </button>
-                    
-                    {showLODownloadDropdown && (
-                      <div style={{ 
-                        position: "absolute", top: "100%", right: 0, marginTop: "8px", 
-                        background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
-                        minWidth: "160px", overflow: "hidden" 
-                      }}>
-                        <button 
-                          onClick={() => { exportLOsToExcel(); setShowLODownloadDropdown(false); }}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", border: "none", background: t.card, color: t.textMuted, cursor: "pointer", fontSize: "0.8125rem", textAlign: "left" }}
-                        >
-                          <FileSpreadsheet size={14} color="#059669" /> Excel
-                        </button>
-                        <button 
-                          onClick={() => { exportLOsToPDF(); setShowLODownloadDropdown(false); }}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", border: "none", background: t.card, color: t.textMuted, cursor: "pointer", fontSize: "0.8125rem", textAlign: "left" }}
-                        >
-                          <FileText size={14} color="#991b1b" /> PDF
-                        </button>
+                ) : (
+                  <>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Learning Opportunities</h3>
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                        {[
+                          { id: 'ALL', label: 'All Findings', color: '#2563eb' },
+                          { id: 'REPORTS', label: 'My Findings', color: '#3b82f6' },
+                          { id: 'LEARNINGS', label: 'My Learnings', color: '#ef4444' }
+                        ].map(tab => (
+                          <button 
+                            key={tab.id}
+                            onClick={() => setLoActiveFilter(tab.id as any)}
+                            style={{ 
+                              padding: "6px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600, 
+                              border: "1px solid", cursor: "pointer", transition: "all 0.2s",
+                              background: loActiveFilter === tab.id ? tab.color : t.card,
+                              borderColor: loActiveFilter === tab.id ? tab.color : t.border,
+                              color: loActiveFilter === tab.id ? "white" : t.textMuted,
+                              boxShadow: loActiveFilter === tab.id ? `0 4px 6px -1px ${tab.color}33` : "none"
+                            }}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+                      {/* Universal Date Filter */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", background: t.bg, padding: "6px 12px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                        <Calendar size={14} color={t.accent} />
+                        <input 
+                          type="date" 
+                          value={loDateFrom} 
+                          onChange={e => setLoDateFrom(e.target.value)}
+                          style={{ border: "none", background: "transparent", fontSize: "0.75rem", outline: "none", color: t.text }}
+                        />
+                        <span style={{ color: t.textMuted, fontSize: "0.75rem" }}>to</span>
+                        <input 
+                          type="date" 
+                          value={loDateTo} 
+                          onChange={e => setLoDateTo(e.target.value)}
+                          style={{ border: "none", background: "transparent", fontSize: "0.75rem", outline: "none", color: t.text }}
+                        />
+                      </div>
+
+                      <div style={{ position: "relative", minWidth: "200px" }}>
+                        <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={16} />
+                        <input 
+                          type="text" 
+                          placeholder="Search..." 
+                          value={loSearchQuery}
+                          onChange={e => setLoSearchQuery(e.target.value)}
+                          style={{ padding: "8px 8px 8px 32px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.8125rem", width: "100%", background: t.card }} 
+                        />
+                      </div>
+
+                      <div className="download-container" style={{ position: "relative" }}>
+                        <button 
+                          onClick={() => setShowLODownloadDropdown(!showLODownloadDropdown)}
+                          style={{ 
+                            display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
+                            padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
+                            cursor: "pointer", fontSize: "0.8125rem", fontWeight: 600, transition: "all 0.2s" 
+                          }} 
+                        >
+                          <Download size={16} color="#2563eb" />
+                        </button>
+                        
+                        {showLODownloadDropdown && (
+                          <div style={{ 
+                            position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                            background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
+                            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                            minWidth: "160px", overflow: "hidden" 
+                          }}>
+                            <button 
+                              onClick={() => { exportLOsToExcel(); setShowLODownloadDropdown(false); }}
+                              style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", border: "none", background: t.card, color: t.textMuted, cursor: "pointer", fontSize: "0.8125rem", textAlign: "left" }}
+                            >
+                              <FileSpreadsheet size={14} color="#059669" /> Excel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+             </div>
              </div>
              <div style={{ overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
                 {loActiveFilter === 'RESOURCES' ? (
@@ -4366,8 +4365,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                     </tbody>
                   </table>
                 )}
-             </div>
-          </div>
+           </div>
         </div>
       )}
 
