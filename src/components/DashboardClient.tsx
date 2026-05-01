@@ -267,6 +267,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
   const [newManagerEmailInput, setNewManagerEmailInput] = useState("");
   const [newLOEmailInput, setNewLOEmailInput] = useState("");
   const [newPaymentEmailInput, setNewPaymentEmailInput] = useState("");
