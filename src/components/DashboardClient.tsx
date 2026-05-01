@@ -254,6 +254,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const d = new Date();
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
+    // Ensure we start at the 1st of the current month in local time
     return `${year}-${month}-01`;
   });
   const [loDateTo, setLoDateTo] = useState(() => {
@@ -1631,13 +1632,15 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     let entityMatch = true;
     if (loEntityFilter !== "ALL" && lo.entity !== loEntityFilter) entityMatch = false;
 
-    // 4. Date Filter (Universal)
+    // 4. Date Filter (Universal & Timezone-Safe)
     let dateMatch = true;
     if (loDateFrom || loDateTo) {
-      const loDateStr = lo.dateOfIdentification.split('T')[0];
+      // Convert UTC timestamp to Local YYYY-MM-DD for accurate comparison
+      const d = new Date(lo.dateOfIdentification);
+      const loDateLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
-      if (loDateFrom && loDateStr < loDateFrom) dateMatch = false;
-      if (loDateTo && loDateStr > loDateTo) dateMatch = false;
+      if (loDateFrom && loDateLocal < loDateFrom) dateMatch = false;
+      if (loDateTo && loDateLocal > loDateTo) dateMatch = false;
     }
 
     return typeMatch && searchMatch && entityMatch && dateMatch;
