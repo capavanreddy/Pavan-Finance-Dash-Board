@@ -4153,7 +4153,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                         </div>
                       )}
                     </div>
-                  </div>
                </div>
               )}
 
