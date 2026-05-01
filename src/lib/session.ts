@@ -149,6 +149,23 @@ export async function authenticate(
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "deleteRequestedBy" TEXT`;
 
+      // --- Learning Hub Migration ---
+      await sql`ALTER TABLE "LearningOpportunity" ADD COLUMN IF NOT EXISTS "isAcknowledged" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "LearningOpportunity" ADD COLUMN IF NOT EXISTS "acknowledgedAt" TIMESTAMP WITH TIME ZONE`;
+      await sql`ALTER TABLE "LearningOpportunity" ADD COLUMN IF NOT EXISTS "learnerComments" TEXT`;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS "LearningResource" (
+          id SERIAL PRIMARY KEY,
+          "name" TEXT NOT NULL,
+          "type" TEXT NOT NULL, -- 'LINK' or 'FILE'
+          "url" TEXT,
+          "data" TEXT, -- Base64 for files
+          "uploadedBy" TEXT,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `;
+
       // --- Payment Deletion Workflow Columns ---
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequested" BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "deleteRequestReason" TEXT`;
