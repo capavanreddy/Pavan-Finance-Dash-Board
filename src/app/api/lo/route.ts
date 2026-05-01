@@ -18,26 +18,20 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
-    let query = `SELECT * FROM "LearningOpportunity" WHERE 1=1`;
-    const params: any[] = [];
+    const dbFromDate = fromDate ? new Date(fromDate).toISOString() : '1970-01-01';
+    const dbToDate = toDate ? new Date(toDate).toISOString() : '9999-12-31';
 
-    if (!isAdmin) {
-      query += ` AND ("createdByEmail" = $${params.length + 1} OR "identifiedBy" = $${params.length + 2} OR "committedBy" = $${params.length + 3})`;
-      params.push(session.user.email, shortName, shortName);
-    }
-
-    if (fromDate) {
-      query += ` AND "dateOfIdentification" >= $${params.length + 1}`;
-      params.push(new Date(fromDate).toISOString());
-    }
-    if (toDate) {
-      query += ` AND "dateOfIdentification" <= $${params.length + 1}`;
-      params.push(new Date(toDate).toISOString());
-    }
-
-    query += ` ORDER BY "createdAt" DESC`;
+    const los = await sql`
+      SELECT * FROM "LearningOpportunity"
+      WHERE (
+        ${isAdmin} = true OR 
+        ("createdByEmail" = ${session.user.email} OR "identifiedBy" = ${shortName} OR "committedBy" = ${shortName})
+      )
+      AND (${fromDate === null} = true OR "dateOfIdentification" >= ${dbFromDate})
+      AND (${toDate === null} = true OR "dateOfIdentification" <= ${dbToDate})
+      ORDER BY "createdAt" DESC
+    `;
     
-    const los = await (sql as any)(query, params);
     return NextResponse.json(los);
   } catch (error) {
     console.error("Fetch LOs error:", error);
