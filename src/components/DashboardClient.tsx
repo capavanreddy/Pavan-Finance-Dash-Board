@@ -78,6 +78,9 @@ type LearningOpportunity = {
   emailSub: string | null;
   comments: string | null;
   createdAt: string;
+  isAcknowledged?: boolean;
+  acknowledgedAt?: string | null;
+  learnerComments?: string | null;
   editRequested?: boolean;
   editApproved?: boolean;
   editRequestReason?: string | null;
@@ -2665,6 +2668,37 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
                           >
                             <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
                             <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
+                          </button>
+                        )}
+                        
+                        {/* Growth Hub & Knowledge Links */}
+                        <button 
+                          onClick={() => { setActiveView('LOS'); setLoActiveFilter('RESOURCES'); setActiveMainView('DASHBOARD'); }}
+                          style={{ 
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                            background: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "rgba(16, 185, 129, 0.15)" : "transparent", 
+                            border: "none", color: activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#94a3b8", 
+                            cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                            width: "100%", borderRadius: "16px", marginTop: "8px"
+                          }}
+                        >
+                          <BookOpen size={24} color={activeView === 'LOS' && loActiveFilter === 'RESOURCES' ? "#10b981" : "#94a3b8"} />
+                          <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Knowledge</span>
+                        </button>
+
+                        {isAdmin && (
+                          <button 
+                            onClick={() => setIsAnalyticsOpen(true)}
+                            style={{ 
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                              background: isAnalyticsOpen ? "rgba(99, 102, 241, 0.15)" : "transparent", 
+                              border: "none", color: isAnalyticsOpen ? "#6366f1" : "#94a3b8", 
+                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                              width: "100%", borderRadius: "16px", marginTop: "4px"
+                            }}
+                          >
+                            <Rocket size={24} color={isAnalyticsOpen ? "#6366f1" : "#94a3b8"} />
+                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Growth</span>
                           </button>
                         )}
                       </>
