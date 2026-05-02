@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { triggerNotification } from '@/services/notificationService';
 
 
 export async function PATCH(
@@ -64,6 +65,11 @@ export async function PATCH(
     const result = await (sql as any).query(query, [...values, id]);
     const updatedRequest = result[0];
     
+    // Trigger Notification (Silent)
+    if (body.status === 'Rejected') {
+      triggerNotification('REQUEST_REJECTED', updatedRequest);
+    }
+
     return NextResponse.json(updatedRequest);
   } catch (error: any) {
     console.error('Error updating external request:', error);

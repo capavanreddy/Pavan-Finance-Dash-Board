@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { resolveTaskName, getPeriodKey } from "@/lib/recurringUtils";
 import { getEmailFromName, sendEmail } from "@/lib/email";
+import { triggerNotification } from "@/services/notificationService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -121,15 +122,9 @@ export async function POST(req: NextRequest) {
 
         if (newTasks.length > 0) {
           results.push(newTasks[0]);
+          // Trigger Notification (Silent)
+          triggerNotification('TASK_ASSIGNED', newTasks[0]);
         }
-
-        // Optional: Email Notification (Uncomment if needed)
-        /*
-        const ownerEmail = getEmailFromName(template.defaultOwner);
-        if (ownerEmail) {
-           // sendEmail logic here...
-        }
-        */
 
       } catch (err: any) {
         errors.push({ templateId: template.id, error: err.message });

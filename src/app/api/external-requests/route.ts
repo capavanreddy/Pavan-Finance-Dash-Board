@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { triggerNotification } from '@/services/notificationService';
 
 
 export async function GET(request: Request) {
@@ -77,6 +78,9 @@ export async function POST(request: Request) {
         RETURNING *
       `;
       createdRequests.push(result[0]);
+
+      // Trigger Notification (Silent)
+      triggerNotification('REQUEST_SUBMITTED', result[0]);
     }
 
     return NextResponse.json(createdRequests, { status: 201 });
