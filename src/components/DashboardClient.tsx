@@ -3179,7 +3179,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         </nav>
 
         {/* Content Area */}
-        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: activeView === 'RECURRING' ? "0" : ((activeView as any) === 'HOME' ? "20px 32px 32px 32px" : "32px"), background: t.bg, transition: "all 0.3s ease" }}>
+        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: (activeView === 'RECURRING' || (activeView === 'LOS' && loActiveFilter === 'ANALYTICS')) ? "0" : ((activeView as any) === 'HOME' ? "20px 32px 32px 32px" : "32px"), background: t.bg, transition: "all 0.3s ease" }}>
           {activeView === 'RECURRING' && (
             <RecurringActivities settings={settings} usersList={usersList} showNotification={showNotification} showConfirm={showConfirm} showPrompt={showPrompt} />
           )}
@@ -3187,7 +3187,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           {activeView !== 'RECURRING' && (
             <>
           {/* Active View Title/Context Area */}
-          {(activeView as any) !== 'HOME' && (
+          {(activeView as any) !== 'HOME' && loActiveFilter !== 'ANALYTICS' && (
           <div style={{ 
             padding: (activeView === 'LOS' && loActiveFilter === 'RESOURCES') ? "0" : "24px 32px 32px 32px",
             marginBottom: ((activeView as any) === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "0" : "32px", 
@@ -3197,7 +3197,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             alignItems: "flex-end",
             transition: "all 0.3s ease"
           }}>
-            {(activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? null : (
+            {(activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES') || loActiveFilter === 'ANALYTICS') ? null : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
@@ -3476,7 +3476,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
           ) : null
         ) : activeView === 'LOS' && loActiveFilter === 'ANALYTICS' ? (
-          <div style={{ background: "#0f172a", borderRadius: "24px", minHeight: "calc(100vh - 100px)", padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out" }}>
+          <div style={{ background: "#0f172a", borderRadius: activeView === 'LOS' && loActiveFilter === 'ANALYTICS' ? "0" : "24px", minHeight: "calc(100vh - 80px)", padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out" }}>
             {/* Header & Command Bar */}
             <div style={{ background: "rgba(30, 41, 59, 0.5)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "20px 32px" }}>
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -4791,7 +4791,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         )}
 
         {/* LO View */}
-        {activeView === 'LOS' && (
+        {activeView === 'LOS' && loActiveFilter !== 'ANALYTICS' && (
           <div className="lo-view" style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden", animation: "fadeIn 0.5s ease-out" }}>
               {loActiveFilter === 'RESOURCES' ? (
                 <div style={{ minHeight: "600px" }}>
