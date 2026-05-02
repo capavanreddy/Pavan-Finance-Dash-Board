@@ -3477,38 +3477,38 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
           ) : null
         ) : activeView === 'LOS' && loActiveFilter === 'ANALYTICS' ? (
-          <div style={{ background: "#0f172a", borderRadius: activeView === 'LOS' && loActiveFilter === 'ANALYTICS' ? "0" : "24px", minHeight: "calc(100vh - 80px)", padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out" }}>
+          <div style={{ background: t.bg, borderRadius: activeView === 'LOS' && loActiveFilter === 'ANALYTICS' ? "0" : "24px", minHeight: "calc(100vh - 80px)", padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out" }}>
             {/* Header & Command Bar */}
-            <div style={{ background: "rgba(30, 41, 59, 0.5)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "20px 32px" }}>
+            <div style={{ background: t.card, borderBottom: `1px solid ${t.border}`, padding: "20px 32px" }}>
               <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "white", letterSpacing: "-0.02em" }}>LO Analytics & Reporting</h2>
-                  <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.5)", fontSize: "0.8125rem" }}>Detailed insights and performance tracking for Learning Opportunities.</p>
+                  <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: t.text, letterSpacing: "-0.02em" }}>LO Analytics & Reporting</h2>
+                  <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.8125rem" }}>Detailed insights and performance tracking for Learning Opportunities.</p>
                 </div>
                 
                 {/* Filters Area */}
                 <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "8px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <Filter size={16} color="rgba(255,255,255,0.4)" />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#ffffff", padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                    <Filter size={16} color={t.textMuted} />
                     <select 
                       value={anaEntityFilter}
                       onChange={(e) => setAnaEntityFilter(e.target.value)}
-                      style={{ background: "transparent", border: "none", color: "white", fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                      style={{ background: "transparent", border: "none", color: t.text, fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
                     >
-                      <option value="ALL" style={{ background: "#0f172a" }}>All Entities</option>
-                      {uniqueLOEntities.map(ent => <option key={ent} value={ent} style={{ background: "#0f172a" }}>{ent}</option>)}
+                      <option value="ALL" style={{ background: t.card, color: t.text }}>All Entities</option>
+                      {uniqueLOEntities.map(ent => <option key={ent} value={ent} style={{ background: t.card, color: t.text }}>{ent}</option>)}
                     </select>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.05)", padding: "8px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <User size={16} color="rgba(255,255,255,0.4)" />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#ffffff", padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                    <User size={16} color={t.textMuted} />
                     <select 
                       value={anaUserFilter}
                       onChange={(e) => setAnaUserFilter(e.target.value)}
-                      style={{ background: "transparent", border: "none", color: "white", fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                      style={{ background: "transparent", border: "none", color: t.text, fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
                     >
-                      <option value="ALL" style={{ background: "#0f172a" }}>All Users</option>
-                      {Array.from(new Set(los.map(l => l.identifiedBy))).map(user => <option key={user} value={user} style={{ background: "#0f172a" }}>{user}</option>)}
+                      <option value="ALL" style={{ background: t.card, color: t.text }}>All Users</option>
+                      {Array.from(new Set(los.map(l => l.identifiedBy))).map(user => <option key={user} value={user} style={{ background: t.card, color: t.text }}>{user}</option>)}
                     </select>
                   </div>
 
@@ -3524,10 +3524,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </button>
 
                       {showAnaDownloadDropdown && (
-                        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "14px", overflow: "hidden", minWidth: "210px", boxShadow: "0 16px 40px rgba(0,0,0,0.4)", zIndex: 100 }}>
+                        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: t.card, border: `1px solid ${t.border}`, borderRadius: "14px", overflow: "hidden", minWidth: "210px", boxShadow: isDarkMode ? "0 16px 40px rgba(0,0,0,0.4)" : "0 10px 25px rgba(0,0,0,0.1)", zIndex: 100 }}>
                           <button
                             onClick={() => { handleAnaExportExcel(); setShowAnaDownloadDropdown(false); }}
-                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#10b981", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#10b981", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: `1px solid ${t.border}` }}
                             onMouseEnter={e => e.currentTarget.style.background = "rgba(16,185,129,0.08)"}
                             onMouseLeave={e => e.currentTarget.style.background = "none"}
                           >
@@ -3535,7 +3535,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </button>
                           <button
                             onClick={() => { handleAnaExportPDF(); setShowAnaDownloadDropdown(false); }}
-                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: `1px solid ${t.border}` }}
                             onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
                             onMouseLeave={e => e.currentTarget.style.background = "none"}
                           >
@@ -3584,11 +3584,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           { label: "Pending Review", value: pending, icon: <Clock />, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
                           { label: "Knowledge Assets", value: resourcesCount, icon: <BookOpen />, color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)" }
                         ].map((m, i) => (
-                          <div key={i} style={{ padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
+                          <div key={i} style={{ padding: "24px", borderRadius: "24px", background: t.card, border: `1px solid ${t.border}`, position: "relative", overflow: "hidden", boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
                             <div style={{ position: "absolute", top: 0, right: 0, width: "100px", height: "100px", background: `radial-gradient(circle at center, ${m.color}20 0%, transparent 70%)`, pointerEvents: "none" }} />
                             <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: m.bg, color: m.color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>{m.icon}</div>
-                            <div style={{ fontSize: "2rem", fontWeight: 800, color: "white", marginBottom: "4px" }}>{m.value}</div>
-                            <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: "2rem", fontWeight: 800, color: t.text, marginBottom: "4px" }}>{m.value}</div>
+                            <div style={{ fontSize: "0.8125rem", color: t.textMuted, fontWeight: 600 }}>{m.label}</div>
                           </div>
                         ))}
                       </div>
@@ -3596,10 +3596,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       {/* Main Charts Row */}
                       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
                         {/* Entity Trends */}
-                        <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                            <h3 style={{ margin: 0, color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Findings by Entity</h3>
-                            <div style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)", padding: "4px 12px", borderRadius: "20px" }}>Distribution Analysis</div>
+                            <h3 style={{ margin: 0, color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Findings by Entity</h3>
+                            <div style={{ fontSize: "0.8125rem", color: t.textMuted, background: t.bg, padding: "4px 12px", borderRadius: "20px" }}>Distribution Analysis</div>
                           </div>
                           <div style={{ height: "300px", display: "flex", alignItems: "flex-end", gap: "16px", paddingBottom: "20px" }}>
                             {(() => {
@@ -3611,9 +3611,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 return (
                                   <div key={ent} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
                                     <div style={{ width: "100%", height: `${height}%`, background: "linear-gradient(to top, #6366f1, #8b5cf6)", borderRadius: "8px", minHeight: "4px", position: "relative", transition: "height 0.6s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-                                      <div style={{ position: "absolute", top: "-28px", width: "100%", textAlign: "center", color: "white", fontSize: "0.875rem", fontWeight: 700 }}>{count}</div>
+                                      <div style={{ position: "absolute", top: "-28px", width: "100%", textAlign: "center", color: t.text, fontSize: "0.875rem", fontWeight: 700 }}>{count}</div>
                                     </div>
-                                    <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{ent.split('-')[1] || ent}</div>
+                                    <div style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 500 }}>{ent.split('-')[1] || ent}</div>
                                   </div>
                                 );
                               });
@@ -3622,34 +3622,34 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
 
                         {/* Status Distribution */}
-                        <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                          <h3 style={{ margin: "0 0 32px 0", alignSelf: "flex-start", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Resolution Status</h3>
+                        <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                          <h3 style={{ margin: "0 0 32px 0", alignSelf: "flex-start", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Resolution Status</h3>
                           <div style={{ position: "relative", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <svg width="160" height="160" viewBox="0 0 100 100">
-                              <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                              <circle cx="50" cy="50" r="40" fill="transparent" stroke={isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9"} strokeWidth="12" />
                               <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" strokeWidth="12" 
                                       strokeDasharray={`${(ack/total)*251.2} 251.2`} strokeDashoffset="0" strokeLinecap="round" 
                                       style={{ transition: "stroke-dasharray 1s ease-out" }} />
                             </svg>
                             <div style={{ position: "absolute", textAlign: "center" }}>
-                              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "white" }}>{total > 0 ? Math.round((ack/total)*100) : 0}%</div>
-                              <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>RESOLVED</div>
+                              <div style={{ fontSize: "1.75rem", fontWeight: 800, color: t.text }}>{total > 0 ? Math.round((ack/total)*100) : 0}%</div>
+                              <div style={{ fontSize: "0.65rem", color: t.textMuted, fontWeight: 600 }}>RESOLVED</div>
                             </div>
                           </div>
                           <div style={{ marginTop: "32px", width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                  <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#10b981" }} />
-                                 <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.6)" }}>Acknowledged</span>
+                                 <span style={{ fontSize: "0.8125rem", color: t.textMuted }}>Acknowledged</span>
                                </div>
-                               <span style={{ color: "white", fontWeight: 600 }}>{ack}</span>
+                               <span style={{ color: t.text, fontWeight: 600 }}>{ack}</span>
                              </div>
                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                 <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "rgba(255,255,255,0.1)" }} />
-                                 <span style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.6)" }}>Pending Review</span>
+                                 <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: isDarkMode ? "rgba(255,255,255,0.1)" : "#e2e8f0" }} />
+                                 <span style={{ fontSize: "0.8125rem", color: t.textMuted }}>Pending Review</span>
                                </div>
-                               <span style={{ color: "white", fontWeight: 600 }}>{pending}</span>
+                               <span style={{ color: t.text, fontWeight: 600 }}>{pending}</span>
                              </div>
                           </div>
                         </div>
@@ -3658,10 +3658,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       {/* Detailed Reporting Tables */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                         {/* User-wise Report */}
-                        <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                          <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Performance by User</h3>
+                        <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                          <h3 style={{ margin: "0 0 24px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Performance by User</h3>
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: t.bg, borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: t.textMuted, textTransform: "uppercase" }}>
                               <div>User Name</div>
                               <div style={{ textAlign: "center" }}>Found</div>
                               <div style={{ textAlign: "center" }}>Resolved</div>
@@ -3672,8 +3672,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 const reported = filteredData.filter(l => l.identifiedBy === user).length;
                                 const resolved = filteredData.filter(l => l.identifiedBy === user && l.isAcknowledged).length;
                                 return (
-                                  <div key={user} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "16px", borderRadius: "12px", borderBottom: "1px solid rgba(255,255,255,0.02)", alignItems: "center" }}>
-                                    <div style={{ color: "white", fontWeight: 600, fontSize: "0.875rem" }}>{user}</div>
+                                  <div key={user} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "16px", borderRadius: "12px", borderBottom: `1px solid ${t.border}`, alignItems: "center" }}>
+                                    <div style={{ color: t.text, fontWeight: 600, fontSize: "0.875rem" }}>{user}</div>
                                     <div style={{ textAlign: "center", color: "#6366f1", fontWeight: 700 }}>{reported}</div>
                                     <div style={{ textAlign: "center", color: "#10b981", fontWeight: 700 }}>{resolved}</div>
                                   </div>
@@ -3684,10 +3684,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
 
                         {/* Entity-wise Report */}
-                        <div style={{ padding: "32px", borderRadius: "32px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                          <h3 style={{ margin: "0 0 24px 0", color: "white", fontSize: "1.25rem", fontWeight: 700 }}>Entity Tracker Summary</h3>
+                        <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                          <h3 style={{ margin: "0 0 24px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Entity Tracker Summary</h3>
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", padding: "12px 16px", background: t.bg, borderRadius: "12px", fontSize: "0.75rem", fontWeight: 800, color: t.textMuted, textTransform: "uppercase" }}>
                               <div>Entity</div>
                               <div style={{ textAlign: "center" }}>Total LOs</div>
                               <div style={{ textAlign: "center" }}>% Resolved</div>
