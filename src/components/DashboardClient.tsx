@@ -3187,7 +3187,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           {activeView !== 'RECURRING' && (
             <>
           {/* Active View Title/Context Area */}
-          {(activeView as any) !== 'HOME' && loActiveFilter !== 'ANALYTICS' && (
+          {(activeView as any) !== 'HOME' && !(activeView === 'LOS' && loActiveFilter === 'ANALYTICS') && (
           <div style={{ 
             padding: (activeView === 'LOS' && loActiveFilter === 'RESOURCES') ? "0" : "24px 32px 32px 32px",
             marginBottom: ((activeView as any) === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "0" : "32px", 
@@ -3197,7 +3197,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             alignItems: "flex-end",
             transition: "all 0.3s ease"
           }}>
-            {(activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES') || loActiveFilter === 'ANALYTICS') ? null : (
+            {(activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES') || (activeView === 'LOS' && (loActiveFilter as string) === 'ANALYTICS')) ? null : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
