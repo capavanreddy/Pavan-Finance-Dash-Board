@@ -10,9 +10,10 @@ type LOFormProps = {
   usersList: any[];
   user: any;
   initialData?: any;
+  isDarkMode?: boolean;
 };
 
-export default function LOForm({ onClose, onSuccess, settings, usersList = [], user, initialData }: LOFormProps) {
+export default function LOForm({ onClose, onSuccess, settings, usersList = [], user, initialData, isDarkMode = false }: LOFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -78,6 +79,34 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
     }
   };
 
+  const t = isDarkMode ? {
+    bg: "#0f172a",
+    card: "#1e293b",
+    text: "#f8fafc",
+    textMuted: "#94a3b8",
+    border: "#334155",
+    input: "#1e293b",
+    accent: "#3b82f6",
+    hover: "#334155"
+  } : {
+    bg: "#f8fafc",
+    card: "#ffffff",
+    text: "#111827",
+    textMuted: "#64748b",
+    border: "#e2e8f0",
+    input: "#ffffff",
+    accent: "#2563eb",
+    hover: "#f1f5f9"
+  };
+
+  const dynamicLabelStyle = { ...labelStyle, color: t.text };
+  const dynamicInputStyle = { 
+    ...inputStyle, 
+    background: t.input, 
+    color: t.text, 
+    borderColor: t.border 
+  };
+
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0, 
@@ -86,15 +115,15 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
       padding: "20px"
     }}>
       <div style={{
-        background: "white", borderRadius: "16px", width: "100%", maxWidth: "700px",
-        maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-        position: "relative"
+        background: t.card, borderRadius: "16px", width: "100%", maxWidth: "700px",
+        maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
+        position: "relative", border: `1px solid ${t.border}`
       }}>
-        <div style={{ padding: "24px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "white", zIndex: 10 }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem", color: "#111827", fontWeight: 600 }}>
+        <div style={{ padding: "24px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: t.card, zIndex: 10 }}>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", color: t.text, fontWeight: 600 }}>
             {initialData ? "Edit LO Update" : "LO Submit Form (Learning Opportunity)"}
           </h2>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6b7280" }}>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: t.textMuted }}>
             <X size={24} />
           </button>
         </div>
@@ -104,8 +133,8 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>
-              <label style={labelStyle}>Entity *</label>
-              <select name="entity" required value={formData.entity} onChange={handleChange} style={inputStyle}>
+              <label style={dynamicLabelStyle}>Entity *</label>
+              <select name="entity" required value={formData.entity} onChange={handleChange} style={dynamicInputStyle}>
                 <option value="">Choose</option>
                 {settings?.masterEntities?.split(',').filter((e: string) => e.trim()).map((entity: string) => (
                   <option key={entity.trim()} value={entity.trim()}>{entity.trim()}</option>
@@ -113,34 +142,34 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Date of Identification *</label>
-              <input type="date" name="dateOfIdentification" required value={formData.dateOfIdentification} onChange={handleChange} style={inputStyle} />
+              <label style={dynamicLabelStyle}>Date of Identification *</label>
+              <input type="date" name="dateOfIdentification" required value={formData.dateOfIdentification} onChange={handleChange} style={dynamicInputStyle} />
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Learning Opportunity *</label>
+            <label style={dynamicLabelStyle}>Learning Opportunity *</label>
             <textarea 
               name="learningOpportunity" 
               required 
               value={formData.learningOpportunity} 
               onChange={handleChange} 
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
+              style={{ ...dynamicInputStyle, minHeight: "80px", resize: "vertical" }} 
               placeholder="Describe the mistake/learning opportunity"
             />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>
-              <label style={labelStyle}>Identified By *</label>
-              <select name="identifiedBy" required value={formData.identifiedBy} onChange={handleChange} style={inputStyle}>
+              <label style={dynamicLabelStyle}>Identified By *</label>
+              <select name="identifiedBy" required value={formData.identifiedBy} onChange={handleChange} style={dynamicInputStyle}>
                 <option value="">Choose</option>
                 {finalEmployees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Committed By *</label>
-              <select name="committedBy" required value={formData.committedBy} onChange={handleChange} style={inputStyle}>
+              <label style={dynamicLabelStyle}>Committed By *</label>
+              <select name="committedBy" required value={formData.committedBy} onChange={handleChange} style={dynamicInputStyle}>
                 <option value="">Choose</option>
                 {finalEmployees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
               </select>
@@ -148,21 +177,21 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
           </div>
 
           <div>
-            <label style={labelStyle}>Resolution Provided *</label>
+            <label style={dynamicLabelStyle}>Resolution Provided *</label>
             <textarea 
               name="resolutionProvided" 
               required 
               value={formData.resolutionProvided} 
               onChange={handleChange} 
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} 
+              style={{ ...dynamicInputStyle, minHeight: "80px", resize: "vertical" }} 
               placeholder="Describe the resolution provided"
             />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>
-              <label style={labelStyle}>Mode Of Communication *</label>
-              <select name="modeOfCommunication" required value={formData.modeOfCommunication} onChange={handleChange} style={inputStyle}>
+              <label style={dynamicLabelStyle}>Mode Of Communication *</label>
+              <select name="modeOfCommunication" required value={formData.modeOfCommunication} onChange={handleChange} style={dynamicInputStyle}>
                 <option value="">Choose</option>
                 {settings?.masterCommunicationModes?.split(',').filter((m: string) => m.trim()).map((mode: string) => (
                   <option key={mode.trim()} value={mode.trim()}>{mode.trim()}</option>
@@ -170,27 +199,27 @@ export default function LOForm({ onClose, onSuccess, settings, usersList = [], u
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Email Sub</label>
-              <input name="emailSub" value={formData.emailSub} onChange={handleChange} style={inputStyle} placeholder="Optional email subject" />
+              <label style={dynamicLabelStyle}>Email Sub</label>
+              <input name="emailSub" value={formData.emailSub} onChange={handleChange} style={dynamicInputStyle} placeholder="Optional email subject" />
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Comments</label>
+            <label style={dynamicLabelStyle}>Comments</label>
             <textarea 
               name="comments" 
               value={formData.comments} 
               onChange={handleChange} 
-              style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} 
+              style={{ ...dynamicInputStyle, minHeight: "60px", resize: "vertical" }} 
               placeholder="Any additional comments"
             />
           </div>
 
           <div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-            <button type="button" onClick={onClose} style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #d1d5db", background: "white", color: "#374151", fontWeight: 600, cursor: "pointer" }}>
+            <button type="button" onClick={onClose} style={{ padding: "10px 20px", borderRadius: "8px", border: `1px solid ${t.border}`, background: t.card, color: t.text, fontWeight: 600, cursor: "pointer" }}>
               Cancel
             </button>
-            <button type="submit" disabled={loading} style={{ padding: "10px 24px", borderRadius: "8px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer" }}>
+            <button type="submit" disabled={loading} style={{ padding: "10px 24px", borderRadius: "8px", border: "none", background: t.accent, color: "white", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer" }}>
               {loading ? "Submitting..." : initialData ? "Save Changes" : "Submit LO Update"}
             </button>
           </div>

@@ -365,8 +365,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  const isDarkMode = theme === 'DARK';
   const t = {
-    bg: theme === 'DARK' ? '#0f172a' : '#f8fafc',
+    bg: isDarkMode ? '#0f172a' : '#f8fafc',
     card: theme === 'DARK' ? '#1e293b' : '#ffffff',
     text: theme === 'DARK' ? '#f8fafc' : '#0f172a',
     textMuted: theme === 'DARK' ? '#94a3b8' : '#64748b',
@@ -5169,6 +5170,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           settings={settings}
           usersList={usersList}
           user={user}
+          isDarkMode={isDarkMode}
           onClose={() => setShowLOForm(false)} 
           onSuccess={() => {
             setShowLOForm(false);
@@ -5182,6 +5184,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           settings={settings}
           usersList={usersList}
           user={user}
+          isDarkMode={isDarkMode}
           initialData={editingLO}
           onClose={() => setEditingLO(null)} 
           onSuccess={() => {
