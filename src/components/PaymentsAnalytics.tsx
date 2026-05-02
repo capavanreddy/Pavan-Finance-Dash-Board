@@ -710,9 +710,6 @@ export default function PaymentsAnalytics({
               <button type="submit" style={{ gridColumn: "span 2", padding: "14px", borderRadius: "14px", border: "none", background: "#3b82f6", color: "white", fontWeight: 700 }}>Save Analytics Entry</button>
         </form></div></div>
       )}
-          </div>
-        </div>
-      )}
 
       {/* STRATEGIC PREDICTIVE FORECAST */}
       <div style={{ marginTop: "40px", padding: "40px", background: theme === 'DARK' ? "rgba(30, 41, 59, 0.4)" : "#f8fafc", borderRadius: "32px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.05)" : "#e2e8f0"}` }}>
