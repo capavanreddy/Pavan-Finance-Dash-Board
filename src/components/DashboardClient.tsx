@@ -251,7 +251,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [dateFilterPreset, setDateFilterPreset] = useState("ALL_TIME");
-  const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS' | 'RESOURCES'>('ALL');
+  const [loActiveFilter, setLoActiveFilter] = useState<'ALL' | 'REPORTS' | 'LEARNINGS' | 'RESOURCES' | 'ANALYTICS'>('ALL');
   const [loDateFrom, setLoDateFrom] = useState(() => {
     const d = new Date();
     const year = d.getFullYear();
