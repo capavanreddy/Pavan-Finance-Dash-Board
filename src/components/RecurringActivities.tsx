@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff, ArrowUp, ArrowDown, ChevronDown, Mail, X, FileSpreadsheet, Send, Zap, LayoutDashboard, Settings2 } from "lucide-react";
+import { Plus, Trash2, Edit2, CheckCircle2, AlertTriangle, Calendar, Users, Briefcase, Filter, Search, ChevronRight, ListChecks, StopCircle, Play, Download, Share2, FileText, Table as TableIcon, Eye, EyeOff, ArrowUp, ArrowDown, ChevronDown, Mail, X, FileSpreadsheet, Send, Zap, LayoutDashboard, Settings2 } from "lucide-react";
 import { resolveTaskName, getPeriodKey, isWithinLeadTime, FREQUENCIES, Frequency, getOccurrencesBetween } from "@/lib/recurringUtils";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -112,6 +112,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
   const [stopModal, setStopModal] = useState<{ isOpen: boolean; templateId: number | null; templateName: string }>({ isOpen: false, templateId: null, templateName: '' });
   const [stopDate, setStopDate] = useState(new Date().toISOString().split('T')[0]);
   const [stopLoading, setStopLoading] = useState(false);
+  const [resumeModal, setResumeModal] = useState<{ isOpen: boolean; templateId: number | null; templateName: string }>({ isOpen: false, templateId: null, templateName: '' });
+  const [resumeDate, setResumeDate] = useState(new Date().toISOString().split('T')[0]);
+  const [resumeLoading, setResumeLoading] = useState(false);
 
   const handleDailySort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -377,6 +380,41 @@ export default function RecurringActivities({   settings, usersList = [] , showN
       showNotification("An error occurred.");
     } finally {
       setStopLoading(false);
+    }
+  };
+
+  const handleResumeTemplate = (id: number) => {
+    const template = templates.find(t => t.id === id);
+    setResumeDate(new Date().toISOString().split('T')[0]);
+    setResumeModal({ isOpen: true, templateId: id, templateName: template?.taskNamePattern || 'this template' });
+  };
+
+  const confirmResumeTemplate = async () => {
+    if (!resumeModal.templateId) return;
+    setResumeLoading(true);
+    try {
+      const res = await fetch(`/api/recurring-templates/${resumeModal.templateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            isStopped: false, 
+            stopDate: null, 
+            isActive: true,
+            startDate: resumeDate // Set new start date for resumed rule
+        })
+      });
+      if (res.ok) {
+        fetchTemplates();
+        showNotification("Recurring template resumed successfully!");
+        setResumeModal({ isOpen: false, templateId: null, templateName: '' });
+      } else {
+        showNotification("Failed to resume template.");
+      }
+    } catch (err) {
+      console.error("Resume error:", err);
+      showNotification("An error occurred.");
+    } finally {
+      setResumeLoading(false);
     }
   };
 
@@ -1601,7 +1639,11 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     <td style={{...tdStyle, textAlign: "right"}}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
                         <button onClick={() => openEditTemplate(t)} style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer" }} title="Edit"><Edit2 size={16} /></button>
-                        {!t.isStopped && (
+                        {t.isStopped ? (
+                          <button onClick={() => handleResumeTemplate(t.id)} style={{ background: "none", border: "none", color: "#16a34a", cursor: "pointer" }} title="Resume">
+                            <Play size={16} />
+                          </button>
+                        ) : (
                           <button onClick={() => handleStopTemplate(t.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }} title="Stop">
                             <StopCircle size={16} />
                           </button>
@@ -1906,6 +1948,80 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 >
                   <StopCircle size={18} />
                   {stopLoading ? "Pausing..." : "Confirm Pause"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Resume Template Modal ─────────────────────────────────────── */}
+      {resumeModal.isOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5000, padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "460px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", padding: "24px 28px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Play size={24} color="white" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 800, color: "white" }}>Resume Recurring Template</h3>
+                  <p style={{ margin: "3px 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.8125rem" }}>Set an effective start date for this rule</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "28px" }}>
+
+              {/* Template name chip */}
+              <div style={{ background: "#dcfce7", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 16px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <Settings2 size={16} color="#059669" />
+                <span style={{ fontWeight: 600, color: "#065f46", fontSize: "0.875rem" }}>{resumeModal.templateName}</span>
+              </div>
+
+              {/* Date picker */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+                  Effective Resume Date
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Calendar size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+                  <input
+                    type="date"
+                    value={resumeDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setResumeDate(e.target.value)}
+                    style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: "12px", padding: "13px 16px 13px 44px", fontSize: "1rem", color: "#111827", outline: "none", boxSizing: "border-box", cursor: "pointer" }}
+                    onFocus={e => e.currentTarget.style.borderColor = "#10b981"}
+                    onBlur={e => e.currentTarget.style.borderColor = "#e5e7eb"}
+                  />
+                </div>
+                <p style={{ margin: "8px 0 0 0", fontSize: "0.75rem", color: "#6b7280" }}>
+                  New tasks will be generated for this rule starting from this date.
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "12px", marginTop: "28px" }}>
+                <button
+                  onClick={() => setResumeModal({ isOpen: false, templateId: null, templateName: '' })}
+                  style={{ flex: 1, height: "46px", background: "white", border: "1.5px solid #e5e7eb", borderRadius: "12px", color: "#374151", fontWeight: 600, fontSize: "0.9375rem", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={resumeLoading || !resumeDate}
+                  onClick={confirmResumeTemplate}
+                  style={{ flex: 2, height: "46px", background: (resumeLoading || !resumeDate) ? "#a7f3d0" : "linear-gradient(135deg, #10b981 0%, #059669 100%)", border: "none", borderRadius: "12px", color: "white", fontWeight: 700, fontSize: "0.9375rem", cursor: (resumeLoading || !resumeDate) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  {resumeLoading ? (
+                    <><span style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "white", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} /> Resuming...</>
+                  ) : (
+                    <><Play size={18} /> Confirm Resume</>
+                  )}
                 </button>
               </div>
             </div>
