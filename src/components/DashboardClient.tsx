@@ -3252,94 +3252,120 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               };
               
               return (
-                <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+                <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "48px", padding: "10px" }}>
                   
+                  {/* Background Mesh Gradient Blobs (Subtle) */}
+                  <div style={{ position: "absolute", top: "-10%", right: "-10%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)", borderRadius: "50%", zIndex: 0, filter: "blur(60px)" }}></div>
+                  <div style={{ position: "absolute", bottom: "20%", left: "-5%", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, rgba(255, 255, 255, 0) 70%)", borderRadius: "50%", zIndex: 0, filter: "blur(50px)" }}></div>
+
                   {/* 1. Mission & Vision Pillars */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
                     {/* Mission Card */}
                     <div style={{ 
-                      padding: "32px", 
-                      borderRadius: "24px", 
-                      background: "white", 
-                      border: "1px solid #e0f2fe",
+                      padding: "40px", 
+                      borderRadius: "32px", 
+                      background: "rgba(255, 255, 255, 0.7)", 
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(59, 130, 246, 0.2)",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.03)"
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+                      transition: "transform 0.3s ease"
                     }} className="hover-card">
-                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "#f8fafc", opacity: 0.5 }}>
-                        <Compass size={140} />
+                      <div style={{ position: "absolute", right: "-30px", top: "-30px", color: "rgba(59, 130, 246, 0.05)", zIndex: 0 }}>
+                        <Compass size={180} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-                          <div style={{ background: "#f0f9ff", padding: "8px", borderRadius: "10px" }}>
-                            <Building2 size={20} color="#0ea5e9" />
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+                          <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", padding: "10px", borderRadius: "14px", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}>
+                            <Building2 size={22} color="white" />
                           </div>
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#0369a1" }}>Our Mission</span>
+                          <span style={{ fontSize: "0.8125rem", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#2563eb" }}>Our Mission</span>
                         </div>
-                        <h2 style={{ fontSize: "1.625rem", fontWeight: 800, color: "#0f172a", margin: "0 0 16px 0", lineHeight: 1.3, letterSpacing: "-0.02em" }}>{mission}</h2>
-                        <div style={{ height: "2px", width: "40px", background: "#0ea5e9", borderRadius: "2px", marginBottom: "16px" }}></div>
-                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6 }}>Driving daily excellence through disciplined execution and data-driven insights.</p>
+                        <h2 style={{ fontSize: "1.875rem", fontWeight: 800, color: "#1e293b", margin: "0 0 20px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{mission}</h2>
+                        <div style={{ height: "4px", width: "50px", background: "linear-gradient(to right, #3b82f6, #60a5fa)", borderRadius: "2px", marginBottom: "20px" }}></div>
+                        <p style={{ margin: 0, fontSize: "1rem", color: "#475569", lineHeight: 1.6, fontWeight: 500 }}>Driving daily excellence through disciplined execution and data-driven insights.</p>
                       </div>
                     </div>
 
                     {/* Vision Card */}
                     <div style={{ 
-                      padding: "32px", 
-                      borderRadius: "24px", 
-                      background: "white", 
-                      border: "1px solid #f0fdf4",
+                      padding: "40px", 
+                      borderRadius: "32px", 
+                      background: "rgba(255, 255, 255, 0.7)", 
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(16, 185, 129, 0.2)",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.03)"
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+                      transition: "transform 0.3s ease"
                     }} className="hover-card">
-                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "#f8fafc", opacity: 0.5 }}>
-                        <Rocket size={140} />
+                      <div style={{ position: "absolute", right: "-30px", top: "-30px", color: "rgba(16, 185, 129, 0.05)", zIndex: 0 }}>
+                        <Rocket size={180} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-                          <div style={{ background: "#f0fdf4", padding: "8px", borderRadius: "10px" }}>
-                            <Compass size={20} color="#10b981" />
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+                          <div style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", padding: "10px", borderRadius: "14px", boxShadow: "0 4px 6px -1px rgba(5, 150, 105, 0.2)" }}>
+                            <Compass size={22} color="white" />
                           </div>
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#15803d" }}>Our Vision</span>
+                          <span style={{ fontSize: "0.8125rem", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#059669" }}>Our Vision</span>
                         </div>
-                        <h2 style={{ fontSize: "1.625rem", fontWeight: 800, color: "#0f172a", margin: "0 0 16px 0", lineHeight: 1.3, letterSpacing: "-0.02em" }}>{vision}</h2>
-                        <div style={{ height: "2px", width: "40px", background: "#10b981", borderRadius: "2px", marginBottom: "16px" }}></div>
-                        <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6 }}>Building a future where finance is the engine of innovation and sustainable growth.</p>
+                        <h2 style={{ fontSize: "1.875rem", fontWeight: 800, color: "#1e293b", margin: "0 0 20px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{vision}</h2>
+                        <div style={{ height: "4px", width: "50px", background: "linear-gradient(to right, #10b981, #34d399)", borderRadius: "2px", marginBottom: "20px" }}></div>
+                        <p style={{ margin: 0, fontSize: "1rem", color: "#475569", lineHeight: 1.6, fontWeight: 500 }}>Building a future where finance is the engine of innovation and sustainable growth.</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. Motivation Section */}
+                  {/* 2. Motivation Section - Enhanced Contrast */}
                   <div style={{ 
-                    padding: "60px 40px", 
+                    position: "relative",
+                    zIndex: 1,
+                    padding: "80px 60px", 
                     textAlign: "center", 
-                    background: "#f8fafc", 
-                    borderRadius: "32px",
-                    border: "1px dashed #cbd5e1"
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
+                    borderRadius: "40px",
+                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                    overflow: "hidden"
                   }}>
-                    <Quote size={40} color="#94a3b8" style={{ marginBottom: "24px", opacity: 0.5 }} />
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')", opacity: 0.05 }}></div>
+                    <Quote size={60} color="#3b82f6" style={{ marginBottom: "32px", opacity: 0.3 }} />
                     <h3 style={{ 
-                      fontSize: "2rem", 
-                      fontFamily: "serif", 
+                      fontSize: "2.5rem", 
+                      fontFamily: "'Outfit', serif", 
                       fontStyle: "italic", 
-                      maxWidth: "900px", 
-                      margin: "0 auto 16px auto", 
-                      color: "#334155",
-                      lineHeight: 1.4
+                      maxWidth: "1000px", 
+                      margin: "0 auto 32px auto", 
+                      color: "#f8fafc",
+                      lineHeight: 1.3,
+                      fontWeight: 300,
+                      letterSpacing: "-0.01em"
                     }}>
                       "{quote.text}"
                     </h3>
-                    <div style={{ fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em" }}>— {quote.author}</div>
+                    <div style={{ 
+                      display: "inline-block",
+                      padding: "8px 24px",
+                      background: "rgba(59, 130, 246, 0.1)",
+                      borderRadius: "20px",
+                      border: "1px solid rgba(59, 130, 246, 0.2)",
+                      fontWeight: 800, 
+                      color: "#60a5fa", 
+                      textTransform: "uppercase", 
+                      letterSpacing: "0.2em",
+                      fontSize: "0.875rem"
+                    }}>— {quote.author}</div>
                   </div>
 
-                  {/* 3. Wall of Fame */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* 3. Wall of Fame - Premium Floating Cards */}
+                  <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "32px" }}>
                     <div style={{ textAlign: "center" }}>
-                      <h3 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: "#0f172a" }}>Wall of Fame</h3>
-                      <p style={{ margin: "4px 0 0 0", color: "#64748b", fontWeight: 500 }}>CELEBRATING TEAM SUCCESS STORIES</p>
+                      <div style={{ display: "inline-block", background: "#eff6ff", color: "#2563eb", padding: "6px 16px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", marginBottom: "12px" }}>RECOGNITION</div>
+                      <h3 style={{ margin: 0, fontSize: "2.25rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.04em" }}>Wall of Fame</h3>
+                      <p style={{ margin: "8px 0 0 0", color: "#64748b", fontWeight: 600, fontSize: "1rem" }}>CELEBRATING TEAM SUCCESS STORIES</p>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "32px" }}>
                       {(() => {
                         const stories = content.stories || [
                           { id: 1, title: "Efficiency Boost", text: "The new matrix system has cut down our task allocation time by 40%!", author: "Finance Admin" },
@@ -3347,38 +3373,44 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         ];
                         return stories.map((s: any) => (
                           <div key={s.id} style={{ 
-                            padding: "32px", 
-                            borderRadius: "24px", 
+                            padding: "40px", 
+                            borderRadius: "32px", 
                             background: "white", 
-                            border: `1px solid ${t.border}`,
-                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            border: "1px solid #f1f5f9",
+                            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                             cursor: "default",
-                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)"
-                          }} className="hover-card">
+                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02)",
+                            position: "relative"
+                          }} className="hover-card-premium">
                             <div style={{ position: "relative", zIndex: 1 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-                                <div style={{ background: "#f0fdf4", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <Trophy size={24} color="#10b981" />
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+                                <div style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", width: "56px", height: "56px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(16, 185, 129, 0.1)" }}>
+                                  <Trophy size={28} color="#10b981" />
                                 </div>
-                                <div style={{ fontSize: "0.625rem", fontWeight: 700, background: "#f1f5f9", padding: "4px 10px", borderRadius: "20px", color: "#64748b", textTransform: "uppercase" }}>Success Story</div>
+                                <div style={{ fontSize: "0.6875rem", fontWeight: 800, background: "#f8fafc", padding: "6px 14px", borderRadius: "20px", color: "#64748b", textTransform: "uppercase", border: "1px solid #e2e8f0" }}>Success Story</div>
                               </div>
                               
-                              {/* New Photo Support */}
                               {s.image && (
-                                <div style={{ width: "calc(100% + 64px)", margin: "-32px -32px 20px -32px", height: "180px", overflow: "hidden", borderRadius: "24px 24px 0 0" }}>
+                                <div style={{ width: "calc(100% + 80px)", margin: "-40px -40px 24px -40px", height: "200px", overflow: "hidden", borderRadius: "32px 32px 0 0" }}>
                                   <img src={s.image} alt="Success Story" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 </div>
                               )}
 
-                              <h4 style={{ margin: "0 0 12px 0", fontSize: "1.125rem", fontWeight: 800, color: "#1e293b" }}>{s.title}</h4>
-                              <p style={{ margin: "0 0 24px 0", fontSize: "0.9375rem", color: "#64748b", lineHeight: 1.6, fontStyle: "italic" }}>"{s.text}"</p>
-                              <div style={{ display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
-                                <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "#3b82f6", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", fontWeight: 800 }}>
+                              <h4 style={{ margin: "0 0 16px 0", fontSize: "1.375rem", fontWeight: 800, color: "#1e293b", letterSpacing: "-0.02em" }}>{s.title}</h4>
+                              <p style={{ margin: "0 0 32px 0", fontSize: "1rem", color: "#475569", lineHeight: 1.7, fontStyle: "italic", fontWeight: 500 }}>"{s.text}"</p>
+                              
+                              <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "1px solid #f1f5f9", paddingTop: "24px" }}>
+                                <div style={{ 
+                                  width: "44px", height: "44px", borderRadius: "14px", 
+                                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", 
+                                  color: "white", display: "flex", alignItems: "center", justifyContent: "center", 
+                                  fontSize: "1.125rem", fontWeight: 900, boxShadow: "0 4px 10px rgba(37, 99, 235, 0.2)" 
+                                }}>
                                   {s.author[0]}
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#1e293b" }}>{s.author}</span>
-                                  <span style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>Team Member</span>
+                                  <span style={{ fontSize: "0.9375rem", fontWeight: 800, color: "#1e293b" }}>{s.author}</span>
+                                  <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600 }}>Team Contributor</span>
                                 </div>
                               </div>
                             </div>
@@ -3388,13 +3420,15 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </div>
                   </div>
 
-                  {/* 4. Achievements List */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <Award size={24} color="#3b82f6" />
-                      <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Major Achievements</h3>
+                  {/* 4. Achievements - Modern List */}
+                  <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "24px", marginTop: "20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div style={{ background: "#eff6ff", padding: "10px", borderRadius: "12px" }}>
+                        <Award size={26} color="#2563eb" />
+                      </div>
+                      <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "#1e293b" }}>Major Milestones</h3>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
                       {(() => {
                         const achievements = content.achievements || [
                           { id: 1, title: "Platform Launch", date: "Apr 2026" },
@@ -3402,21 +3436,22 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         ];
                         return achievements.map((a: any) => (
                           <div key={a.id} style={{ 
-                            padding: "20px", 
-                            borderRadius: "16px", 
-                            background: "rgba(255, 255, 255, 0.5)", 
-                            border: `1px solid ${t.border}`, 
+                            padding: "24px", 
+                            borderRadius: "24px", 
+                            background: "rgba(255, 255, 255, 0.6)", 
+                            border: "1px solid #f1f5f9", 
                             display: "flex", 
                             alignItems: "center", 
-                            gap: "16px",
-                            backdropFilter: "blur(8px)"
+                            gap: "20px",
+                            backdropFilter: "blur(10px)",
+                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)"
                           }}>
-                            <div style={{ background: "#fdf2f8", padding: "10px", borderRadius: "12px" }}>
-                              <ShieldCheck size={20} color="#db2777" />
+                            <div style={{ background: "linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%)", padding: "12px", borderRadius: "14px" }}>
+                              <ShieldCheck size={24} color="#db2777" />
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#1e293b" }}>{a.title}</div>
-                              <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{a.date}</div>
+                              <div style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b" }}>{a.title}</div>
+                              <div style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>{a.date}</div>
                             </div>
                           </div>
                         ));
