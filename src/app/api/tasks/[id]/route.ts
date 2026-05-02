@@ -29,7 +29,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const userEmail = session.user?.email;
-    const userRole = (session.user as any)?.role;
     
     // Check if the user is authorized to edit this task
     const isMasterAdmin = userEmail === "pavanreddy@intellicar.in" || userRole === "ADMIN";

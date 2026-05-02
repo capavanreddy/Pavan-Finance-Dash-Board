@@ -4003,7 +4003,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       </td>
 
-                      {/* Delete / Request Edit / Request De                      {!isViewer && (
+                      {/* Delete / Request Edit / Request De Actions */}
+                      {!isViewer && (
                         <td style={{ ...getTdStyle(t), textAlign: "center" }}>
                                                         <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
                             {(isAdmin || task.editApproved) && (
