@@ -59,9 +59,15 @@ interface PaymentOccurrence {
   cancelledReason?: string;
   deleteRequested: boolean;
   deleteRequestReason?: string;
-  amountToRelease?: number;
   isListed: boolean;
+  amountToRelease?: number;
   paidFromAccount?: string;
+  vendorEmail?: string;
+  utrNumber?: string;
+  adviceShared?: boolean;
+  adviceRecipient?: string;
+  adviceCC?: string;
+  adviceAttachment?: string;
 }
 
 import { resolveTaskName, getPeriodKey, getOccurrencesBetween } from "@/lib/recurringUtils";
@@ -651,7 +657,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           const matchesType = paidTypeFilter === "ALL" || o.paymentType === paidTypeFilter;
           const matchesFreq = paidFreqFilter === "ALL" || o.frequency === paidFreqFilter;
           const matchesBank = paidBankFilter === "ALL" || o.paidFromAccount === paidBankFilter;
-          const matchesAdvice = paidAdviceFilter === "ALL" || (paidAdviceFilter === "SHARED" ? (o as any).adviceShared : !(o as any).adviceShared);
+          const matchesAdvice = paidAdviceFilter === 'ALL' || (paidAdviceFilter === 'SHARED' ? o.adviceShared : !o.adviceShared);
           const occDate = new Date(o.actualDate || o.dueDate);
           const from = new Date(paidFromDate);
           const to = new Date(paidToDate);
@@ -1632,26 +1638,26 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}><span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700, background: style.bg, color: style.text, border: `1px solid ${style.border}` }}>{status}</span></td>
                         <td style={tdStyle}>
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: (occ as any).adviceShared ? "#16a34a" : "#64748b" }}>
-                              {(occ as any).adviceShared ? "✓ Shared" : "Pending"}
+                            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: occ.adviceShared ? "#16a34a" : "#64748b" }}>
+                              {occ.adviceShared ? "✓ Shared" : "Pending"}
                             </div>
                             <button 
                               onClick={() => {
                                 setActiveOccurrence(occ);
                                 setPayData({
                                   ...payData,
-                                  utrNumber: (occ as any).utrNumber || "",
-                                  adviceRecipient: (occ as any).adviceRecipient || "",
-                                  adviceCC: (occ as any).adviceCC || "",
-                                  attachment: (occ as any).adviceAttachment || null
+                                  utrNumber: occ.utrNumber || "",
+                                  adviceRecipient: occ.adviceRecipient || "",
+                                  adviceCC: occ.adviceCC || "",
+                                  attachment: occ.adviceAttachment || null
                                 });
-                                setAdviceToTags(((occ as any).adviceRecipient || "").split(',').filter(Boolean));
-                                setAdviceCcTags(((occ as any).adviceCC || "").split(',').filter(Boolean));
+                                setAdviceToTags((occ.adviceRecipient || "").split(',').filter(Boolean));
+                                setAdviceCcTags((occ.adviceCC || "").split(',').filter(Boolean));
                                 setShowAdviceModal(true);
                               }}
                               style={{ border: "none", background: "none", color: "#2563eb", fontSize: "0.7rem", padding: 0, cursor: "pointer", textAlign: "left", fontWeight: 600 }}
                             >
-                              {(occ as any).adviceShared ? "Reshare Advice" : "Share Advice"}
+                              {occ.adviceShared ? "Reshare Advice" : "Share Advice"}
                             </button>
                           </div>
                         </td>
