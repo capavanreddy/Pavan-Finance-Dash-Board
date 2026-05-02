@@ -327,6 +327,18 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const handleMarkAsPaid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOccurrence) return;
+
+    // Process any pending tag inputs for advice
+    let finalTo = [...adviceToTags];
+    if (adviceToInput.trim() && adviceToInput.includes('@')) {
+      finalTo.push(adviceToInput.trim().toLowerCase());
+    }
+    
+    let finalCc = [...adviceCcTags];
+    if (adviceCcInput.trim() && adviceCcInput.includes('@')) {
+      finalCc.push(adviceCcInput.trim().toLowerCase());
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/payments/tracker/${activeOccurrence.id}/pay`, {
@@ -334,17 +346,30 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payData,
-          adviceRecipient: adviceToTags.join(','),
-          adviceCC: adviceCcTags.join(',')
+          adviceRecipient: finalTo.join(','),
+          adviceCC: finalCc.join(',')
         })
       });
+      
+      const data = await res.json();
+
       if (res.ok) {
         setShowPayModal(false);
         setActiveOccurrence(null);
+        setAdviceToInput("");
+        setAdviceCcInput("");
         fetchData();
+        if (payData.sendAdvice) {
+          alert("Payment marked as Paid and Advice shared successfully!");
+        } else {
+          alert("Payment marked as Paid successfully!");
+        }
+      } else {
+        alert("Error: " + (data.error || "Failed to mark as paid"));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Pay error:", err);
+      alert("Technical Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -353,6 +378,23 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const handleShareAdvice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOccurrence) return;
+
+    // Process any pending tag inputs
+    let finalTo = [...adviceToTags];
+    if (adviceToInput.trim() && adviceToInput.includes('@')) {
+      finalTo.push(adviceToInput.trim().toLowerCase());
+    }
+    
+    let finalCc = [...adviceCcTags];
+    if (adviceCcInput.trim() && adviceCcInput.includes('@')) {
+      finalCc.push(adviceCcInput.trim().toLowerCase());
+    }
+
+    if (finalTo.length === 0) {
+      alert("Please add at least one recipient email.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/payments/tracker/${activeOccurrence.id}/share-advice`, {
@@ -360,19 +402,27 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           utrNumber: payData.utrNumber,
-          adviceRecipient: adviceToTags.join(','),
-          adviceCC: adviceCcTags.join(','),
+          adviceRecipient: finalTo.join(','),
+          adviceCC: finalCc.join(','),
           attachment: payData.attachment
         })
       });
+      
+      const data = await res.json();
+
       if (res.ok) {
         setShowAdviceModal(false);
         setActiveOccurrence(null);
+        setAdviceToInput("");
+        setAdviceCcInput("");
         fetchData();
         alert("Payment Advice shared successfully!");
+      } else {
+        alert("Error: " + (data.error || "Failed to share advice"));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Share advice error:", err);
+      alert("Technical Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
