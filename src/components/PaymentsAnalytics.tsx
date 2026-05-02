@@ -91,13 +91,13 @@ export default function PaymentsAnalytics({
   const { firstDay, lastDay } = getInitialDates();
 
   const [tableFilters, setTableFilters] = useState({
-    fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL', search: ''
+    fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL', search: '', bank: 'ALL'
   });
 
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'payment_date', direction: 'desc' });
 
   const [chartFilters, setChartFilters] = useState({
-    fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL'
+    fromDate: firstDay, toDate: lastDay, entity: 'ALL', department: 'ALL', type: 'ALL', status: 'ALL', bank: 'ALL'
   });
 
   const [newEntry, setNewEntry] = useState({
@@ -175,7 +175,8 @@ export default function PaymentsAnalytics({
         transaction_count: 1, 
         payment_date: o.actualDate ? new Date(o.actualDate).toISOString().split('T')[0] : new Date(o.dueDate).toISOString().split('T')[0], 
         isTracker: true,
-        isPaid: true
+        isPaid: true,
+        paidFromAccount: o.paidFromAccount || 'Not Specified'
       };
     })
     .filter(d => ["Paid Before due date", "Paid on due date", "Paid After due date"].includes(d.status));
@@ -191,8 +192,9 @@ export default function PaymentsAnalytics({
       const deptMatch = tableFilters.department === 'ALL' || d.department_name === tableFilters.department;
       const typeMatch = tableFilters.type === 'ALL' || d.payment_type === tableFilters.type;
       const statusMatch = tableFilters.status === 'ALL' || d.status === tableFilters.status;
+      const bankMatch = tableFilters.bank === 'ALL' || (d as any).paidFromAccount === tableFilters.bank;
       const searchMatch = !tableFilters.search || d.entity_name.toLowerCase().includes(tableFilters.search.toLowerCase());
-      return dateInRange && entityMatch && deptMatch && typeMatch && statusMatch && searchMatch;
+      return dateInRange && entityMatch && deptMatch && typeMatch && statusMatch && bankMatch && searchMatch;
     });
 
     return filtered.sort((a: any, b: any) => {
@@ -230,7 +232,8 @@ export default function PaymentsAnalytics({
       const deptMatch = chartFilters.department === 'ALL' || d.department_name === chartFilters.department;
       const typeMatch = chartFilters.type === 'ALL' || d.payment_type === chartFilters.type;
       const statusMatch = chartFilters.status === 'ALL' || d.status === chartFilters.status;
-      return dateInRange && entityMatch && deptMatch && typeMatch && statusMatch;
+      const bankMatch = chartFilters.bank === 'ALL' || (d as any).paidFromAccount === chartFilters.bank;
+      return dateInRange && entityMatch && deptMatch && typeMatch && statusMatch && bankMatch;
     });
   }, [combinedData, chartFilters]);
 
@@ -510,6 +513,7 @@ export default function PaymentsAnalytics({
             <div><label style={filterLabelStyle}>By Entity</label><select value={tableFilters.entity} onChange={e => setTableFilters({...tableFilters, entity: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Entities</option>{settings.masterEntities.split(',').map((e: string) => <option key={e} value={e.trim()}>{e.trim()}</option>)}</select></div>
             <div><label style={filterLabelStyle}>By Department</label><select value={tableFilters.department} onChange={e => setTableFilters({...tableFilters, department: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Departments</option>{settings.masterDepartments?.split(',').map((d: string) => <option key={d} value={d.trim()}>{d.trim()}</option>)}</select></div>
             <div><label style={filterLabelStyle}>By Type</label><select value={tableFilters.type} onChange={e => setTableFilters({...tableFilters, type: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Types</option>{settings.masterPaymentTypes.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}</select></div>
+            <div><label style={filterLabelStyle}>By Bank</label><select value={tableFilters.bank} onChange={e => setTableFilters({...tableFilters, bank: e.target.value})} style={filterInputStyle(theme)}><option value="ALL">All Banks</option>{Array.from(new Set(combinedData.map(d => (d as any).paidFromAccount).filter(Boolean))).map(b => <option key={b} value={b}>{b}</option>)}</select></div>
             <div style={{ display: "flex", alignItems: "flex-end" }}><button onClick={() => setShowAddEntry(true)} style={addBtnStyle}><Plus size={18} /> Add Entry</button></div>
           </div>
           <div style={{ background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, overflow: "hidden" }}>
@@ -522,6 +526,7 @@ export default function PaymentsAnalytics({
                   <th onClick={() => handleSort('amount')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Amount <SortIcon colKey="amount" /></th>
                   <th onClick={() => handleSort('status')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Status <SortIcon colKey="status" /></th>
                   <th onClick={() => handleSort('payment_date')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Date <SortIcon colKey="payment_date" /></th>
+                  <th onClick={() => handleSort('paidFromAccount')} className="sort-th" style={{ ...thStyle, cursor: "pointer", transition: "background 0.2s" }}>Bank <SortIcon colKey="paidFromAccount" /></th>
                   <th style={thStyle}></th>
                 </tr>
               </thead>
@@ -534,6 +539,7 @@ export default function PaymentsAnalytics({
                     <td style={{ ...tdStyle, fontWeight: 800 }}>₹{d.amount.toLocaleString('en-IN')}</td>
                     <td style={tdStyle}><span style={statusBadgeStyle(d.status)}>{d.status}</span></td>
                     <td style={tdStyle}>{formatDateDisplay(d.payment_date)}</td>
+                    <td style={tdStyle}><div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b" }}>{(d as any).paidFromAccount || '--'}</div></td>
                     <td style={tdStyle}>{!d.isTracker && <button onClick={() => handleDeleteEntry(parseInt(d.id.split('-')[1]))} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>}</td>
                   </tr>
                 ))}

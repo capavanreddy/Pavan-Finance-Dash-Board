@@ -95,6 +95,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const [paidEntityFilter, setPaidEntityFilter] = useState("ALL");
   const [paidTypeFilter, setPaidTypeFilter] = useState("ALL");
   const [paidFreqFilter, setPaidFreqFilter] = useState("ALL");
+  const [paidBankFilter, setPaidBankFilter] = useState("ALL");
   const [paidFromDate, setPaidFromDate] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -602,12 +603,13 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           const matchesEntity = paidEntityFilter === "ALL" || o.entityName === paidEntityFilter;
           const matchesType = paidTypeFilter === "ALL" || o.paymentType === paidTypeFilter;
           const matchesFreq = paidFreqFilter === "ALL" || o.frequency === paidFreqFilter;
+          const matchesBank = paidBankFilter === "ALL" || o.paidFromAccount === paidBankFilter;
           const occDate = new Date(o.actualDate || o.dueDate);
           const from = new Date(paidFromDate);
           const to = new Date(paidToDate);
           from.setHours(0,0,0,0); to.setHours(23,59,59,999);
           const matchesDate = occDate >= from && occDate <= to;
-          return matchesSearch && matchesStatus && matchesEntity && matchesType && matchesFreq && matchesDate && o.isPaid;
+          return matchesSearch && matchesStatus && matchesEntity && matchesType && matchesFreq && matchesBank && matchesDate && o.isPaid;
         }
         return false;
       })
@@ -1515,6 +1517,10 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
             <select value={paidTypeFilter} onChange={e => setPaidTypeFilter(e.target.value)} style={{ padding: "8px", borderRadius: "8px", border: `1px solid ${t.border}`, background: t.card, color: t.text, fontSize: "0.8125rem", minWidth: "120px" }}>
               <option value="ALL">All Types</option>
               {(settings.masterPaymentTypes || "AMC,Rent,Security,Utility,Salaries,Other").split(',').map((type: string) => <option key={type.trim()} value={type.trim()}>{type.trim()}</option>)}
+            </select>
+            <select value={paidBankFilter} onChange={e => setPaidBankFilter(e.target.value)} style={{ padding: "8px", borderRadius: "8px", border: `1px solid ${t.border}`, background: t.card, color: t.text, fontSize: "0.8125rem", minWidth: "120px" }}>
+              <option value="ALL">All Banks</option>
+              {Array.from(new Set(occurrences.filter(o => o.isPaid && o.paidFromAccount).map(o => o.paidFromAccount))).map(bank => <option key={bank} value={bank}>{bank}</option>)}
             </select>
           </div>
 
