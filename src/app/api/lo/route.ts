@@ -76,8 +76,8 @@ export async function PATCH(req: NextRequest) {
 
     if (updated.length === 0) return NextResponse.json({ message: "LO not found" }, { status: 404 });
 
-    // Trigger Notification (Silent)
-    triggerNotification('LO_ACKNOWLEDGED', updated[0]);
+    // Trigger Notification
+    await triggerNotification('LO_ACKNOWLEDGED', updated[0]);
 
     return NextResponse.json(updated[0]);
   } catch (error: any) {
@@ -117,8 +117,8 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `;
     
-    // Trigger Notification (Silent)
-    triggerNotification('LO_CREATED', los[0]);
+    // Trigger Notification
+    await triggerNotification('LO_CREATED', los[0]);
 
     return NextResponse.json(los[0], { status: 201 });
   } catch (error: any) {

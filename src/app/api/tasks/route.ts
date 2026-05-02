@@ -176,8 +176,8 @@ export async function POST(req: NextRequest) {
       const newTask = newTasks[0];
       createdTasks.push(newTask);
 
-      // Trigger Notification (Silent)
-      triggerNotification('TASK_ASSIGNED', newTask);
+      // Trigger Notification (Wait for it to ensure Vercel doesn't kill the process)
+      await triggerNotification('TASK_ASSIGNED', newTask);
     }
 
     // Link back to External Request if applicable (link to the FIRST created task)

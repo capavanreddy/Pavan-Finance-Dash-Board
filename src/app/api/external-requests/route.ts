@@ -79,8 +79,8 @@ export async function POST(request: Request) {
       `;
       createdRequests.push(result[0]);
 
-      // Trigger Notification (Silent)
-      triggerNotification('REQUEST_SUBMITTED', result[0]);
+      // Trigger Notification
+      await triggerNotification('REQUEST_SUBMITTED', result[0]);
     }
 
     return NextResponse.json(createdRequests, { status: 201 });

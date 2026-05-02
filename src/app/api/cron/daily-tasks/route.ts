@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
 
         if (newTasks.length > 0) {
           results.push(newTasks[0]);
-          // Trigger Notification (Silent)
-          triggerNotification('TASK_ASSIGNED', newTasks[0]);
+          // Trigger Notification (Wait for it)
+          await triggerNotification('TASK_ASSIGNED', newTasks[0]);
         }
 
       } catch (err: any) {

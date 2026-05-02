@@ -133,12 +133,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Send email to reviewer if status just changed to Completed and review is required
     if (taskStatus === "Completed" && existingTask.taskStatus !== "Completed" && updatedTask.reviewStatus === "Pending") {
-      triggerNotification('TASK_COMPLETED', updatedTask);
+      await triggerNotification('TASK_COMPLETED', updatedTask);
     }
 
     // Send email to owner if task is rejected (returned to Pending)
     if (taskStatus === "Pending" && existingTask.taskStatus === "Completed") {
-      triggerNotification('TASK_REJECTED', updatedTask);
+      await triggerNotification('TASK_REJECTED', updatedTask);
     }
 
     // Sync with ExternalRequest if applicable
@@ -154,7 +154,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         `;
 
         if (requestStatus === 'Processed' && extReq?.requesterEmail) {
-          triggerNotification('TASK_PROCESSED', { 
+          await triggerNotification('TASK_PROCESSED', { 
             ...updatedTask, 
             requesterEmail: extReq.requesterEmail 
           });

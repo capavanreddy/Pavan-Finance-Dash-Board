@@ -65,9 +65,9 @@ export async function PATCH(
     const result = await (sql as any).query(query, [...values, id]);
     const updatedRequest = result[0];
     
-    // Trigger Notification (Silent)
-    if (body.status === 'Rejected') {
-      triggerNotification('REQUEST_REJECTED', updatedRequest);
+    // Trigger Notification
+    if (updatedRequest && body.status === 'Rejected') {
+      await triggerNotification('REQUEST_REJECTED', updatedRequest);
     }
 
     return NextResponse.json(updatedRequest);
