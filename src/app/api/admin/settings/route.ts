@@ -48,6 +48,7 @@ export async function PATCH(request: Request) {
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "lastDailyGenerationAt" TIMESTAMP`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterResourceCategories" TEXT DEFAULT 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous'`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "bulkImportMatrix" TEXT DEFAULT '{}'`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "masterBankAccounts" TEXT DEFAULT 'HDFC,ICICI,SBI'`;
     } catch (e) {
       console.log("Migration for settings fields failed/skipped");
     }
@@ -105,6 +106,7 @@ export async function PATCH(request: Request) {
           ${body.loReportEmail || ''},
           ${body.masterFrequencies || 'Ad,M,Y,2Y,H,Q,W,BW,D'},
           ${body.masterPaymentTypes || 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment'},
+          ${body.masterBankAccounts || 'HDFC,ICICI,SBI'},
           ${body.userModuleExceptions || '{}'},
           ${body.dailyTaskGenerationTime || '06:00'},
           ${body.holidayList || '[]'},
@@ -143,6 +145,7 @@ export async function PATCH(request: Request) {
         "loReportEmail" = ${body.loReportEmail ?? existingSettings[0].loReportEmail},
         "masterFrequencies" = ${body.masterFrequencies ?? existingSettings[0].masterFrequencies},
         "masterPaymentTypes" = ${body.masterPaymentTypes ?? existingSettings[0].masterPaymentTypes},
+        "masterBankAccounts" = ${body.masterBankAccounts ?? existingSettings[0].masterBankAccounts},
         "userModuleExceptions" = ${body.userModuleExceptions ?? existingSettings[0].userModuleExceptions},
         "dailyTaskGenerationTime" = ${body.dailyTaskGenerationTime ?? existingSettings[0].dailyTaskGenerationTime},
         "holidayList" = ${body.holidayList ?? existingSettings[0].holidayList},

@@ -267,8 +267,19 @@ export default function PaymentsAnalytics({
     const trendData = Object.entries(trendMap).map(([date, amount]) => ({ 
       date: new Date(date + '-01').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }), amount 
     })).sort((a,b) => a.date.localeCompare(b.date));
+    
+    // Bank wise Outflow
+    const bankMap: Record<string, number> = {};
+    paidRecords.forEach(d => {
+      if ((d as any).paidFromAccount) {
+        bankMap[(d as any).paidFromAccount] = (bankMap[(d as any).paidFromAccount] || 0) + Number(d.amount);
+      } else {
+        bankMap['Not Specified'] = (bankMap['Not Specified'] || 0) + Number(d.amount);
+      }
+    });
+    const bankData = Object.entries(bankMap).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
 
-    return { totalAmount, totalCount, healthScore, pieData, typePieData, deptPieData, barData, trendData };
+    return { totalAmount, totalCount, healthScore, pieData, typePieData, deptPieData, barData, trendData, bankData };
   }, [filteredChartData]);
 
   const insights = useMemo(() => {
@@ -569,6 +580,10 @@ export default function PaymentsAnalytics({
             <div id="dept-pie-chart" style={chartContainerStyle(theme)}>
               <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", fontWeight: 800 }}>By Department</h4>
               <div style={{ height: "300px" }}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats.deptPieData} innerRadius={60} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none" cornerRadius={10}>{stats.deptPieData.map((e, i) => <Cell key={`c-${i}`} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36} /></PieChart></ResponsiveContainer></div>
+            </div>
+            <div id="bank-pie-chart" style={chartContainerStyle(theme)}>
+              <h4 style={{ margin: "0 0 24px 0", fontSize: "1.1rem", fontWeight: 800 }}>Bank-wise Outflow</h4>
+              <div style={{ height: "300px" }}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats.bankData} innerRadius={60} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none" cornerRadius={10}>{stats.bankData.map((e, i) => <Cell key={`c-${i}`} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend verticalAlign="bottom" height={36} /></PieChart></ResponsiveContainer></div>
             </div>
           </div>
         </div>

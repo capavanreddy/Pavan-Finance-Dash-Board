@@ -32,6 +32,7 @@ export async function GET() {
           "startDate" DATE,
           "endDate" DATE,
           "stopDate" DATE,
+          "amountToRelease" NUMERIC DEFAULT 0,
           "isStopped" BOOLEAN DEFAULT FALSE,
           "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -44,8 +45,11 @@ export async function GET() {
           "templateId" INTEGER REFERENCES "PaymentTemplate"(id) ON DELETE CASCADE,
           "dueDate" DATE NOT NULL,
           "actualDate" DATE,
+          "amountToRelease" NUMERIC DEFAULT 0,
           "amountPaid" NUMERIC,
+          "paidFromAccount" TEXT,
           "isPaid" BOOLEAN DEFAULT FALSE,
+          "isListed" BOOLEAN DEFAULT FALSE,
           "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
@@ -60,6 +64,7 @@ export async function GET() {
       await sql`ALTER TABLE "PaymentTemplate" ADD COLUMN IF NOT EXISTS "editRequested" BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE "PaymentTemplate" ADD COLUMN IF NOT EXISTS "editApproved" BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE "PaymentTemplate" ADD COLUMN IF NOT EXISTS "editRequestReason" TEXT`;
+      await sql`ALTER TABLE "PaymentTemplate" ADD COLUMN IF NOT EXISTS "amountToRelease" NUMERIC DEFAULT 0`;
       
       // New columns for PaymentOccurrence
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "isHold" BOOLEAN DEFAULT FALSE`;
@@ -67,6 +72,9 @@ export async function GET() {
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "editRequested" BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "editApproved" BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "editRequestReason" TEXT`;
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "amountToRelease" NUMERIC DEFAULT 0`;
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "isListed" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "PaymentOccurrence" ADD COLUMN IF NOT EXISTS "paidFromAccount" TEXT`;
     } catch (err) {
       console.error("Payment migration error:", err);
     }
@@ -113,7 +121,8 @@ export async function POST(req: NextRequest) {
       dueDay,
       weeklyDay,
       startDate,
-      endDate
+      endDate,
+      amountToRelease
     } = data;
 
     if (!entityName || !paymentDescription || !vendorName || !frequency) {
@@ -140,6 +149,7 @@ export async function POST(req: NextRequest) {
           "weeklyDay" = ${weeklyDay || null},
           "startDate" = ${startDate ? new Date(startDate) : null},
           "endDate" = ${endDate ? new Date(endDate) : null},
+          "amountToRelease" = ${amountToRelease ? Number(amountToRelease) : 0},
           "updatedAt" = NOW()
         WHERE id = ${id}
         RETURNING *
@@ -153,7 +163,7 @@ export async function POST(req: NextRequest) {
           "departmentName", "financeFunction", "frequency", "vendorEmail",
           "prodEmail", "defaultOwner", "defaultReviewer",
           "dueDay", "weeklyDay",
-          "startDate", "endDate", "isActive", "createdAt", "updatedAt"
+          "startDate", "endDate", "amountToRelease", "isActive", "createdAt", "updatedAt"
         )
         VALUES (
           ${entityName}, ${paymentDescription}, ${vendorName}, ${paymentType},
@@ -161,6 +171,7 @@ export async function POST(req: NextRequest) {
           ${prodEmail}, ${defaultOwner}, ${defaultReviewer},
           ${dueDay ? Number(dueDay) : null}, ${weeklyDay || null},
           ${startDate ? new Date(startDate) : null}, ${endDate ? new Date(endDate) : null},
+          ${amountToRelease ? Number(amountToRelease) : 0},
           TRUE, NOW(), NOW()
         )
         RETURNING *

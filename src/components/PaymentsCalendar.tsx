@@ -33,6 +33,7 @@ interface PaymentTemplate {
   editRequestReason?: string;
   deleteRequested?: boolean;
   deleteRequestReason?: string;
+  amountToRelease?: number;
 }
 
 interface PaymentOccurrence {
@@ -58,15 +59,19 @@ interface PaymentOccurrence {
   cancelledReason?: string;
   deleteRequested: boolean;
   deleteRequestReason?: string;
+  amountToRelease?: number;
+  isListed: boolean;
+  paidFromAccount?: string;
 }
 
 import { resolveTaskName, getPeriodKey, getOccurrencesBetween } from "@/lib/recurringUtils";
 
 export default function PaymentsCalendar({   user, isAdmin, t, theme, settings , showNotification , showConfirm }: { user: any; isAdmin: boolean; t: any; theme: string; settings: any ; showNotification: any;  showConfirm: any; }) {
   const isViewer = user?.role === 'VIEWER';
-  const [activeTab, setActiveTab] = useState<'TRACKER' | 'MASTER' | 'ANALYTICS'>('TRACKER');
+  const [activeTab, setActiveTab] = useState<'TRACKER' | 'LIST' | 'MASTER' | 'ANALYTICS'>('TRACKER');
   const [templates, setTemplates] = useState<PaymentTemplate[]>([]);
   const [occurrences, setOccurrences] = useState<PaymentOccurrence[]>([]);
+  const [selectedOccs, setSelectedOccs] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<PaymentTemplate | null>(null);
@@ -118,12 +123,13 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     dueDay: 1,
     weeklyDay: "Monday",
     startDate: "",
-    endDate: ""
+    endDate: "",
+    amountToRelease: ""
   });
 
   const [showPayModal, setShowPayModal] = useState(false);
   const [activeOccurrence, setActiveOccurrence] = useState<PaymentOccurrence | null>(null);
-  const [payData, setPayData] = useState({ actualDate: new Date().toISOString().split('T')[0], amountPaid: "" });
+  const [payData, setPayData] = useState({ actualDate: new Date().toISOString().split('T')[0], amountPaid: "", paidFromAccount: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showStopModal, setShowStopModal] = useState(false);
@@ -560,7 +566,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       to.setHours(23,59,59,999);
       const matchesDate = occDate >= from && occDate <= to;
       
-      return matchesSearch && matchesStatus && matchesEntity && matchesType && matchesFreq && matchesDate;
+      return matchesSearch && matchesStatus && matchesEntity && matchesType && matchesFreq && matchesDate && !o.isListed && !o.isPaid;
     })
     .sort((a: any, b: any) => {
       if (!sortConfig) return 0;
@@ -613,6 +619,16 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     }
     return items;
   }, [templates, masterSortConfig]);
+
+  const filteredListOccurrences = useMemo(() => {
+    return occurrences
+      .filter(o => o.isListed && !o.isPaid)
+      .sort((a, b) => {
+        const dateA = new Date(a.dueDate).getTime();
+        const dateB = new Date(b.dueDate).getTime();
+        return dateA - dateB;
+      });
+  }, [occurrences]);
 
   const handleDownloadExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -911,6 +927,12 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
             Payments Master Sheet
           </button>
           <button 
+            onClick={() => setActiveTab('LIST')}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'LIST' ? "#2563eb" : "transparent", color: activeTab === 'LIST' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            <ListChecks size={16} /> Payment List
+          </button>
+          <button 
             onClick={() => setActiveTab('ANALYTICS')}
             style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'ANALYTICS' ? "#2563eb" : "transparent", color: activeTab === 'ANALYTICS' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
           >
@@ -921,7 +943,61 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
 
       {activeTab === 'TRACKER' ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Tracker Filters */}
+           {/* Selection Bar */}
+           {selectedOccs.length > 0 && (
+             <div style={{ 
+               display: "flex", justifyContent: "space-between", alignItems: "center", 
+               padding: "16px 24px", background: "#eff6ff", borderRadius: "12px", 
+               border: "1px solid #bfdbfe", marginBottom: "8px", animation: "slideIn 0.3s ease"
+             }}>
+               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                 <div style={{ background: "#2563eb", color: "white", width: "28px", height: "28px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", fontWeight: 700 }}>
+                   {selectedOccs.length}
+                 </div>
+                 <span style={{ fontWeight: 600, color: "#1e40af" }}>Transactions Selected</span>
+               </div>
+               <div style={{ display: "flex", gap: "12px" }}>
+                 <button 
+                   onClick={() => setSelectedOccs([])}
+                   style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #bfdbfe", background: "white", color: "#2563eb", fontWeight: 600, cursor: "pointer" }}
+                 >
+                   Clear Selection
+                 </button>
+                 <button 
+                   onClick={async () => {
+                     showConfirm(`Generate Payment List for ${selectedOccs.length} items?`, async () => {
+                       try {
+                         const results = await Promise.all(selectedOccs.map(id => 
+                           fetch(`/api/payments/tracker/${id}`, {
+                             method: "PATCH",
+                             headers: { "Content-Type": "application/json" },
+                             body: JSON.stringify({ isListed: true })
+                           })
+                         ));
+                         if (results.every(r => r.ok)) {
+                           showNotification(`Successfully moved ${selectedOccs.length} items to Payment List.`);
+                           setSelectedOccs([]);
+                           fetchData();
+                           setActiveTab('LIST');
+                         }
+                       } catch (err) {
+                         showNotification("Failed to generate payment list.");
+                       }
+                     });
+                   }}
+                   style={{ 
+                     padding: "8px 24px", borderRadius: "8px", border: "none", 
+                     background: "#2563eb", color: "white", fontWeight: 600, cursor: "pointer",
+                     display: "flex", alignItems: "center", gap: "8px"
+                   }}
+                 >
+                   <ListChecks size={18} /> Generate Payment List
+                 </button>
+               </div>
+             </div>
+           )}
+
+           {/* Tracker Filters */}
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
             <div style={{ flex: "1 1 200px", position: "relative" }}>
               <Search size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
@@ -1040,6 +1116,20 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
             <table style={{ width: "100%", minWidth: "1500px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1e293b" }}>
+                  <th style={{ ...thStyle, width: "40px" }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedOccs.length === filteredOccurrences.length && filteredOccurrences.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedOccs(filteredOccurrences.map(o => o.id));
+                        } else {
+                          setSelectedOccs([]);
+                        }
+                      }}
+                      style={{ cursor: "pointer" }}
+                    />
+                  </th>
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('entityName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Entity <SortIcon column="entityName" /></div>
                   </th>
@@ -1061,8 +1151,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('actualDate')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Actual Date <SortIcon column="actualDate" /></div>
                   </th>
-                                    <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('amountPaid')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Amount <SortIcon column="amountPaid" /></div>
+                                    <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('amountToRelease')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Amount to Release <SortIcon column="amountToRelease" /></div>
                   </th>
                                     <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('isPaid')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Status <SortIcon column="isPaid" /></div>
@@ -1082,6 +1172,20 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                     const style = getStatusStyle(status);
                     return (
                       <tr key={occ.id} style={{ borderBottom: `1px solid ${t.border}`, transition: "background 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = theme === 'DARK' ? "rgba(255,255,255,0.02)" : "#f8fafc")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <td style={{ ...tdStyle, width: "40px" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedOccs.includes(occ.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedOccs([...selectedOccs, occ.id]);
+                              } else {
+                                setSelectedOccs(selectedOccs.filter(id => id !== occ.id));
+                              }
+                            }}
+                            style={{ cursor: "pointer" }}
+                          />
+                        </td>
                         <td style={tdStyle}>{occ.entityName}</td>
                         <td style={tdStyle}>
                           <div style={{ fontWeight: 600 }}>{occ.vendorName}</div>
@@ -1095,7 +1199,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         </td>
                         <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
                         <td style={tdStyle}>{occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--"}</td>
-                        <td style={tdStyle}>{occ.amountPaid ? formatCurrency(occ.amountPaid) : "--"}</td>
+                        <td style={tdStyle}>{formatCurrency(occ.amountToRelease || 0)}</td>
                         <td style={tdStyle}>
                           <span style={{ 
                             padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700,
@@ -1107,44 +1211,20 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         </td>
                         <td style={tdStyle}>
                           <div style={{ display: "flex", gap: "6px" }}>
-                            {occ.isHold ? (
+                            {occ.isHold && (
                               <button 
                                 onClick={() => handleReleaseHold(occ)}
                                 style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: "0.7rem", cursor: "pointer" }}
                               >
                                 Release
                               </button>
-                            ) : (
-                              !occ.isPaid && !occ.isCancelled && (
-                                <>
-                                  <button 
-                                    onClick={() => { setActiveOccurrence(occ); setShowHoldModal(true); }}
-                                    style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "white", color: "#ef4444", fontSize: "0.7rem", cursor: "pointer" }}
-                                  >
-                                    Hold
-                                  </button>
-                                  <button 
-                                    onClick={() => { setActiveOccurrence(occ); setShowCancelModal(true); }}
-                                    style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fef2f2", color: "#991b1b", fontSize: "0.7rem", cursor: "pointer" }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              )
                             )}
                           </div>
                         </td>
-                         {!isViewer && (
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            {!occ.isPaid && !occ.isHold && !occ.isCancelled && (
-                              <button 
-                                onClick={() => { setActiveOccurrence(occ); setShowPayModal(true); }}
-                                style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#2563eb", color: "white", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                              >
-                                Mark Paid
-                              </button>
-                            )}
+                        {!isViewer && (
+                          <td style={tdStyle}>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              {/* Tracker actions restricted to Delete Request per requirements */}
 
                             {/* Delete Request Option */}
                             {!occ.isPaid && !occ.deleteRequested && (
@@ -1189,6 +1269,128 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                           </div>
                         </td>
                       )}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : activeTab === 'LIST' ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0, color: t.text, display: "flex", alignItems: "center", gap: "8px" }}>
+              <ListChecks size={24} color="#2563eb" />
+              Pending Payment List
+            </h3>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button 
+                onClick={fetchData}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: `1px solid ${t.border}`, background: t.card, color: t.text, fontWeight: 600, cursor: "pointer" }}
+              >
+                Refresh List
+              </button>
+            </div>
+          </div>
+
+          <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflowX: "auto", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+            <table style={{ width: "100%", minWidth: "1200px", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#1e293b" }}>
+                  <th style={thStyle}>Entity</th>
+                  <th style={thStyle}>Vendor</th>
+                  <th style={thStyle}>Description</th>
+                  <th style={thStyle}>Due Date</th>
+                  <th style={thStyle}>Amount to Release</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredListOccurrences.length === 0 ? (
+                  <tr><td colSpan={7} style={{ padding: "60px", textAlign: "center", color: t.textMuted }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                      <ListChecks size={48} style={{ opacity: 0.2 }} />
+                      <p>Your payment list is empty. Go to Tracker to select and move items here.</p>
+                    </div>
+                  </td></tr>
+                ) : (
+                  filteredListOccurrences.map(occ => {
+                    const status = getStatus(occ);
+                    const style = getStatusStyle(status);
+                    return (
+                      <tr key={occ.id} style={{ borderBottom: `1px solid ${t.border}` }}>
+                        <td style={tdStyle}>{occ.entityName}</td>
+                        <td style={tdStyle}><div style={{ fontWeight: 600 }}>{occ.vendorName}</div></td>
+                        <td style={tdStyle}>{occ.paymentDescription}</td>
+                        <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontWeight: 700, color: "#1e293b" }}>{formatCurrency(occ.amountToRelease || 0)}</span>
+                            <button 
+                              onClick={() => {
+                                const newAmount = prompt("Enter new Amount to Release:", occ.amountToRelease?.toString() || "0");
+                                if (newAmount !== null) {
+                                  const val = parseFloat(newAmount);
+                                  if (!isNaN(val)) {
+                                    fetch(`/api/payments/tracker/${occ.id}`, {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ amountToRelease: val })
+                                    }).then(r => { if (r.ok) fetchData(); });
+                                  }
+                                }
+                              }}
+                              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", padding: "4px" }}
+                              title="Update Amount"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ 
+                            padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700,
+                            background: style.bg, color: style.text, border: `1px solid ${style.border}`
+                          }}>
+                            {status}
+                          </span>
+                        </td>
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button 
+                              onClick={() => { 
+                                setActiveOccurrence(occ); 
+                                setPayData({ 
+                                  actualDate: new Date().toISOString().split('T')[0], 
+                                  amountPaid: (occ.amountToRelease || 0).toString(),
+                                  paidFromAccount: ""
+                                }); 
+                                setShowPayModal(true); 
+                              }}
+                              style={{ padding: "6px 16px", borderRadius: "8px", border: "none", background: "#22c55e", color: "white", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}
+                            >
+                              Mark Paid
+                            </button>
+                            <button 
+                              onClick={() => {
+                                showConfirm("Move this back to Tracker?", async () => {
+                                  await fetch(`/api/payments/tracker/${occ.id}`, {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ isListed: false })
+                                  });
+                                  fetchData();
+                                });
+                              }}
+                              style={{ padding: "6px", borderRadius: "8px", border: `1px solid ${t.border}`, background: "white", color: "#64748b", cursor: "pointer" }}
+                              title="Remove from List"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
@@ -1468,6 +1670,18 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
               )}
 
               <div>
+                <label style={labelStyle}>Amount to Release (INR)</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 5000"
+                  value={formData.amountToRelease || ""}
+                  onChange={e => setFormData({...formData, amountToRelease: e.target.value})}
+                  style={inputStyle}
+                />
+                <p style={{ fontSize: "0.65rem", color: "#64748b", marginTop: "4px" }}>Default amount for generated payments.</p>
+              </div>
+
+              <div>
                 <label style={labelStyle}>Vendor Email ID</label>
                 <input 
                   type="email" 
@@ -1551,6 +1765,20 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                   onChange={e => setPayData({...payData, amountPaid: e.target.value})}
                   style={inputStyle}
                 />
+              </div>
+              <div>
+                <label style={labelStyle}>Paid From Account</label>
+                <select 
+                  required
+                  value={payData.paidFromAccount}
+                  onChange={e => setPayData({...payData, paidFromAccount: e.target.value})}
+                  style={inputStyle}
+                >
+                  <option value="">Select Bank Account</option>
+                  {(settings.masterBankAccounts || "").split(',').filter((b: string) => b.trim()).map((bank: string) => (
+                    <option key={bank.trim()} value={bank.trim()}>{bank.trim()}</option>
+                  ))}
+                </select>
               </div>
               <div style={{ marginTop: "12px", display: "flex", gap: "12px" }}>
                 <button type="button" onClick={() => setShowPayModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "white", fontWeight: 600 }}>Cancel</button>

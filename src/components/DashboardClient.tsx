@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
@@ -186,7 +186,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     masterPaymentTypes: 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment',
     masterResourceCategories: 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous',
     userModuleExceptions: '{}',
-    bulkImportMatrix: '{}'
+    bulkImportMatrix: '{}',
+    masterBankAccounts: ''
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -7183,6 +7184,53 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       return;
                                     }
                                     setSettings({...settings, masterPaymentTypes: (settings.masterPaymentTypes || "") + (settings.masterPaymentTypes?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...getInputStyle(t), padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bank Accounts */}
+                      <div style={{ padding: "20px", background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: t.text }}>
+                          <CreditCard size={18} color="#ef4444" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Bank Accounts</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterBankAccounts || "").split(',').filter(t => t.trim()).map((bank, idx) => (
+                              <div key={idx} style={{ background: t.card, border: `1px solid ${t.border}`, padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {bank.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterBankAccounts.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterBankAccounts: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px", opacity: 0.7 }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add bank account..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    const currentItems = (settings.masterBankAccounts || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      showNotification(`"${val}" already exists in Bank Accounts.`);
+                                      return;
+                                    }
+                                    setSettings({...settings, masterBankAccounts: (settings.masterBankAccounts || "") + (settings.masterBankAccounts?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
                                 }

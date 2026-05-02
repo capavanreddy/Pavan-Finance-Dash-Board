@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Forbidden: Viewers cannot record payments" }, { status: 403 });
     }
 
-    const { actualDate, amountPaid } = await req.json();
+    const { actualDate, amountPaid, paidFromAccount } = await req.json();
 
     if (!actualDate || !amountPaid) {
       return NextResponse.json({ error: "Missing payment details" }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       SET 
         "actualDate" = ${new Date(actualDate)},
         "amountPaid" = ${Number(amountPaid)},
+        "paidFromAccount" = ${paidFromAccount || null},
         "isPaid" = TRUE,
         "updatedAt" = NOW()
       WHERE id = ${id}

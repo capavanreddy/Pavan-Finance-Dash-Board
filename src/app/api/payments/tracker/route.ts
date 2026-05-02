@@ -58,8 +58,10 @@ export async function POST(req: NextRequest) {
         }
 
         const inserted = await sql`
-          INSERT INTO "PaymentOccurrence" ("templateId", "dueDate", "isPaid", "createdAt", "updatedAt")
-          VALUES (${p.templateId}, ${p.dueDate}, FALSE, NOW(), NOW())
+          INSERT INTO "PaymentOccurrence" ("templateId", "dueDate", "amountToRelease", "isPaid", "createdAt", "updatedAt")
+          SELECT id, ${p.dueDate}, "amountToRelease", FALSE, NOW(), NOW()
+          FROM "PaymentTemplate"
+          WHERE id = ${p.templateId}
           RETURNING *
         `;
 

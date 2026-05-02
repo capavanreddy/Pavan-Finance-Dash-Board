@@ -24,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       isCancelled, cancelledReason,
       editRequested, editRequestReason, 
       editApproved,
-      actualDate, amountPaid 
+      actualDate, amountPaid,
+      isListed, amountToRelease
     } = data;
 
     // Build the update query manually since Neon's sql tagged template doesn't support the sql(obj) helper
@@ -35,6 +36,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         "holdReason" = CASE WHEN ${holdReason !== undefined} THEN ${holdReason}::TEXT ELSE "holdReason" END,
         "isCancelled" = CASE WHEN ${isCancelled !== undefined} THEN ${isCancelled}::BOOLEAN ELSE "isCancelled" END,
         "cancelledReason" = CASE WHEN ${cancelledReason !== undefined} THEN ${cancelledReason}::TEXT ELSE "cancelledReason" END,
+        "isListed" = CASE WHEN ${isListed !== undefined} THEN ${isListed}::BOOLEAN ELSE "isListed" END,
+        "amountToRelease" = CASE WHEN ${amountToRelease !== undefined} THEN ${amountToRelease ? Number(amountToRelease) : null}::NUMERIC ELSE "amountToRelease" END,
         "editRequested" = CASE 
           WHEN ${editRequested !== undefined} THEN ${editRequested}::BOOLEAN 
           WHEN ${actualDate !== undefined || amountPaid !== undefined} THEN FALSE
