@@ -1503,7 +1503,20 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}><span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700, background: style.bg, color: style.text, border: `1px solid ${style.border}` }}>{status}</span></td>
                         <td style={tdStyle}>
                           <div style={{ display: "flex", gap: "8px" }}>
-                            <button onClick={() => { setActiveOccurrence(occ); setPayData({ actualDate: new Date().toISOString().split('T')[0], amountPaid: (occ.amountToRelease || 0).toString(), paidFromAccount: "" }); setShowPayModal(true); }} style={{ padding: "6px 16px", borderRadius: "8px", border: "none", background: "#22c55e", color: "white", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Mark Paid</button>
+                            <button onClick={() => { 
+                              setActiveOccurrence(occ); 
+                              setPayData({ 
+                                actualDate: new Date().toISOString().split('T')[0], 
+                                amountPaid: (occ.amountToRelease || 0).toString(), 
+                                paidFromAccount: "",
+                                utrNumber: "",
+                                sendAdvice: false,
+                                adviceRecipient: occ.vendorEmail || "",
+                                adviceCC: "",
+                                attachment: null
+                              }); 
+                              setShowPayModal(true); 
+                            }} style={{ padding: "6px 16px", borderRadius: "8px", border: "none", background: "#22c55e", color: "white", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer" }}>Mark Paid</button>
                             <button onClick={() => { showConfirm("Move this back to Tracker?", async () => { await fetch(`/api/payments/tracker/${occ.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isListed: false }) }); fetchData(); }); }} style={{ padding: "6px", borderRadius: "8px", border: `1px solid ${t.border}`, background: "white", color: "#64748b", cursor: "pointer" }} title="Remove from List"><X size={16} /></button>
                           </div>
                         </td>
