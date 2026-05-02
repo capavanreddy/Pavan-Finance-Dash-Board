@@ -763,7 +763,7 @@ export default function PaymentsAnalytics({
           </div>
 
           <div style={statCardStyle(theme)}>
-            <div style={cardHead}>By Payment Type <PieChart size={18} /></div>
+            <div style={cardHead}>By Payment Type <PieIcon size={18} /></div>
             <div style={{ height: 250 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={forecastData.typeCharts}>
