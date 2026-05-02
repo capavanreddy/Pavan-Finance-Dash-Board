@@ -3252,7 +3252,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               };
               
               return (
-                <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "48px", padding: "10px" }}>
+                <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "32px", padding: "10px" }}>
                   
                   {/* Background Mesh Gradient Blobs (Subtle) */}
                   <div style={{ position: "absolute", top: "-10%", right: "-10%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)", borderRadius: "50%", zIndex: 0, filter: "blur(60px)" }}></div>
@@ -3262,18 +3262,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
                     {/* Mission Card */}
                     <div style={{ 
-                      padding: "40px", 
-                      borderRadius: "32px", 
+                      padding: "28px", 
+                      borderRadius: "24px", 
                       background: "rgba(255, 255, 255, 0.7)", 
                       backdropFilter: "blur(12px)",
                       border: "1px solid rgba(59, 130, 246, 0.2)",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
                       transition: "transform 0.3s ease"
                     }} className="hover-card">
-                      <div style={{ position: "absolute", right: "-30px", top: "-30px", color: "rgba(59, 130, 246, 0.05)", zIndex: 0 }}>
-                        <Compass size={180} />
+                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "rgba(59, 130, 246, 0.05)", zIndex: 0 }}>
+                        <Compass size={120} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
@@ -3282,7 +3282,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </div>
                           <span style={{ fontSize: "0.8125rem", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#2563eb" }}>Our Mission</span>
                         </div>
-                        <h2 style={{ fontSize: "1.875rem", fontWeight: 800, color: "#1e293b", margin: "0 0 20px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{mission}</h2>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1e293b", margin: "0 0 12px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{mission}</h2>
                         <div style={{ height: "4px", width: "50px", background: "linear-gradient(to right, #3b82f6, #60a5fa)", borderRadius: "2px", marginBottom: "20px" }}></div>
                         <p style={{ margin: 0, fontSize: "1rem", color: "#475569", lineHeight: 1.6, fontWeight: 500 }}>Driving daily excellence through disciplined execution and data-driven insights.</p>
                       </div>
@@ -3290,18 +3290,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
                     {/* Vision Card */}
                     <div style={{ 
-                      padding: "40px", 
-                      borderRadius: "32px", 
+                      padding: "28px", 
+                      borderRadius: "24px", 
                       background: "rgba(255, 255, 255, 0.7)", 
                       backdropFilter: "blur(12px)",
                       border: "1px solid rgba(16, 185, 129, 0.2)",
                       position: "relative",
                       overflow: "hidden",
-                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
                       transition: "transform 0.3s ease"
                     }} className="hover-card">
-                      <div style={{ position: "absolute", right: "-30px", top: "-30px", color: "rgba(16, 185, 129, 0.05)", zIndex: 0 }}>
-                        <Rocket size={180} />
+                      <div style={{ position: "absolute", right: "-20px", top: "-20px", color: "rgba(16, 185, 129, 0.05)", zIndex: 0 }}>
+                        <Rocket size={120} />
                       </div>
                       <div style={{ position: "relative", zIndex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
@@ -3310,7 +3310,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </div>
                           <span style={{ fontSize: "0.8125rem", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#059669" }}>Our Vision</span>
                         </div>
-                        <h2 style={{ fontSize: "1.875rem", fontWeight: 800, color: "#1e293b", margin: "0 0 20px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{vision}</h2>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1e293b", margin: "0 0 12px 0", lineHeight: 1.25, letterSpacing: "-0.03em", fontFamily: "'Outfit', sans-serif" }}>{vision}</h2>
                         <div style={{ height: "4px", width: "50px", background: "linear-gradient(to right, #10b981, #34d399)", borderRadius: "2px", marginBottom: "20px" }}></div>
                         <p style={{ margin: 0, fontSize: "1rem", color: "#475569", lineHeight: 1.6, fontWeight: 500 }}>Building a future where finance is the engine of innovation and sustainable growth.</p>
                       </div>
@@ -3321,23 +3321,23 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <div style={{ 
                     position: "relative",
                     zIndex: 1,
-                    padding: "80px 60px", 
+                    padding: "48px 32px", 
                     textAlign: "center", 
                     background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
-                    borderRadius: "40px",
+                    borderRadius: "32px",
                     boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
                     overflow: "hidden"
                   }}>
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')", opacity: 0.05 }}></div>
-                    <Quote size={60} color="#3b82f6" style={{ marginBottom: "32px", opacity: 0.3 }} />
+                    <Quote size={40} color="#3b82f6" style={{ marginBottom: "20px", opacity: 0.3 }} />
                     <h3 style={{ 
-                      fontSize: "2.5rem", 
+                      fontSize: "1.75rem", 
                       fontFamily: "'Outfit', serif", 
                       fontStyle: "italic", 
-                      maxWidth: "1000px", 
-                      margin: "0 auto 32px auto", 
+                      maxWidth: "900px", 
+                      margin: "0 auto 24px auto", 
                       color: "#f8fafc",
-                      lineHeight: 1.3,
+                      lineHeight: 1.4,
                       fontWeight: 300,
                       letterSpacing: "-0.01em"
                     }}>
@@ -3373,13 +3373,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         ];
                         return stories.map((s: any) => (
                           <div key={s.id} style={{ 
-                            padding: "40px", 
-                            borderRadius: "32px", 
+                            padding: "28px", 
+                            borderRadius: "24px", 
                             background: "white", 
                             border: "1px solid #f1f5f9",
                             transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                             cursor: "default",
-                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02)",
+                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)",
                             position: "relative"
                           }} className="hover-card-premium">
                             <div style={{ position: "relative", zIndex: 1 }}>
