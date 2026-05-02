@@ -4026,22 +4026,37 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </div>
                   </th>
                   {!isViewer && (
-                    <>
-                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                        </div>
-                      </th>
-                      <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
-                    </>
+                    <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                      </div>
+                    </th>
+                  )}
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerComments')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Owner Comments {taskSortConfig?.key === 'ownerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerComments')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Reviewer Comments {taskSortConfig?.key === 'reviewerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Request Status {taskSortConfig?.key === 'requestStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  {!isViewer && (
+                    <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
                   )}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
                 ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={17} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
+                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
                     const currentUserName = user?.name || user?.email;
