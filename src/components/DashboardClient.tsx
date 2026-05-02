@@ -3180,7 +3180,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         </nav>
 
         {/* Content Area */}
-        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: activeView === 'RECURRING' ? "0" : "32px", background: t.bg, transition: "all 0.3s ease" }}>
+        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: activeView === 'RECURRING' ? "0" : (activeView === 'HOME' ? "20px 32px 32px 32px" : "32px"), background: t.bg, transition: "all 0.3s ease" }}>
           {activeView === 'RECURRING' && (
             <RecurringActivities settings={settings} usersList={usersList} showNotification={showNotification} showConfirm={showConfirm} showPrompt={showPrompt} />
           )}
@@ -3188,6 +3188,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           {activeView !== 'RECURRING' && (
             <>
           {/* Active View Title/Context Area */}
+          {activeView !== 'HOME' && (
           <div style={{ 
             padding: (activeView === 'LOS' && loActiveFilter === 'RESOURCES') ? "0" : "24px 32px 32px 32px",
             marginBottom: (activeView === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "0" : "32px", 
@@ -3237,6 +3238,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
             )}
           </div>
+          )}
 
         {/* Metric Cards / Motivational Quote / Home Content */}
         {activeView === 'HOME' ? (
