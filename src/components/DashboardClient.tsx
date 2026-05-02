@@ -116,6 +116,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [user, setUser] = useState(initialUser);
   const [theme, setTheme] = useState<'LIGHT' | 'DARK'>('LIGHT');
   const isAdmin = user?.role === 'ADMIN' || user?.email === 'pavanreddy@intellicar.in';
+  const isViewer = user?.role === 'VIEWER';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: "", type: null });
@@ -399,7 +400,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     })
     .map(([dept, _]) => dept.trim());
   
-  const canAllocateAnything = isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0;
+  const canAllocateAnything = (isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && !isViewer;
 
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
@@ -3220,13 +3221,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
-                    <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                      <Plus size={18} /> New Task
-                    </button>
+                    !isViewer && (
+                      <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                        <Plus size={18} /> New Task
+                      </button>
+                    )
                   ) : (activeView as string) === 'LOS' ? (
-                    <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "12px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
-                      <Lightbulb size={18} color="#f59e0b" /> Update LO
-                    </button>
+                    !isViewer && (
+                      <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "12px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
+                        <Lightbulb size={18} color="#f59e0b" /> Update LO
+                      </button>
+                    )
                   ) : null}
                 </div>
               </div>
@@ -3742,27 +3747,16 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       Review Status {taskSortConfig?.key === 'reviewStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerComments')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Owner Comments {taskSortConfig?.key === 'ownerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerComments')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Reviewer Comments {taskSortConfig?.key === 'reviewerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestStatus')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Request Status {taskSortConfig?.key === 'requestStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
+                  {!isViewer && (
+                    <>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -3783,8 +3777,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     const isOwnerLocked = COMPLETION_STATUSES.includes(task.taskStatus) && !isAdmin;
                     const isReviewerLocked = (task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin;
                     
-                    const canEditReviewFields = isAdmin || isCurrentUserReviewer;
-                    const canEditOwnerFields = isAdmin || isCurrentUserOwner;
+                    const canEditReviewFields = (isAdmin || isCurrentUserReviewer) && !isViewer;
+                    const canEditOwnerFields = (isAdmin || isCurrentUserOwner) && !isViewer;
                     
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
@@ -3839,9 +3833,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </td>
 
                       <td 
-                        style={{ ...getTdStyle(t), fontWeight: 600, cursor: isOwnerLocked ? "default" : "pointer" }}
+                        style={{ ...getTdStyle(t), fontWeight: 600, cursor: (isOwnerLocked || isViewer) ? "default" : "pointer" }}
                         onClick={() => {
-                          if (isOwnerLocked) return;
+                          if (isOwnerLocked || isViewer) return;
                           if (COMPLETION_STATUSES.includes(task.taskStatus)) return;
                           showConfirm(`Mark "${task.taskName}" as Completed?`, () => {
                             handleUpdate(task.id, "taskStatus", "Completed");
@@ -3891,40 +3885,42 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         />
                       </td>
 
-                      <td style={getTdStyle(t)}>
-                        {task.reviewerName === "Not Applicable" ? (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                        ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
-                          <select 
-                            onChange={(e) => {
-                              if (e.target.value === 'YES') {
-                                setLOCaptureForm({
-                                  ...loCaptureForm,
-                                  taskId: task.id,
-                                  entity: task.entityName || "",
-                                  dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
-                                  identifiedBy: task.reviewerName || "",
-                                  committedBy: task.ownerName || "",
-                                  learningOpportunity: "",
-                                  resolutionProvided: "",
-                                  modeOfCommunication: "Email",
-                                  comments: ""
-                                });
-                                setShowLOCaptureModal(true);
-                              }
-                            }}
-                            style={{ 
-                              padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, 
-                              fontSize: "0.75rem", fontWeight: 600, background: t.bg, color: t.textMuted, cursor: "pointer" 
-                            }}
-                          >
-                            <option value="NO">No</option>
-                            <option value="YES">Yes</option>
-                          </select>
-                        ) : (
-                          <span style={{ color: "#cbd5e1" }}>--</span>
-                        )}
-                      </td>
+                      {!isViewer && (
+                        <td style={getTdStyle(t)}>
+                          {task.reviewerName === "Not Applicable" ? (
+                            <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
+                          ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value === 'YES') {
+                                  setLOCaptureForm({
+                                    ...loCaptureForm,
+                                    taskId: task.id,
+                                    entity: task.entityName || "",
+                                    dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
+                                    identifiedBy: task.reviewerName || "",
+                                    committedBy: task.ownerName || "",
+                                    learningOpportunity: "",
+                                    resolutionProvided: "",
+                                    modeOfCommunication: "Email",
+                                    comments: ""
+                                  });
+                                  setShowLOCaptureModal(true);
+                                }
+                              }}
+                              style={{ 
+                                padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, 
+                                fontSize: "0.75rem", fontWeight: 600, background: t.bg, color: t.textMuted, cursor: "pointer" 
+                              }}
+                            >
+                              <option value="NO">No</option>
+                              <option value="YES">Yes</option>
+                            </select>
+                          ) : (
+                            <span style={{ color: "#cbd5e1" }}>--</span>
+                          )}
+                        </td>
+                      )}
                       
                       {/* Editable Owner Comments */}
                       <td 
@@ -4007,83 +4003,84 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       </td>
 
-                      {/* Delete / Request Edit / Request Delete Action */}
-                      <td style={{ ...getTdStyle(t), textAlign: "center" }}>
-                                                      <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
-                          {(isAdmin || task.editApproved) && (
-                             <button 
-                               onClick={() => { setPreFilledTask(task); setShowForm(true); }}
-                               style={{ 
-                                 background: t.bg, color: t.textMuted, border: `1px solid ${t.border}`, 
-                                 cursor: "pointer", padding: "6px", borderRadius: "8px", 
-                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                 transition: "all 0.2s"
-                                }}
-                                title="Edit Task"
-                                onMouseOver={e => { e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.borderColor = "#bfdbfe"; e.currentTarget.style.background = "#eff6ff"; }}
-                                onMouseOut={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                           )}
-
-                             {isAdmin ? (
+                      {/* Delete / Request Edit / Request De                      {!isViewer && (
+                        <td style={{ ...getTdStyle(t), textAlign: "center" }}>
+                                                        <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
+                            {(isAdmin || task.editApproved) && (
                                <button 
-                                 onClick={() => {
-                                   showConfirm(`Are you sure you want to delete "${task.taskName}"?`, async () => {
-                                      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-                                      if (res.ok) {
-                                        setTasks(tasks.filter(t => t.id !== task.id));
-                                        showNotification("Task deleted successfully.");
-                                      } else {
-                                        showNotification("Failed to delete task.", "error");
-                                      }
-                                   });
-                                 }}
+                                 onClick={() => { setPreFilledTask(task); setShowForm(true); }}
                                  style={{ 
-                                   background: "#fef2f2", color: "#ef4444", border: "1px solid #fca5a5", 
-                                   cursor: "pointer", padding: "4px 8px", borderRadius: "6px", 
-                                   fontSize: "0.75rem", fontWeight: 500 
-                                 }}
-                                 title="Delete Task Directly"
-                               >
-                                 Delete
-                               </button>
-                             ) : (isCurrentUserOwner || isCurrentUserReviewer) ? (
-                               <button 
-                                 onClick={() => handleRequestDelete(task.id)}
-                                 disabled={task.deleteRequested}
-                                 style={{ 
-                                   background: task.deleteRequested ? "#e2e8f0" : "#fef2f2", 
-                                   color: task.deleteRequested ? "#94a3b8" : "#ef4444", 
-                                   border: task.deleteRequested ? "1px solid #cbd5e1" : "1px solid #fca5a5", 
-                                   cursor: task.deleteRequested ? "not-allowed" : "pointer", 
-                                   padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
-                                 }}
-                                 title={task.deleteRequested ? "Delete Pending" : "Request Delete"}
-                               >
-                                 {task.deleteRequested ? "Requested" : "Del Req"}
-                               </button>
-                             ) : null}
-
-                             {(!isAdmin && !task.editApproved && (isCurrentUserOwner || isCurrentUserReviewer)) && (
-                              <button 
-                                onClick={() => handleRequestEdit(task.id, isCurrentUserReviewer ? "REVIEWER" : "OWNER")}
-                                disabled={task.editRequested}
-                                style={{ 
-                                  background: task.editRequested ? "#e2e8f0" : (isCurrentUserReviewer ? "#fdf4ff" : "#eff6ff"), 
-                                  color: task.editRequested ? "#94a3b8" : (isCurrentUserReviewer ? "#d946ef" : "#3b82f6"), 
-                                  border: task.editRequested ? "1px solid #cbd5e1" : (isCurrentUserReviewer ? "1px solid #f5d0fe" : "1px solid #bfdbfe"), 
-                                  cursor: task.editRequested ? "not-allowed" : "pointer", 
-                                  padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
-                                }}
-                                title={task.editRequested ? "Edit Pending" : "Request Edit"}
-                              >
-                                {task.editRequested ? "Requested" : "Edit Req"}
-                              </button>
+                                   background: t.bg, color: t.textMuted, border: `1px solid ${t.border}`, 
+                                   cursor: "pointer", padding: "6px", borderRadius: "8px", 
+                                   display: "flex", alignItems: "center", justifyContent: "center",
+                                   transition: "all 0.2s"
+                                  }}
+                                  title="Edit Task"
+                                  onMouseOver={e => { e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.borderColor = "#bfdbfe"; e.currentTarget.style.background = "#eff6ff"; }}
+                                  onMouseOut={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
                              )}
+
+                               {isAdmin ? (
+                                 <button 
+                                   onClick={() => {
+                                     showConfirm(`Are you sure you want to delete "${task.taskName}"?`, async () => {
+                                        const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+                                        if (res.ok) {
+                                          setTasks(tasks.filter(t => t.id !== task.id));
+                                          showNotification("Task deleted successfully.");
+                                        } else {
+                                          showNotification("Failed to delete task.", "error");
+                                        }
+                                     });
+                                   }}
+                                   style={{ 
+                                     background: "#fef2f2", color: "#ef4444", border: "1px solid #fca5a5", 
+                                     cursor: "pointer", padding: "4px 8px", borderRadius: "6px", 
+                                     fontSize: "0.75rem", fontWeight: 500 
+                                   }}
+                                   title="Delete Task Directly"
+                                 >
+                                   Delete
+                                 </button>
+                               ) : (isCurrentUserOwner || isCurrentUserReviewer) ? (
+                                 <button 
+                                   onClick={() => handleRequestDelete(task.id)}
+                                   disabled={task.deleteRequested}
+                                   style={{ 
+                                     background: task.deleteRequested ? "#e2e8f0" : "#fef2f2", 
+                                     color: task.deleteRequested ? "#94a3b8" : "#ef4444", 
+                                     border: task.deleteRequested ? "1px solid #cbd5e1" : "1px solid #fca5a5", 
+                                     cursor: task.deleteRequested ? "not-allowed" : "pointer", 
+                                     padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
+                                   }}
+                                   title={task.deleteRequested ? "Delete Pending" : "Request Delete"}
+                                 >
+                                   {task.deleteRequested ? "Requested" : "Del Req"}
+                                 </button>
+                               ) : null}
+
+                               {(!isAdmin && !task.editApproved && (isCurrentUserOwner || isCurrentUserReviewer)) && (
+                                <button 
+                                  onClick={() => handleRequestEdit(task.id, isCurrentUserReviewer ? "REVIEWER" : "OWNER")}
+                                  disabled={task.editRequested}
+                                  style={{ 
+                                    background: task.editRequested ? "#e2e8f0" : (isCurrentUserReviewer ? "#fdf4ff" : "#eff6ff"), 
+                                    color: task.editRequested ? "#94a3b8" : (isCurrentUserReviewer ? "#d946ef" : "#3b82f6"), 
+                                    border: task.editRequested ? "1px solid #cbd5e1" : (isCurrentUserReviewer ? "1px solid #f5d0fe" : "1px solid #bfdbfe"), 
+                                    cursor: task.editRequested ? "not-allowed" : "pointer", 
+                                    padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
+                                  }}
+                                  title={task.editRequested ? "Edit Pending" : "Request Edit"}
+                                >
+                                  {task.editRequested ? "Requested" : "Edit Req"}
+                                </button>
+                               )}
                             </div>
-                      </td>
+                        </td>
+                      )}
                     </tr>
                     )
                   })
@@ -4169,12 +4166,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </div>
                     )}
                   </div>
-                  <button 
-                    onClick={() => setShowExtReqForm(true)}
-                    style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
-                  >
-                    <Plus size={18} /> Submit New Request
-                  </button>
+                  {!isViewer && (
+                    <button 
+                      onClick={() => setShowExtReqForm(true)}
+                      style={{ display: "flex", alignItems: "center", gap: "8px", background: "#4f46e5", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(79, 70, 229, 0.3)" }}
+                    >
+                      <Plus size={18} /> Submit New Request
+                    </button>
+                  )}
                 </div>
               </div>
               
@@ -4522,16 +4521,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                          <h2 style={{ color: "white", margin: 0, fontSize: "2.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Knowledge Library</h2>
                          <p style={{ color: "rgba(255,255,255,0.7)", margin: "8px 0 0 0", fontSize: "1rem" }}>Centralized reference materials, acts, and professional publications.</p>
                       </div>
-                      <button 
-                        onClick={() => {
-                          const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
-                          if (cats.length > 0) setResourceCategory(cats[0]);
-                          setShowResourceModal(true);
-                        }} 
-                        style={{ background: "#10b981", color: "white", padding: "14px 28px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", gap: "8px" }}
-                      >
-                        <Plus size={18} /> Add Resource
-                      </button>
+                      {!isViewer && (
+                        <button 
+                          onClick={() => {
+                            const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
+                            if (cats.length > 0) setResourceCategory(cats[0]);
+                            setShowResourceModal(true);
+                          }} 
+                          style={{ background: "#10b981", color: "white", padding: "14px 28px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", gap: "8px" }}
+                        >
+                          <Plus size={18} /> Add Resource
+                        </button>
+                      )}
                    </div>
                    <div style={{ padding: "40px" }}>
                      {resourcesLoading ? (
@@ -4769,7 +4770,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               </div>
                             </th>
                             <th style={getThStyle(t)}>Ack Remarks</th>
-                            <th style={getThStyle(t)}>Actions</th>
+                            {!isViewer && <th style={getThStyle(t)}>Actions</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -4797,40 +4798,42 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </span>
                               </td>
                               <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal", fontSize: "0.8125rem", color: t.text }}>{lo.learnerComments || "--"}</td>
-                              <td style={getTdStyle(t)}>
-                                <div style={{ display: "flex", gap: "8px" }}>
-                                  {!lo.isAcknowledged && (lo.committedBy === user.name || isAdmin) && (
-                                    <button 
-                                      onClick={() => { setAcknowledgingLO(lo); setShowAckModal(true); }}
-                                      style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.75rem" }}
-                                    >Acknowledge</button>
-                                  )}
-                                  
-                                  {isAdmin ? (
-                                    <>
-                                      <button onClick={() => { setEditingLO(lo); setShowOptionsModal(false); }} style={{ padding: "4px", color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}><Edit2 size={16} /></button>
-                                      <button onClick={() => handleDeleteLO(lo.id)} style={{ padding: "4px", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={16} /></button>
-                                    </>
-                                  ) : (
-                                    <>
+                              {!isViewer && (
+                                <td style={getTdStyle(t)}>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    {!lo.isAcknowledged && (lo.committedBy === user.name || isAdmin) && (
                                       <button 
-                                        disabled={lo.editRequested}
-                                        onClick={() => handleRequestEditLO(lo.id)} 
-                                        style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, background: "white", color: lo.editRequested ? t.textMuted : "#3b82f6", fontSize: "0.7rem", fontWeight: 600, cursor: lo.editRequested ? "not-allowed" : "pointer" }}
-                                      >
-                                        {lo.editRequested ? "Edit Requested" : "Req Edit"}
-                                      </button>
-                                      <button 
-                                        disabled={lo.deleteRequested}
-                                        onClick={() => handleRequestDeleteLO(lo.id)} 
-                                        style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, background: "white", color: lo.deleteRequested ? t.textMuted : "#ef4444", fontSize: "0.7rem", fontWeight: 600, cursor: lo.deleteRequested ? "not-allowed" : "pointer" }}
-                                      >
-                                        {lo.deleteRequested ? "Delete Requested" : "Req Delete"}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
+                                        onClick={() => { setAcknowledgingLO(lo); setShowAckModal(true); }}
+                                        style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.75rem" }}
+                                      >Acknowledge</button>
+                                    )}
+                                    
+                                    {isAdmin ? (
+                                      <>
+                                        <button onClick={() => { setEditingLO(lo); setShowOptionsModal(false); }} style={{ padding: "4px", color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}><Edit2 size={16} /></button>
+                                        <button onClick={() => handleDeleteLO(lo.id)} style={{ padding: "4px", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button 
+                                          disabled={lo.editRequested}
+                                          onClick={() => handleRequestEditLO(lo.id)} 
+                                          style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, background: "white", color: lo.editRequested ? t.textMuted : "#3b82f6", fontSize: "0.7rem", fontWeight: 600, cursor: lo.editRequested ? "not-allowed" : "pointer" }}
+                                        >
+                                          {lo.editRequested ? "Edit Requested" : "Req Edit"}
+                                        </button>
+                                        <button 
+                                          disabled={lo.deleteRequested}
+                                          onClick={() => handleRequestDeleteLO(lo.id)} 
+                                          style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, background: "white", color: lo.deleteRequested ? t.textMuted : "#ef4444", fontSize: "0.7rem", fontWeight: 600, cursor: lo.deleteRequested ? "not-allowed" : "pointer" }}
+                                        >
+                                          {lo.deleteRequested ? "Delete Requested" : "Req Delete"}
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
@@ -5978,6 +5981,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   >
                                     <option value="USER">USER</option>
                                     <option value="ADMIN">ADMIN</option>
+                                    <option value="VIEWER">VIEWER</option>
                                     <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                                   </select>
                                 </td>

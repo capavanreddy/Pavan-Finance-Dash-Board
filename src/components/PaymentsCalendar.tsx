@@ -63,6 +63,7 @@ interface PaymentOccurrence {
 import { resolveTaskName, getPeriodKey, getOccurrencesBetween } from "@/lib/recurringUtils";
 
 export default function PaymentsCalendar({   user, isAdmin, t, theme, settings , showNotification , showConfirm }: { user: any; isAdmin: boolean; t: any; theme: string; settings: any ; showNotification: any;  showConfirm: any; }) {
+  const isViewer = user?.role === 'VIEWER';
   const [activeTab, setActiveTab] = useState<'TRACKER' | 'MASTER' | 'ANALYTICS'>('TRACKER');
   const [templates, setTemplates] = useState<PaymentTemplate[]>([]);
   const [occurrences, setOccurrences] = useState<PaymentOccurrence[]>([]);
@@ -1062,7 +1063,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                                     <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestSort('isHold')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Hold <SortIcon column="isHold" /></div>
                   </th>
-                  <th style={thStyle}>Action</th>
+                  {!isViewer && <th style={thStyle}>Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1126,6 +1127,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                             )}
                           </div>
                         </td>
+                         {!isViewer && (
                         <td style={tdStyle}>
                           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                             {!occ.isPaid && !occ.isHold && !occ.isCancelled && (
@@ -1179,6 +1181,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                             )}
                           </div>
                         </td>
+                      )}
                       </tr>
                     );
                   })
@@ -1218,12 +1221,14 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
               )}
             </div>
 
-            <button 
-              onClick={() => { setEditingTemplate(null); setFormData({ ...formData, entityName: "", paymentDescription: "", vendorName: "", vendorEmail: "", startDate: "", endDate: "" }); setShowForm(true); }}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: "pointer" }}
-            >
-              <Plus size={18} /> Add New Payment Info
-            </button>
+            {!isViewer && (
+              <button 
+                onClick={() => { setEditingTemplate(null); setFormData({ ...formData, entityName: "", paymentDescription: "", vendorName: "", vendorEmail: "", startDate: "", endDate: "" }); setShowForm(true); }}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 600, cursor: "pointer" }}
+              >
+                <Plus size={18} /> Add New Payment Info
+              </button>
+            )}
           </div>
 
           {/* Master Table */}
@@ -1249,7 +1254,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                   <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => requestMasterSort('isStopped')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>Status <MasterSortIcon column="isStopped" /></div>
                   </th>
-                  <th style={thStyle}>Actions</th>
+                  {!isViewer && <th style={thStyle}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1271,32 +1276,34 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                           {temp.isStopped ? "STOPPED" : "ACTIVE"}
                         </span>
                       </td>
-                      <td style={tdStyle}>
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          {/* Edit logic */}
-                          {isAdmin || temp.editApproved ? (
-                            <button onClick={() => { setEditingTemplate(temp); setFormData(temp as any); setShowForm(true); }} style={iconBtnStyle}><Edit2 size={16} /></button>
-                          ) : (
-                            !temp.editRequested && (
-                              <button onClick={() => { setActiveMaster(temp); setShowRequestEditMasterModal(true); }} style={{ ...iconBtnStyle, color: "#3b82f6" }} title="Request Edit"><Edit2 size={16} /></button>
-                            )
-                          )}
-                          {temp.editRequested && !temp.editApproved && <span style={{ fontSize: "0.65rem", color: "#3b82f6", fontWeight: 700 }}>EDIT PENDING</span>}
+                       {!isViewer && (
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            {/* Edit logic */}
+                            {isAdmin || temp.editApproved ? (
+                              <button onClick={() => { setEditingTemplate(temp); setFormData(temp as any); setShowForm(true); }} style={iconBtnStyle}><Edit2 size={16} /></button>
+                            ) : (
+                              !temp.editRequested && (
+                                <button onClick={() => { setActiveMaster(temp); setShowRequestEditMasterModal(true); }} style={{ ...iconBtnStyle, color: "#3b82f6" }} title="Request Edit"><Edit2 size={16} /></button>
+                              )
+                            )}
+                            {temp.editRequested && !temp.editApproved && <span style={{ fontSize: "0.65rem", color: "#3b82f6", fontWeight: 700 }}>EDIT PENDING</span>}
 
-                          {/* Stop logic */}
-                          {!temp.isStopped && <button onClick={() => { setStoppingTemplate(temp); setShowStopModal(true); }} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Stop Recurring Payment"><StopCircle size={16} /></button>}
-                          
-                          {/* Delete logic */}
-                          {isAdmin ? (
-                            <button onClick={() => handleDeleteMaster(temp.id)} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Delete Template & All Transactions"><Trash2 size={16} /></button>
-                          ) : (
-                            !temp.deleteRequested && (
-                              <button onClick={() => { setActiveMaster(temp); setShowRequestDeleteMasterModal(true); }} style={{ ...iconBtnStyle, color: "#f97316" }} title="Request Deletion"><Trash2 size={16} /></button>
-                            )
-                          )}
-                          {temp.deleteRequested && <span style={{ fontSize: "0.65rem", color: "#f97316", fontWeight: 700 }}>DEL PENDING</span>}
-                        </div>
-                      </td>
+                            {/* Stop logic */}
+                            {!temp.isStopped && <button onClick={() => { setStoppingTemplate(temp); setShowStopModal(true); }} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Stop Recurring Payment"><StopCircle size={16} /></button>}
+                            
+                            {/* Delete logic */}
+                            {isAdmin ? (
+                              <button onClick={() => handleDeleteMaster(temp.id)} style={{ ...iconBtnStyle, color: "#ef4444" }} title="Delete Template & All Transactions"><Trash2 size={16} /></button>
+                            ) : (
+                              !temp.deleteRequested && (
+                                <button onClick={() => { setActiveMaster(temp); setShowRequestDeleteMasterModal(true); }} style={{ ...iconBtnStyle, color: "#f97316" }} title="Request Deletion"><Trash2 size={16} /></button>
+                              )
+                            )}
+                            {temp.deleteRequested && <span style={{ fontSize: "0.65rem", color: "#f97316", fontWeight: 700 }}>DEL PENDING</span>}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

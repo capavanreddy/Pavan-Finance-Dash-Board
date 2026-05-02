@@ -45,6 +45,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const userRole = (session.user as any)?.role;
+  if (userRole === "VIEWER") {
+    return NextResponse.json({ message: "Forbidden: Viewers cannot acknowledge LOs" }, { status: 403 });
+  }
+
   try {
     const sql = getDb();
     const { id, isAcknowledged, learnerComments } = await req.json();
@@ -81,6 +86,11 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession();
   if (!session || !session.user?.email) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role;
+  if (userRole === "VIEWER") {
+    return NextResponse.json({ message: "Forbidden: Viewers cannot create LOs" }, { status: 403 });
   }
 
   try {

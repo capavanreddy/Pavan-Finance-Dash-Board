@@ -91,6 +91,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userRole = (session.user as any)?.role;
+    if (userRole === "VIEWER") {
+      return NextResponse.json({ error: "Forbidden: Viewers cannot create or modify payment templates" }, { status: 403 });
+    }
+
     const data = await req.json();
     const {
       id,

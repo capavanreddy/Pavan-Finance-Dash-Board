@@ -12,6 +12,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userRole = (session.user as any)?.role;
+    if (userRole === "VIEWER") {
+      return NextResponse.json({ error: "Forbidden: Viewers cannot record payments" }, { status: 403 });
+    }
+
     const { actualDate, amountPaid } = await req.json();
 
     if (!actualDate || !amountPaid) {

@@ -72,6 +72,12 @@ export async function POST(req: NextRequest) {
   }
 
   const data = await req.json();
+  const userRole = (session.user as any)?.role;
+
+  if (userRole === "VIEWER") {
+    return NextResponse.json({ message: "Forbidden: Viewers cannot create tasks" }, { status: 403 });
+  }
+
   let taskName: string = "", taskType: string = "", assignments: any[] = [], dueDate: string = "";
   let departmentName: string = "", requestFrom: string = "", mailLink: string = "", linkedRequestId: any = null;
 

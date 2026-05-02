@@ -15,6 +15,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const resolvedParams = await params;
     const taskId = parseInt(resolvedParams.id);
     const data = await req.json();
+    const userRole = (session.user as any)?.role;
+
+    if (userRole === "VIEWER") {
+      return NextResponse.json({ message: "Forbidden: Viewers cannot modify tasks" }, { status: 403 });
+    }
 
     const existingTasks = await sql`SELECT * FROM "Task" WHERE id = ${taskId}`;
     const existingTask = existingTasks[0];
@@ -192,6 +197,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const userRole = (session.user as any)?.role;
     
     // Only Master Admin can delete tasks
+    if (userRole === "VIEWER") {
+      return NextResponse.json({ message: "Forbidden: Viewers cannot delete tasks" }, { status: 403 });
+    }
     const isMasterAdmin = userEmail === "pavanreddy@intellicar.in" || userRole === "ADMIN";
 
     if (!isMasterAdmin) {

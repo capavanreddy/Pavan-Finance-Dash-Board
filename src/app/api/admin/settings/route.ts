@@ -24,6 +24,14 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const sql = getDb();
+    const { getServerSession } = await import("@/lib/session");
+    const session = await getServerSession();
+    const userRole = (session?.user as any)?.role;
+
+    if (!session || (userRole !== "ADMIN" && session.user?.email !== "pavanreddy@intellicar.in")) {
+      return NextResponse.json({ message: "Forbidden: Only Admins can modify settings" }, { status: 403 });
+    }
+
     const body = await request.json();
     console.log('PATCH /api/admin/settings - Body:', JSON.stringify(body));
 
