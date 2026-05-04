@@ -51,21 +51,21 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', minWidth: '160px' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: 'auto', minWidth: '140px', flexShrink: 0 }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          padding: '10px 12px',
-          borderRadius: '10px',
+          padding: '6px 10px',
+          borderRadius: '8px',
           border: `1px solid ${t.border}`,
           background: t.bg,
           color: selected.length > 0 ? t.text : t.textMuted,
-          fontSize: '0.875rem',
+          fontSize: '0.8125rem',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          minHeight: '42px',
+          minHeight: '36px',
           transition: 'all 0.2s ease',
           boxShadow: isOpen ? `0 0 0 2px ${theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)'}` : 'none',
           ...customStyle
@@ -115,7 +115,9 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           position: 'absolute',
           top: 'calc(100% + 6px)',
           left: 0,
-          right: 0,
+          width: 'max-content',
+          minWidth: '100%',
+          maxWidth: '300px',
           background: theme === 'DARK' ? '#1e293b' : '#ffffff',
           borderRadius: '12px',
           border: `1px solid ${t.border}`,
