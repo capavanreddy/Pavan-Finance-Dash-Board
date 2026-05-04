@@ -3460,12 +3460,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       fontStyle: "italic", 
                       maxWidth: "900px", 
                       margin: "0 auto 24px auto", 
-                      color: "#059669",
                       lineHeight: 1.4,
                       fontWeight: 600,
                       letterSpacing: "-0.01em"
                     }}>
-                      "{quote.text}"
+                      <span style={{ color: "#2563eb" }}>
+                        "Your work is going to fill a large part of your life,
+                      </span>
+                      <br />
+                      <span style={{ color: "#059669" }}>
+                        and the only way to be truly satisfied is to do what you believe is great work."
+                      </span>
                     </h3>
                     <div style={{ 
                       display: "inline-block",
