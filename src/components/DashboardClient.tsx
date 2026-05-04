@@ -3448,19 +3448,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     background: "rgba(255, 255, 255, 0.8)", 
                     backdropFilter: "blur(12px)",
                     borderRadius: "32px",
-                    border: "1px solid rgba(225, 29, 72, 0.2)",
+                    border: "1px solid rgba(16, 185, 129, 0.2)",
                     boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
                     overflow: "hidden"
                   }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(225, 29, 72, 0.02)", pointerEvents: "none" }}></div>
-                    <Quote size={40} color="#e11d48" style={{ marginBottom: "20px", opacity: 0.2 }} />
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(16, 185, 129, 0.02)", pointerEvents: "none" }}></div>
+                    <Quote size={40} color="#059669" style={{ marginBottom: "20px", opacity: 0.2 }} />
                     <h3 style={{ 
                       fontSize: "1.75rem", 
                       fontFamily: "'Outfit', serif", 
                       fontStyle: "italic", 
                       maxWidth: "900px", 
                       margin: "0 auto 24px auto", 
-                      color: "#e11d48",
+                      color: "#059669",
                       lineHeight: 1.4,
                       fontWeight: 600,
                       letterSpacing: "-0.01em"
@@ -3470,9 +3470,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <div style={{ 
                       display: "inline-block",
                       padding: "8px 24px",
-                      background: "rgba(225, 29, 72, 0.08)",
+                      background: "rgba(16, 185, 129, 0.08)",
                       borderRadius: "20px",
-                      border: "1px solid rgba(225, 29, 72, 0.2)",
+                      border: "1px solid rgba(16, 185, 129, 0.2)",
                       fontWeight: 800, 
                       color: "#000000", 
                       textTransform: "uppercase", 
