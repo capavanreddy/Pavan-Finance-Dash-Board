@@ -8227,7 +8227,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {usersList
                                   .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
-                                  .filter(u => matrixDeptFilter === 'ALL' || u.department === matrixDeptFilter)
+                                  .filter(u => matrixDeptFilter.length === 0 || matrixDeptFilter.includes(u.department))
                                   .filter(u => (u as any).isApproved !== false)
                                   .map((u) => {
                                     const matrix = JSON.parse(settings.bulkImportMatrix || '{}');
@@ -8291,16 +8291,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </div>
                             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                               {/* Department Filter */}
-                              <select 
-                                value={matrixDeptFilter}
-                                onChange={(e) => setMatrixDeptFilter(e.target.value)}
-                                style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.875rem", background: t.card, color: t.text, cursor: "pointer" }}
-                              >
-                                <option value="ALL">All Departments</option>
-                                {settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort().map(dept => (
-                                  <option key={dept} value={dept}>{dept}</option>
-                                ))}
-                              </select>
+                              <MultiSelectFilter
+                                options={settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort() || []}
+                                selected={matrixDeptFilter}
+                                onChange={setMatrixDeptFilter}
+                                placeholder="All Departments"
+                                theme={theme}
+                                t={t}
+                              />
 
                               <div style={{ position: "relative" }}>
                                 <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
@@ -8328,7 +8326,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {usersList
                                   .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
-                                  .filter(u => matrixDeptFilter === 'ALL' || u.department === matrixDeptFilter)
+                                  .filter(u => matrixDeptFilter.length === 0 || matrixDeptFilter.includes(u.department))
                                   .filter(u => (u as any).isApproved !== false)
                                   .map((u) => {
                                     const accessMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
