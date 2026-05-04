@@ -10,6 +10,8 @@ interface MultiSelectFilterProps {
   placeholder: string;
   theme?: 'LIGHT' | 'DARK';
   t: any;
+  labelMapping?: Record<string, string>;
+  customStyle?: React.CSSProperties;
 }
 
 const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
@@ -18,7 +20,9 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   onChange,
   placeholder,
   theme = 'DARK',
-  t
+  t,
+  labelMapping,
+  customStyle
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,14 +67,15 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           justifyContent: 'space-between',
           minHeight: '42px',
           transition: 'all 0.2s ease',
-          boxShadow: isOpen ? `0 0 0 2px ${theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)'}` : 'none'
+          boxShadow: isOpen ? `0 0 0 2px ${theme === 'DARK' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)'}` : 'none',
+          ...customStyle
         }}
       >
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
           {selected.length === 0 ? (
             <span>{placeholder}</span>
           ) : selected.length === 1 ? (
-            <span style={{ color: t.text, fontWeight: 600 }}>{selected[0]}</span>
+            <span style={{ color: customStyle?.color || t.text, fontWeight: 600 }}>{labelMapping?.[selected[0]] || selected[0]}</span>
           ) : (
             <span style={{ 
               background: '#2563eb', 
@@ -184,7 +189,7 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                   textOverflow: 'ellipsis',
                   marginRight: '8px'
                 }}>
-                  {option}
+                  {labelMapping?.[option] || option}
                 </span>
                 {isSelected && <Check size={16} />}
               </div>
