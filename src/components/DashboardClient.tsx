@@ -3468,7 +3468,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         "Your work is going to fill a large part of your life,
                       </span>
                       <br />
-                      <span style={{ color: "#059669" }}>
+                      <span style={{ color: "#e11d48" }}>
                         and the only way to be truly satisfied is to do what you believe is great work."
                       </span>
                     </h3>
