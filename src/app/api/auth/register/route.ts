@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
                   <p style="margin: 0;"><strong>Department:</strong> ${department}</p>
                 </div>
                 <p>Please log in to the <strong>Control Center > User Management</strong> to review and approve this request.</p>
-                <a href="${process.env.NEXTAUTH_URL}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px;">Review Request</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app'}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px;">Review Request</a>
               </div>
               <div style="background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b;">
                 © 2026 Intellicar Telematics. All rights reserved.

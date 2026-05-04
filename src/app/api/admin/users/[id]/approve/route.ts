@@ -40,7 +40,7 @@ export async function POST(
                 <p style="font-size: 18px;">Hello <strong>${user.name}</strong>,</p>
                 <p>We are pleased to inform you that your access request has been approved by the Administrator.</p>
                 <p>You can now log in to manage your tasks and collaborate with the team.</p>
-                <a href="${process.env.NEXTAUTH_URL}" style="display: inline-block; background: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; font-size: 16px;">Log In Now</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app'}" style="display: inline-block; background: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; font-size: 16px;">Log In Now</a>
               </div>
               <div style="background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b;">
                 © 2026 Intellicar Telematics. All rights reserved.

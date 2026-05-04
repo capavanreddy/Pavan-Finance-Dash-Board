@@ -159,8 +159,42 @@ export async function POST(req: NextRequest) {
       VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${department}, true, ${role}, NOW(), NOW())
       RETURNING id, name, email
     `;
+    const user = users[0];
 
-    return NextResponse.json({ message: "User created successfully", user: users[0] }, { status: 201 });
+    // Notify new employee
+    try {
+      const { sendEmail } = require("@/lib/email");
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app';
+      await sendEmail({
+        to: user.email,
+        subject: "Welcome to Finance Hub!",
+        html: `
+          <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+            <div style="background: #2563eb; padding: 24px; color: white; text-align: center;">
+              <h2 style="margin: 0; font-size: 24px;">Welcome to Finance Hub!</h2>
+            </div>
+            <div style="padding: 32px; text-align: center;">
+              <p style="font-size: 18px;">Hello <strong>${user.name}</strong>,</p>
+              <p>Your account has been created by the Administrator.</p>
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+                <p style="margin: 0 0 10px 0;"><strong>Login Email:</strong> ${user.email}</p>
+                <p style="margin: 0;"><strong>Default Password:</strong> Intellicar@123</p>
+              </div>
+              <p>You can now log in to manage your tasks and collaborate with the team.</p>
+              <a href="${appUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; font-size: 16px;">Log In Now</a>
+              <p style="margin-top: 20px; font-size: 13px; color: #64748b;">(Please change your password after logging in for the first time.)</p>
+            </div>
+            <div style="background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b;">
+              © 2026 Intellicar Telematics. All rights reserved.
+            </div>
+          </div>
+        `
+      });
+    } catch (emailError) {
+      console.error("FAILED TO NOTIFY NEW EMPLOYEE:", emailError);
+    }
+
+    return NextResponse.json({ message: "User created successfully", user: user }, { status: 201 });
   } catch (error: any) {
     console.error("Failed to create user", error);
     return NextResponse.json({ message: "Internal server error", error: error.message }, { status: 500 });
