@@ -318,16 +318,22 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        if (settings.paymentReportFrequency !== 'OFF' && settings.paymentReportFrequency) {
+        if (settings.paymentReportFrequency && !settings.paymentReportFrequency.includes('OFF')) {
           const pTimes = (settings.paymentReportTimes || "10:00").split(',').map((t: string) => t.trim());
+          const pFreqs = settings.paymentReportFrequency.split(',').map((f: string) => f.trim());
+          
           if (pTimes.includes(currentHHmm)) {
-            if (settings.paymentReportFrequency === 'D') {
+            if (pFreqs.includes('D')) {
               shouldPaymentReport = true;
-            } else if (settings.paymentReportFrequency === 'W') {
+            } 
+            
+            if (!shouldPaymentReport && pFreqs.includes('W')) {
               const dayMap: Record<string, number> = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
               const targetDay = dayMap[settings.paymentReportDay || 'Monday'];
               if (currentDay === targetDay) shouldPaymentReport = true;
-            } else if (settings.paymentReportFrequency === 'M') {
+            } 
+            
+            if (!shouldPaymentReport && pFreqs.includes('M')) {
               if (currentDate === (settings.paymentReportDate || 1)) shouldPaymentReport = true;
             }
           }

@@ -6103,25 +6103,42 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <div style={{ marginBottom: "32px", padding: "20px", background: "#fdf4ff", borderRadius: "12px", border: "1px solid #f5d0fe" }}>
                       <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#a21caf", fontWeight: 700 }}>Payment Report Schedule</h4>
                       <div style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
-                        {(['OFF', 'D', 'W', 'M'] as const).map((freq) => (
-                          <label key={freq} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "10px", border: "1px solid", borderColor: settings.paymentReportFrequency === freq ? "#d946ef" : "#e2e8f0", background: settings.paymentReportFrequency === freq ? "#fdf4ff" : "white", cursor: "pointer", transition: "all 0.2s" }}>
-                            <input 
-                              type="radio" 
-                              name="paymentFreq" 
-                              checked={settings.paymentReportFrequency === freq} 
-                              onChange={() => setSettings({...settings, paymentReportFrequency: freq})}
-                              style={{ accentColor: "#d946ef" }}
-                            />
-                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: settings.paymentReportFrequency === freq ? "#a21caf" : "#64748b" }}>
-                              {freq === 'OFF' ? 'Off' : freq === 'D' ? 'Daily' : freq === 'W' ? 'Weekly' : 'Monthly'}
-                            </span>
-                          </label>
-                        ))}
+                        {(['OFF', 'D', 'W', 'M'] as const).map((freq) => {
+                          const currentFreqs = (settings.paymentReportFrequency || 'OFF').split(',').filter(f => f.trim());
+                          const isSelected = currentFreqs.includes(freq);
+                          
+                          return (
+                            <label key={freq} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "10px", border: "1px solid", borderColor: isSelected ? "#d946ef" : "#e2e8f0", background: isSelected ? "#fdf4ff" : "white", cursor: "pointer", transition: "all 0.2s" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected} 
+                                onChange={() => {
+                                  let newFreqs: string[];
+                                  if (freq === 'OFF') {
+                                    newFreqs = ['OFF'];
+                                  } else {
+                                    if (isSelected) {
+                                      newFreqs = currentFreqs.filter(f => f !== freq);
+                                      if (newFreqs.length === 0) newFreqs = ['OFF'];
+                                    } else {
+                                      newFreqs = [...currentFreqs.filter(f => f !== 'OFF'), freq];
+                                    }
+                                  }
+                                  setSettings({...settings, paymentReportFrequency: newFreqs.join(',')});
+                                }}
+                                style={{ accentColor: "#d946ef" }}
+                              />
+                              <span style={{ fontSize: "0.875rem", fontWeight: 600, color: isSelected ? "#a21caf" : "#64748b" }}>
+                                {freq === 'OFF' ? 'Off' : freq === 'D' ? 'Daily' : freq === 'W' ? 'Weekly' : 'Monthly'}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
 
-                      {settings.paymentReportFrequency === 'W' && (
+                      {(settings.paymentReportFrequency || '').split(',').includes('W') && (
                         <div style={{ marginBottom: "16px" }}>
-                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DAY</label>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DAY (WEEKLY)</label>
                           <select 
                             value={settings.paymentReportDay}
                             onChange={(e) => setSettings({...settings, paymentReportDay: e.target.value})}
@@ -6134,9 +6151,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       )}
 
-                      {settings.paymentReportFrequency === 'M' && (
+                      {(settings.paymentReportFrequency || '').split(',').includes('M') && (
                         <div style={{ marginBottom: "16px" }}>
-                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DATE</label>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DATE (MONTHLY)</label>
                           <select 
                             value={settings.paymentReportDate}
                             onChange={(e) => setSettings({...settings, paymentReportDate: parseInt(e.target.value)})}
