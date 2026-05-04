@@ -8,7 +8,7 @@ interface MultiSelectFilterProps {
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder: string;
-  theme?: 'LIGHT' | 'DARK';
+  theme?: string;
   t: any;
   labelMapping?: Record<string, string>;
   customStyle?: React.CSSProperties;
