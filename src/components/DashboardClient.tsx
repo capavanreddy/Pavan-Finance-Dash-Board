@@ -4212,6 +4212,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Origin {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Reviewer {taskSortConfig?.key === 'reviewerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -4256,9 +4261,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
+                  <tr><td colSpan={20} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
                 ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
+                  <tr><td colSpan={20} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
                 ) : (
                   paginatedTasks.map((task) => {
                     const currentUserName = user?.name || user?.email;
@@ -4339,6 +4344,15 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         title={!isOwnerLocked && !COMPLETION_STATUSES.includes(task.taskStatus) ? "Click to mark as completed" : ""}
                       >
                         {task.taskStatus}
+                      </td>
+                      <td style={getTdStyle(t)}>
+                        <span style={{ 
+                          padding: "2px 6px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 700,
+                          background: task.transferStatus === 'T' ? "#fef3c7" : "#f1f5f9",
+                          color: task.transferStatus === 'T' ? "#b45309" : "#64748b"
+                        }}>
+                          {task.transferStatus === 'T' ? 'Transferred' : 'Original'}
+                        </span>
                       </td>
                       <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
                       

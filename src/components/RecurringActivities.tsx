@@ -1340,13 +1340,45 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     </td>
                     <td style={{...tdStyle, textAlign: "right"}}>
                         {!task.isConverted && (
-                            <button 
-                                onClick={() => handleDismissOccurrence(task.templateId, task.periodKey)}
-                                title="Dismiss this occurrence"
-                                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
-                            >
-                                <Trash2 size={16} />
-                            </button>
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                <button 
+                                    onClick={async () => {
+                                        if (!task.ownerName) {
+                                            showNotification("Please select an owner first");
+                                            return;
+                                        }
+                                        setLoading(true);
+                                        try {
+                                            const res = await fetch("/api/recurring-tasks/generate", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ tasks: [task] })
+                                            });
+                                            if (res.ok) {
+                                                fetchTemplates();
+                                                showNotification("Task converted successfully!");
+                                            } else {
+                                                showNotification("Conversion failed");
+                                            }
+                                        } catch (err) {
+                                            showNotification("Error during conversion");
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    title="Convert to Task now"
+                                    style={{ background: "#2563eb", border: "none", color: "white", cursor: "pointer", padding: "6px 12px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}
+                                >
+                                    <Zap size={14} /> Convert
+                                </button>
+                                <button 
+                                    onClick={() => handleDismissOccurrence(task.templateId, task.periodKey)}
+                                    title="Dismiss this occurrence"
+                                    style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
                         )}
                     </td>
                   </tr>
