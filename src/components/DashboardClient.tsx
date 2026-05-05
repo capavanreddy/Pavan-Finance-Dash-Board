@@ -4423,10 +4423,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <td style={getTdStyle(t)}>{task.ownerName}</td>
                             <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                             <td 
-                              style={{ ...getTdStyle(t), cursor: ((isAdmin || isCurrentUserOwner) && task.requestStatus !== "Processed") ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
                               title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${new Date(task.completedSubmissionAt).toLocaleString()}\nBy: ${task.completedBy || "Unknown"}` : ""}
                               onClick={() => {
-                                if (task.requestStatus === "Processed") return;
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserOwner) return;
                                 setEditingCell({ id: task.id, field: 'completionDate' });
                                 setEditValue(task.completionDate ? task.completionDate.split('T')[0] : '');
@@ -4459,10 +4459,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
                             <td 
-                              style={{ ...getTdStyle(t), cursor: ((isAdmin || isCurrentUserReviewer) && task.requestStatus !== "Processed") ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
                               title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${new Date(task.reviewedSubmissionAt).toLocaleString()}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
                               onClick={() => {
-                                if (task.requestStatus === "Processed") return;
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserReviewer) return;
                                 setEditingCell({ id: task.id, field: 'reviewCompletionDate' });
                                 setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split('T')[0] : '');
@@ -4553,9 +4553,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             {/* Editable Owner Comments */}
                             <td 
-                              style={{ ...getTdStyle(t), cursor: ((isAdmin || isCurrentUserOwner) && task.requestStatus !== "Processed") ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed")) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
                               onClick={() => { 
-                                if (task.requestStatus === "Processed") return;
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserOwner) return;
                                 setEditingCell({ id: task.id, field: "ownerComments" }); 
                                 setEditValue(task.ownerComments || ""); 
@@ -4576,9 +4576,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
 
                             <td 
-                              style={{ ...getTdStyle(t), cursor: ((isAdmin || isCurrentUserReviewer) && task.requestStatus !== "Processed") ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
                               onClick={() => { 
-                                if (task.requestStatus === "Processed") return;
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserReviewer) return;
                                 setEditingCell({ id: task.id, field: "reviewerComments" }); 
                                 setEditValue(task.reviewerComments || ""); 
