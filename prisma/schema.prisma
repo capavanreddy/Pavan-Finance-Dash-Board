@@ -186,4 +186,93 @@ model SystemSettings {
   // Matrices (JSON strings)
   moduleAccessMatrix    String   @default("{}")
   allocationMatrix      String   @default("{}")
+  departmentHeadMatrix  String   @default("{}")
+}
+
+model PaymentTemplate {
+  id                    Int      @id @default(autoincrement())
+  entityName            String
+  paymentDescription    String
+  vendorName            String
+  paymentType           String?
+  departmentName        String?
+  financeFunction       String?
+  frequency             String
+  vendorEmail           String?
+  prodEmail             String?
+  defaultOwner          String?
+  defaultReviewer       String?
+  dueDay                Int?
+  weeklyDay             String?
+  startDate             DateTime? @db.Date
+  endDate               DateTime? @db.Date
+  stopDate              DateTime? @db.Date
+  amountToRelease       Decimal?  @default(0) @db.Decimal(12, 2)
+  isStopped             Boolean?  @default(false)
+  lastGeneratedPeriod   String?
+  deleteRequested       Boolean?  @default(false)
+  deleteRequestReason   String?
+  editRequested         Boolean?  @default(false)
+  editApproved          Boolean?  @default(false)
+  editRequestReason     String?
+  isActive              Boolean?  @default(true)
+  createdAt             DateTime? @default(now())
+  updatedAt             DateTime? @default(now())
+  occurrences           PaymentOccurrence[]
+}
+
+model PaymentOccurrence {
+  id                Int             @id @default(autoincrement())
+  templateId        Int
+  template          PaymentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  dueDate           DateTime        @db.Date
+  actualDate        DateTime?       @db.Date
+  amountToRelease   Decimal?        @default(0) @db.Decimal(12, 2)
+  amountPaid        Decimal?        @db.Decimal(12, 2)
+  paidFromAccount   String?
+  isPaid            Boolean?        @default(false)
+  isListed          Boolean?        @default(false)
+  isHold            Boolean?        @default(false)
+  holdReason        String?
+  editRequested     Boolean?        @default(false)
+  editApproved      Boolean?        @default(false)
+  editRequestReason   String?
+  utrNumber         String?
+  adviceShared      Boolean?        @default(false)
+  adviceRecipient   String?
+  adviceCC          String?
+  adviceAttachment  String?
+  isCancelled       Boolean?        @default(false)
+  cancelledReason   String?
+  deleteRequested   Boolean?        @default(false)
+  deleteRequestReason String?
+  deleteRequestedBy String?
+  createdAt         DateTime?       @default(now())
+  updatedAt         DateTime?       @default(now())
+}
+
+model PaymentRequest {
+  id                Int       @id @default(autoincrement())
+  requesterId       String
+  requesterName     String
+  requesterEmail    String
+  department        String
+  entityName        String
+  vendorName        String
+  description       String
+  paymentType       String
+  frequency         String
+  amount            Decimal   @db.Decimal(12, 2)
+  dueDate           DateTime  @db.Date
+  isNewVendor       Boolean   @default(false)
+  kycDocuments      Json?     // Stores URLs for Registration, GST, MSME, Cheque, PAN
+  status            String    @default("PENDING_DEPT") // PENDING_DEPT, PENDING_FINANCE, APPROVED, REJECTED
+  approvedBy        String?   // Name of the Dept Head
+  approvedByEmail   String?
+  processedBy       String?   // Name of Finance user
+  processedByEmail  String?
+  deptHeadComments  String?
+  financeComments   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }

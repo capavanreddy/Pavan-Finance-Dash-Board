@@ -15,6 +15,7 @@ import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
 import { COMPLETION_STATUSES } from "@/lib/taskUtils";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
+import PaymentRequestPortal from "@/components/PaymentRequestPortal";
 
 type Task = {
   id: number;
@@ -143,20 +144,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'PENDING_STATUS_UPDATE' | 'COMPLETED'>('ALL');
-  const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS' | 'PAYMENTS'>('HOME');
+  const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS' | 'PAYMENTS' | 'PAYMENT_REQUESTS'>('HOME');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
   const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION'>('ACCOUNT');
-  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | 'BULK_IMPORT_MATRIX' | ''>('');
+  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | 'BULK_IMPORT_MATRIX' | 'DEPT_HEADS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
   const [showLearningFlyout, setShowLearningFlyout] = useState(false);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
+  const [showPaymentsFlyout, setShowPaymentsFlyout] = useState(false);
   const [settings, setSettings] = useState({
     reminderFrequency: 'D',
     reminderTimes: '09:00,18:00',
@@ -190,7 +192,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     masterResourceCategories: 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous',
     userModuleExceptions: '{}',
     bulkImportMatrix: '{}',
-    masterBankAccounts: ''
+    masterBankAccounts: '',
+    departmentHeadMatrix: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -219,6 +222,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (activeView !== 'TASKS' && activeView !== 'RECURRING') {
       setIsTasksMenuOpen(false);
     }
+
+    // Reset flyouts on view change
+    setShowWorkplaceFlyout(false);
+    setShowLearningFlyout(false);
+    setShowPaymentsFlyout(false);
     
     // Persist active view
     localStorage.setItem('finpulse_active_view', activeView);
@@ -3263,20 +3271,81 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         )}
 
                         {canSeePayments && (
-                          <button 
-                            onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                              background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                              border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                              width: "100%", borderRadius: "16px",
-                              boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                            }}
+                          <div 
+                            style={{ width: "100%", position: "relative" }}
+                            onMouseEnter={() => setShowPaymentsFlyout(true)}
+                            onMouseLeave={() => setShowPaymentsFlyout(false)}
                           >
-                            <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
-                          </button>
+                            <button 
+                              onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
+                              style={{ 
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                                background: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                                border: "none", color: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                                cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                                width: "100%", borderRadius: "16px",
+                                boxShadow: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                              }}
+                            >
+                              <Wallet size={24} color={(activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
+                            </button>
+
+                            {/* Payments Flyout */}
+                            {showPaymentsFlyout && (
+                              <div style={{
+                                position: "absolute",
+                                left: "100%", 
+                                top: "-10px",
+                                width: "240px",
+                                paddingLeft: "20px", 
+                                zIndex: 1000,
+                                animation: "fadeInSlideRight 0.2s ease-out",
+                              }}>
+                                <div style={{
+                                  background: "rgba(15, 23, 42, 0.95)",
+                                  backdropFilter: "blur(16px)",
+                                  borderRadius: "16px",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  boxShadow: "20px 0 50px rgba(0, 0, 0, 0.4)",
+                                  padding: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                }}>
+                                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
+                                    Treasury Management
+                                  </div>
+                                  <button 
+                                    onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); setShowPaymentsFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'PAYMENTS' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: activeView === 'PAYMENTS' ? "#60a5fa" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'PAYMENTS' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'PAYMENTS' ? "#60a5fa" : "#e2e8f0"; }}
+                                  >
+                                    <Calendar size={16} /> Payments Calendar
+                                  </button>
+                                  <button 
+                                    onClick={() => { setActiveView('PAYMENT_REQUESTS'); setActiveMainView('DASHBOARD'); setShowPaymentsFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'PAYMENT_REQUESTS' ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                                      color: activeView === 'PAYMENT_REQUESTS' ? "#10b981" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#10b981"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'PAYMENT_REQUESTS' ? "rgba(16, 185, 129, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'PAYMENT_REQUESTS' ? "#10b981" : "#e2e8f0"; }}
+                                  >
+                                    <CreditCard size={16} /> Payment Portal
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </>
                     );
@@ -3295,7 +3364,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             <RecurringActivities settings={settings} usersList={usersList} showNotification={showNotification} showConfirm={showConfirm} showPrompt={showPrompt} />
           )}
 
-          {activeView !== 'RECURRING' && (
+          {activeView === 'PAYMENT_REQUESTS' && (
+            <PaymentRequestPortal 
+              user={user} 
+              isAdmin={isAdmin} 
+              settings={settings} 
+              showNotification={showNotification} 
+              showConfirm={showConfirm} 
+              theme={theme}
+              t={t}
+            />
+          )}
+
+          {activeView !== 'RECURRING' && activeView !== 'PAYMENT_REQUESTS' && (
             <>
           {/* Active View Title/Context Area */}
           {(activeView as any) !== 'HOME' && !(activeView === 'LOS' && loActiveFilter === 'ANALYTICS') && (
@@ -3316,17 +3397,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <span style={{ color: "#cbd5e1" }}>/</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
                       {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : 
-                       activeView === 'PAYMENTS' ? "Treasury" : "Development"}
+                       activeView === 'PAYMENTS' ? "Treasury" : 
+                       activeView === 'PAYMENT_REQUESTS' ? "Treasury" : "Development"}
                     </span>
                   </div>
                   <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
                     {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dash Board" : "Inter Department Request") : 
-                     activeView === 'PAYMENTS' ? "Payments Calendar" : "Learning Opportunities"}
+                     activeView === 'PAYMENTS' ? "Payments Calendar" : 
+                     activeView === 'PAYMENT_REQUESTS' ? "Payment Request Portal" : "Learning Opportunities"}
                   </h2>
                   <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
                     {activeView === 'TASKS' ? 
                       (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") :
                      activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments." :
+                     activeView === 'PAYMENT_REQUESTS' ? "Submit and approve payment requests through a multi-tier workflow." :
                      "Turning challenges into structured growth opportunities."}
                   </p>
                 </div>
@@ -8269,6 +8353,65 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Matrix E: Department Head Assignments */}
+                    <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "16px" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'DEPT_HEADS' ? '' : 'DEPT_HEADS')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'DEPT_HEADS' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'DEPT_HEADS' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'DEPT_HEADS' ? "#2563eb" : "#0f172a" }}>
+                          <UserCheck size={20} /> Matrix E : Department Head Assignments
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'DEPT_HEADS' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: t.textMuted }} />
+                      </div>
+                      
+                      {activeMatrixTab === 'DEPT_HEADS' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: t.textMuted }}>Select users who act as Department Heads for Team Approval workflows.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#1e293b" }}>
+                                  <th style={{ padding: "14px 20px", textAlign: "left", color: "#ffffff", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "2px solid #3b82f6" }}>Department</th>
+                                  <th style={{ padding: "14px 20px", textAlign: "left", color: "#ffffff", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "2px solid #3b82f6" }}>Assigned Department Heads</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {settings.masterDepartments.split(',').map(dept => dept.trim()).filter(Boolean).map(dept => {
+                                  const matrix = JSON.parse(settings.departmentHeadMatrix || '{}');
+                                  const assignedHeads = matrix[dept] || [];
+                                  
+                                  return (
+                                    <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "16px", fontWeight: 700, fontSize: "0.875rem", color: t.text }}>{dept}</td>
+                                      <td style={{ padding: "16px" }}>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                          <MultiSelectFilter
+                                            options={usersList.filter(u => u.isApproved !== false).map(u => u.email).sort()}
+                                            selected={assignedHeads}
+                                            onChange={(selected) => {
+                                              setSettings({
+                                                ...settings,
+                                                departmentHeadMatrix: JSON.stringify({ ...matrix, [dept]: selected })
+                                              });
+                                            }}
+                                            placeholder="Assign Dept Heads"
+                                            theme={theme}
+                                            t={t}
+                                          />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
 
                     {/* User Module Controls (Matrix D) */}
                     <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>

@@ -54,6 +54,7 @@ export async function PATCH(request: Request) {
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportEmail" TEXT DEFAULT ''`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportDay" TEXT DEFAULT 'Monday'`;
       await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "paymentReportDate" INTEGER DEFAULT 1`;
+      await sql`ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "departmentHeadMatrix" TEXT DEFAULT '{}'`;
     } catch (e) {
       console.log("Migration for settings fields failed/skipped");
     }
@@ -92,7 +93,8 @@ export async function PATCH(request: Request) {
           "userModuleExceptions",
           "dailyTaskGenerationTime",
           "holidayList",
-          "masterResourceCategories"
+          "masterResourceCategories",
+          "departmentHeadMatrix"
         ) VALUES (
           'singleton',
           ${body.masterDepartments || ''},
@@ -125,7 +127,8 @@ export async function PATCH(request: Request) {
           ${body.userModuleExceptions || '{}'},
           ${body.dailyTaskGenerationTime || '06:00'},
           ${body.holidayList || '[]'},
-          ${body.masterResourceCategories || 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous'}
+          ${body.masterResourceCategories || 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous'},
+          ${body.departmentHeadMatrix || '{}'}
         )
         RETURNING *
       `;
@@ -169,7 +172,8 @@ export async function PATCH(request: Request) {
         "userModuleExceptions" = ${body.userModuleExceptions ?? existingSettings[0].userModuleExceptions},
         "dailyTaskGenerationTime" = ${body.dailyTaskGenerationTime ?? existingSettings[0].dailyTaskGenerationTime},
         "holidayList" = ${body.holidayList ?? existingSettings[0].holidayList},
-        "masterResourceCategories" = ${body.masterResourceCategories ?? existingSettings[0].masterResourceCategories}
+        "masterResourceCategories" = ${body.masterResourceCategories ?? existingSettings[0].masterResourceCategories},
+        "departmentHeadMatrix" = ${body.departmentHeadMatrix ?? existingSettings[0].departmentHeadMatrix}
       WHERE id = ${settingsId}
       RETURNING *
     `;
