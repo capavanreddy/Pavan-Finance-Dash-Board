@@ -49,6 +49,7 @@ type Task = {
   frequency: string | null;
   displayId: string | null;
   captureLO?: string;
+  trackingStatus?: string;
   isApproved?: boolean;
   completedSubmissionAt?: string | null;
   reviewedSubmissionAt?: string | null;
