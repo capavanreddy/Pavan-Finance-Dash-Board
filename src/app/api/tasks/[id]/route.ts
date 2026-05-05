@@ -51,6 +51,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     let completedSubmissionAt = existingTask.completedSubmissionAt;
     let reviewedSubmissionAt = existingTask.reviewedSubmissionAt;
     let processedSubmissionAt = existingTask.processedSubmissionAt;
+    let completedBy = existingTask.completedBy;
+    let reviewedBy = existingTask.reviewedBy;
+    let processedBy = existingTask.processedBy;
+
+    const userName = session.user?.name || session.user?.email || "Unknown";
 
     if (data.taskStatus) {
       taskStatus = data.taskStatus;
@@ -58,8 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (data.taskStatus === "Completed" && !existingTask.completionDate) {
         completionDate = new Date().toISOString();
         completedSubmissionAt = new Date().toISOString();
-        const userName = session.user?.name || session.user?.email || "Unknown";
-        await sql`UPDATE "Task" SET "completedBy" = ${userName} WHERE id = ${taskId}`;
+        completedBy = userName;
       }
 
       if (data.taskStatus === "Completed" && existingTask.taskStatus !== "Completed") {
@@ -69,6 +73,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       } else if (data.taskStatus === "Pending") {
         reviewStatus = "Task Pending From Owner";
         reviewCompletionDate = null;
+        completedBy = null;
       }
     }
 
@@ -80,13 +85,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           ? "Review Not Required" 
           : "Pending";
         completedSubmissionAt = new Date().toISOString();
-        const userName = session.user?.name || session.user?.email || "Unknown";
-        await sql`UPDATE "Task" SET "completedBy" = ${userName} WHERE id = ${taskId}`;
+        completedBy = userName;
       } else {
         completionDate = null;
         taskStatus = "Pending";
         reviewStatus = "Task Pending From Owner";
         reviewCompletionDate = null;
+        completedBy = null;
       }
     }
 
@@ -95,28 +100,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         reviewCompletionDate = new Date(data.reviewCompletionDate).toISOString();
         reviewStatus = "Completed";
         reviewedSubmissionAt = new Date().toISOString();
-        const userName = session.user?.name || session.user?.email || "Unknown";
-        await sql`UPDATE "Task" SET "reviewedBy" = ${userName} WHERE id = ${taskId}`;
+        reviewedBy = userName;
       } else {
         reviewCompletionDate = null;
         reviewStatus = "Pending";
+        reviewedBy = null;
       }
     }
 
-    if (data.ownerComments !== undefined) {
-      ownerComments = data.ownerComments;
-    }
-
-    if (data.reviewerComments !== undefined) {
-      reviewerComments = data.reviewerComments;
-    }
+    if (data.ownerComments !== undefined) ownerComments = data.ownerComments;
+    if (data.reviewerComments !== undefined) reviewerComments = data.reviewerComments;
 
     if (data.requestStatus !== undefined) {
       requestStatus = data.requestStatus;
       if (data.requestStatus === "Processed" && existingTask.requestStatus !== "Processed") {
         processedSubmissionAt = new Date().toISOString();
-        const userName = session.user?.name || session.user?.email || "Unknown";
-        await sql`UPDATE "Task" SET "processedBy" = ${userName} WHERE id = ${taskId}`;
+        processedBy = userName;
       }
     }
 
@@ -141,11 +140,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           "completedSubmissionAt" = ${completedSubmissionAt},
           "reviewedSubmissionAt" = ${reviewedSubmissionAt},
           "processedSubmissionAt" = ${processedSubmissionAt},
+          "completedBy" = ${completedBy},
+          "reviewedBy" = ${reviewedBy},
+          "processedBy" = ${processedBy},
           "frequency" = ${data.frequency !== undefined ? data.frequency : existingTask.frequency},
-          "editRequested" = false,
-          "editApproved" = false,
+          "transferStatus" = ${data.transferStatus !== undefined ? data.transferStatus : existingTask.transferStatus},
+          "originalRequestType" = ${data.originalRequestType !== undefined ? data.originalRequestType : existingTask.originalRequestType},
+          "captureLO" = ${data.captureLO !== undefined ? data.captureLO : existingTask.captureLO},
           "isApproved" = ${data.isApproved !== undefined ? data.isApproved : existingTask.isApproved},
-          "updatedAt" = NOW()
+          "editApproved" = ${data.editApproved !== undefined ? data.editApproved : existingTask.editApproved},
+          "editRequested" = ${data.editRequested !== undefined ? data.editRequested : existingTask.editRequested}
       WHERE id = ${taskId}
       RETURNING *
     `;

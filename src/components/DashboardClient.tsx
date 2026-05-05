@@ -1411,10 +1411,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         fetchTasks();
       } else {
-        showNotification("Failed to update. You may not have permission.");
+        const errData = await res.json().catch(() => ({}));
+        showNotification(errData.message || "Failed to update. You may not have permission.", "error");
       }
-    } catch (error) {
-      console.error("Failed to update status", error);
+    } catch (error: any) {
+      showNotification("Network error or server unreachable", "error");
     }
     setEditingCell(null);
   };
