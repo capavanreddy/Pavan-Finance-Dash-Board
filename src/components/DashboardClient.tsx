@@ -856,9 +856,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments') => {
+  const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const workbook = new ExcelJS.Workbook();
-    const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : 'PaymentsMaster';
+    const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : type === 'employees' ? 'Employees' : 'PaymentsMaster';
     const worksheet = workbook.addWorksheet(sheetName);
     
     if (type === 'tasks') {
