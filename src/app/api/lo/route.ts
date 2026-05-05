@@ -99,6 +99,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const sql = getDb();
+
+    try {
+      await sql`ALTER TABLE "LearningOpportunity" ADD COLUMN IF NOT EXISTS "taskId" INTEGER`;
+    } catch (e) {
+      console.log("Migration check failed silently", e);
+    }
+
     const data = await req.json();
     const los = await sql`
       INSERT INTO "LearningOpportunity" (

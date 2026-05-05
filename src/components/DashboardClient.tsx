@@ -1651,11 +1651,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setShowLOCaptureModal(false);
         fetchLOs(); // Refresh LO list
       } else {
-        showNotification("Failed to capture Learning Opportunity.");
+        const errData = await res.json().catch(() => ({}));
+        showNotification(`Failed to capture: ${errData.error || errData.message || res.statusText}`, "error");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to submit LO capture", error);
-      showNotification("An error occurred while saving the LO.");
+      showNotification(`Error: ${error.message || "Unknown error occurred"}`, "error");
     }
   };
 
