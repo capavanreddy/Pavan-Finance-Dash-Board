@@ -3984,7 +3984,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               <div style={{ marginTop: "16px", height: "4px", width: "60px", background: "rgba(255,255,255,0.3)", borderRadius: "2px", margin: "16px auto 0" }}></div>
             </div>
           </div>
-        ) : n        {activeView === 'TASKS' && activeSubView === 'MAIN' && (
+        ) : null}
+
+        {activeView === 'TASKS' && activeSubView === 'MAIN' && (
           <div className="main-tasks-view">
             {/* Action Toolbar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
@@ -4582,7 +4584,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             )}
           </div>
         )}
-    )}
+
 
 
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
