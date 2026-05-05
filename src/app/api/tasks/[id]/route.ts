@@ -32,9 +32,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const userEmail = session.user?.email;
     
     // Check if the user is authorized to edit this task
-    const isMasterAdmin = userEmail === "pavanreddy@intellicar.in" || userRole === "ADMIN";
-    const isOwner = getEmailFromName(existingTask.ownerName) === userEmail;
-    const isReviewer = getEmailFromName(existingTask.reviewerName) === userEmail;
+    const isMasterAdmin = userEmail?.toLowerCase() === "pavanreddy@intellicar.in" || userRole === "ADMIN";
+    const isOwner = getEmailFromName(existingTask.ownerName)?.toLowerCase() === userEmail?.toLowerCase();
+    const isReviewer = getEmailFromName(existingTask.reviewerName)?.toLowerCase() === userEmail?.toLowerCase();
 
     if (!isMasterAdmin && !isOwner && !isReviewer) {
       return NextResponse.json({ message: "Forbidden: You don't have permission to edit this task" }, { status: 403 });
@@ -182,14 +182,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const resolvedParams = await params;
     const taskId = parseInt(resolvedParams.id);
 
-    const userEmail = session?.user?.email;
+    const userEmail = session.user?.email;
     const userRole = (session?.user as any)?.role;
-    
-    // Only Master Admin can delete tasks
-    if (userRole === "VIEWER") {
-      return NextResponse.json({ message: "Forbidden: Viewers cannot delete tasks" }, { status: 403 });
-    }
-    const isMasterAdmin = userEmail === "pavanreddy@intellicar.in" || userRole === "ADMIN";
+    const isMasterAdmin = userEmail?.toLowerCase() === "pavanreddy@intellicar.in" || userRole === "ADMIN";
 
     if (!isMasterAdmin) {
       return NextResponse.json({ message: "Forbidden: Only Master Admin can delete tasks" }, { status: 403 });

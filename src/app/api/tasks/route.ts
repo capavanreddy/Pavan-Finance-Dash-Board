@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
     const userRole = (session?.user as any)?.role;
     
     // Master Admin can see everything
-    if (userEmail === "pavanreddy@intellicar.in" || userRole === "ADMIN") {
+    const isMasterAdmin = userEmail?.toLowerCase() === "pavanreddy@intellicar.in" || userRole === "ADMIN" || userRole === "ALLOCATOR";
+    if (isMasterAdmin) {
       const tasks = await sql`
         SELECT * FROM "Task"
         ORDER BY "createdAt" DESC
