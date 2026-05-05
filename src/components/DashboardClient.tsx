@@ -9159,16 +9159,54 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                </button>
              </div>
           </div>
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes modal-pop {
-              from { opacity: 0; transform: scale(0.9); }
-              to { opacity: 1; transform: scale(1); }
-            }
-            @keyframes fade-in {
-              from { opacity: 0; transform: translateY(-5px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          `}} />
+        </div>
+      )}
+
+      {promptState.isOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 11000
+        }}>
+          <div style={{
+            background: theme === 'DARK' ? "rgba(30, 41, 59, 0.95)" : "white",
+            padding: "32px", borderRadius: "24px", width: "450px", maxWidth: "90%",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: `1px solid ${t.border}`,
+            animation: "modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+          }}>
+             <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: t.text, marginBottom: "12px" }}>Action Required</h3>
+             <p style={{ color: t.textMuted, fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "20px" }}>{promptState.message}</p>
+             
+             <textarea 
+               value={promptValue}
+               onChange={(e) => setPromptValue(e.target.value)}
+               placeholder="Provide reason here..."
+               autoFocus
+               style={{
+                 width: "100%", height: "100px", padding: "12px", borderRadius: "12px",
+                 border: `1px solid ${t.border}`, background: t.bg, color: t.text,
+                 marginBottom: "24px", resize: "none", outline: "none",
+                 fontSize: "0.95rem"
+               }}
+             />
+
+             <div style={{ display: "flex", gap: "12px" }}>
+               <button 
+                 onClick={() => setPromptState({ ...promptState, isOpen: false })}
+                 style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontWeight: 600, cursor: "pointer" }}
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={() => { promptState.onConfirm(promptValue); setPromptState({ ...promptState, isOpen: false }); }}
+                 disabled={!promptValue.trim()}
+                 style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: !promptValue.trim() ? "not-allowed" : "pointer", opacity: !promptValue.trim() ? 0.6 : 1 }}
+               >
+                 Submit Request
+               </button>
+             </div>
+          </div>
         </div>
       )}
 
