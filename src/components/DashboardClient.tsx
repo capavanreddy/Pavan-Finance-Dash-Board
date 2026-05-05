@@ -1208,7 +1208,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         showNotification("Employee added successfully! Default password is: Intellicar@123", "success");
         setShowAddEmployeeModal(false);
-        setNewEmployeeData({ name: '', email: '', department: '', role: 'USER' });
+        setNewEmployeeData({ employeeId: '', name: '', email: '', department: '', role: 'USER' });
         fetchUsersList();
       } else {
         const data = await res.json();
