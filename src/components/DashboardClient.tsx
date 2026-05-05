@@ -3396,14 +3396,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <span style={{ color: "#cbd5e1" }}>/</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
                       {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : 
-                       activeView === 'PAYMENTS' ? "Treasury" : 
-                       activeView === 'PAYMENT_REQUESTS' ? "Treasury" : "Development"}
+                       activeView === 'PAYMENTS' ? "Treasury" : "Development"}
                     </span>
                   </div>
                   <h2 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, color: t.text, letterSpacing: "-0.03em", transition: "all 0.3s ease" }}>
                     {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dash Board" : "Inter Department Request") : 
-                     activeView === 'PAYMENTS' ? "Payments Calendar" : 
-                     activeView === 'PAYMENT_REQUESTS' ? "Payment Request Portal" : "Learning Opportunities"}
+                     activeView === 'PAYMENTS' ? "Payments Calendar" : "Learning Opportunities"}
                   </h2>
                   <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
                     {activeView === 'TASKS' ? 
