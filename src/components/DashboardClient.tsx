@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard, Settings2 } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
@@ -159,7 +159,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION' | 'TASK_APPROVALS'>('ACCOUNT');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'DATA_MANAGEMENT' | 'AUTOMATION' | 'TASK_APPROVALS'>('ACCOUNT');
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | 'BULK_IMPORT_MATRIX' | 'DEPT_HEADS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
@@ -5653,17 +5653,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               <div style={{ width: "200px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "16px", overflowY: "auto", maxHeight: "100%" }}>
                 <button 
                   onClick={() => setActiveOptionsTab('ACCOUNT')} 
-                  style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                  style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                 >
-                  Account
+                  <User size={18} /> Account
                 </button>
 
                 {canImport && (
                   <button 
                     onClick={() => setActiveOptionsTab('DATA')} 
-                    style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                    style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                   >
-                    <Download size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Bulk Import
+                    <Download size={18} /> Bulk Import
                   </button>
                 )}
 
@@ -5671,59 +5671,65 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <>
                     <button 
                       onClick={() => setActiveOptionsTab('SCHEDULE')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'SCHEDULE' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'SCHEDULE' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'SCHEDULE' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      Email Trigger
+                      <Mail size={18} /> Email Trigger
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('MAILS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MAILS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MAILS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MAILS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      Manual Mails
+                      <Send size={18} /> Manual Mails
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('USERS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'USERS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'USERS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'USERS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      User Management
+                      <Users size={18} /> User Management
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      Edit Request
+                      <Edit2 size={18} /> Edit Request
                       {(tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length + los.filter(l => l.deleteRequested).length) > 0 && (
-                        <span style={{ marginLeft: "8px", background: "#ef4444", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
+                        <span style={{ background: "#ef4444", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.7rem", fontWeight: "bold" }}>
                           {tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length + los.filter(l => l.deleteRequested).length}
                         </span>
                       )}
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('MASTER_DATA')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      Master Data
+                      <Building2 size={18} /> Master Data
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('AUTOMATION')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'AUTOMATION' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'AUTOMATION' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'AUTOMATION' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'AUTOMATION' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      <Zap size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Task Automation
+                      <Zap size={18} /> Task Automation
                     </button>
-                        <button 
-                          onClick={() => setActiveOptionsTab('MATRICES')} 
-                          style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                        >
-                          <Shield size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Matrix Module
-                        </button>
-                        <button 
-                          onClick={() => setActiveOptionsTab('HOME_HUB')} 
-                          style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'HOME_HUB' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                        >
-                          Home Hub
-                        </button>
-                      </>
-                    )}
+                    <button 
+                      onClick={() => setActiveOptionsTab('MATRICES')} 
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
+                    >
+                      <Shield size={18} /> Matrix Module
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('HOME_HUB')} 
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'HOME_HUB' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "4px", display: "flex", alignItems: "center", gap: "10px" }}
+                    >
+                      <Home size={18} /> Home Hub
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('DATA_MANAGEMENT')} 
+                      style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA_MANAGEMENT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA_MANAGEMENT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
+                    >
+                      <Settings2 size={18} /> Data Management
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Tab Content */}
@@ -5800,96 +5806,107 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 )}
 
-                {activeOptionsTab === 'MASTER_RESET' && (
-                  <div style={{ maxWidth: "600px" }}>
+                {activeOptionsTab === 'DATA_MANAGEMENT' && (
+                  <div style={{ maxWidth: "800px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                      <div style={{ background: "#fee2e2", padding: "10px", borderRadius: "10px" }}>
-                        <RotateCcw size={24} color="#ef4444" />
+                      <div style={{ background: "#e0f2fe", padding: "10px", borderRadius: "10px" }}>
+                        <Settings2 size={24} color="#0369a1" />
                       </div>
-                      <h3 style={{ margin: 0 }}>Master Reset Protocol</h3>
+                      <h3 style={{ margin: 0 }}>Data Management Hub</h3>
                     </div>
 
-                    <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "12px", padding: "24px", marginBottom: "32px" }}>
-                      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-                        <AlertTriangle color="#f97316" size={20} />
-                        <h4 style={{ margin: 0, color: "#c2410c", fontWeight: 700 }}>Critical Action Required</h4>
-                      </div>
-                      <p style={{ margin: 0, fontSize: "0.875rem", color: "#9a3412", lineHeight: 1.6 }}>
-                        Performing a Master Reset will **permanently delete** all operational data across all modules, including Tasks, Learning Opportunities, Inter-departmental Requests, and Recurring Activities.
-                      </p>
-                      <ul style={{ marginTop: "12px", fontSize: "0.8125rem", color: "#9a3412", paddingLeft: "20px" }}>
-                        <li>All Task transactions will be wiped.</li>
-                        <li>All Recurring Task templates will be cleared.</li>
-                        <li>All ID sequences will be reset to 01.</li>
-                        <li style={{ fontWeight: 700 }}>Master Data (Entities, Depts) and Users will NOT be deleted.</li>
-                        <li style={{ fontWeight: 700, color: "#166534" }}>Matrix Module and User-wise Controls will NOT be impacted.</li>
-                      </ul>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                      <div style={{ border: `1px solid ${t.border}`, borderRadius: "12px", padding: "20px" }}>
-                        <h5 style={{ margin: "0 0 12px 0", fontWeight: 700 }}>1. Execute Master Reset</h5>
-                        <p style={{ fontSize: "0.8125rem", color: t.textMuted, marginBottom: "20px" }}>
-                          Use this to clear the database for a fresh start. A snapshot is automatically saved.
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
+                      {/* Master Reset Section */}
+                      <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "12px", padding: "24px" }}>
+                        <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+                          <AlertTriangle color="#f97316" size={20} />
+                          <h4 style={{ margin: 0, color: "#c2410c", fontWeight: 700 }}>Master Purge Protocol</h4>
+                        </div>
+                        <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#9a3412", lineHeight: 1.6 }}>
+                          Clear all transactional data (Tasks, LOs, Requests) and reset Task ID sequences. User accounts and master data are preserved.
                         </p>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          <button 
+                            onClick={() => {
+                              showConfirm("CRITICAL: This will delete all transactions and reset task IDs to 01. A snapshot will be saved for safety. Proceed?", async () => {
+                                try {
+                                  const res = await fetch("/api/admin/master-reset", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ action: "RESET" })
+                                  });
+                                  const data = await res.json();
+                                  if (res.ok) {
+                                    showNotification(data.message);
+                                    window.location.reload();
+                                  } else {
+                                    showNotification(data.message, "error");
+                                  }
+                                } catch (e) {
+                                  showNotification("Reset failed", "error");
+                                }
+                              });
+                            }}
+                            style={{ background: "#ef4444", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
+                          >
+                            Execute Master Purge
+                          </button>
+                          <button 
+                            onClick={() => {
+                              showConfirm("Restore data from the latest snapshot? Current data will be replaced.", async () => {
+                                try {
+                                  const res = await fetch("/api/admin/master-reset", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ action: "REVERSE" })
+                                  });
+                                  const data = await res.json();
+                                  if (res.ok) {
+                                    showNotification(data.message);
+                                    window.location.reload();
+                                  } else {
+                                    showNotification(data.message, "error");
+                                  }
+                                } catch (e) {
+                                  showNotification("Restore failed", "error");
+                                }
+                              });
+                            }}
+                            style={{ background: "#0f172a", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
+                          >
+                            Reverse Previous Purge
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Database Sync Section */}
+                      <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "12px", padding: "24px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                          <div style={{ padding: "12px", background: "#e0f2fe", borderRadius: "12px" }}>
+                            <RefreshCw size={24} color="#0284c7" />
+                          </div>
+                          <div>
+                            <h4 style={{ margin: "0 0 4px 0", color: "#0c4a6e", fontSize: "1rem", fontWeight: 700 }}>Database Schema Sync</h4>
+                            <p style={{ color: "#075985", margin: 0, fontSize: "0.8125rem", maxWidth: "450px" }}>
+                              Align the database schema with the latest application updates. Safe for existing data.
+                            </p>
+                          </div>
+                        </div>
                         <button 
                           onClick={() => {
-                            showConfirm("CRITICAL: Are you absolutely sure? This will delete all transactions and reset task IDs. A snapshot will be saved for safety.", async () => {
+                            showConfirm("Are you sure you want to sync database schema?", async () => {
                               try {
-                                const res = await fetch("/api/admin/master-reset", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ action: "RESET" })
-                                });
+                                const res = await fetch("/api/users/sync-schema", { method: "POST" });
                                 const data = await res.json();
-                                if (res.ok) {
-                                  showNotification(data.message);
-                                  // Refresh everything
-                                  window.location.reload();
-                                } else {
-                                  showNotification(data.message, "error");
-                                }
-                              } catch (e) {
-                                showNotification("Reset failed", "error");
+                                showNotification(data.message || "Sync completed successfully!");
+                              } catch (err) {
+                                showNotification("Sync failed. Please check the logs.", 'error');
                               }
                             });
                           }}
-                          style={{ background: "#ef4444", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
+                          style={{ background: "#0284c7", color: "white", padding: "10px 24px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}
                         >
-                          Execute Master Reset
-                        </button>
-                      </div>
-
-                      <div style={{ border: `1px solid ${t.border}`, borderRadius: "12px", padding: "20px", background: "#f8fafc" }}>
-                        <h5 style={{ margin: "0 0 12px 0", fontWeight: 700 }}>2. Reverse Previous Reset</h5>
-                        <p style={{ fontSize: "0.8125rem", color: t.textMuted, marginBottom: "20px" }}>
-                          Accidentally reset? This will restore all data from the most recent snapshot.
-                        </p>
-                        <button 
-                          onClick={() => {
-                            showConfirm("Restore data from the latest snapshot? Current data will be replaced.", async () => {
-                              try {
-                                const res = await fetch("/api/admin/master-reset", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ action: "REVERSE" })
-                                });
-                                const data = await res.json();
-                                if (res.ok) {
-                                  showNotification(data.message);
-                                  // Refresh everything
-                                  window.location.reload();
-                                } else {
-                                  showNotification(data.message, "error");
-                                }
-                              } catch (e) {
-                                showNotification("Restore failed", "error");
-                              }
-                            });
-                          }}
-                          style={{ background: "#0f172a", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Reverse Previous Reset
+                          <RefreshCw size={18} /> Sync Database Schema
                         </button>
                       </div>
                     </div>
@@ -6773,54 +6790,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </table>
                       </div>
                     )}
-
-                    {/* Database Sync Section */}
-                    <div style={{ marginTop: "40px", padding: "24px", background: "#f0f9ff", borderRadius: "16px", border: "1px solid #bae6fd" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                          <div style={{ padding: "12px", background: "#e0f2fe", borderRadius: "12px" }}>
-                            <RefreshCw size={24} color="#0284c7" />
-                          </div>
-                          <div>
-                            <h4 style={{ margin: "0 0 4px 0", color: "#0c4a6e", fontSize: "1rem", fontWeight: 700 }}>Database Sync</h4>
-                            <p style={{ color: "#075985", margin: 0, fontSize: "0.8125rem", maxWidth: "400px", lineHeight: 1.5 }}>
-                              Sync the database schema to ensure all newly added fields and tables are correctly initialized. This will not affect existing data.
-                            </p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            showConfirm("Are you sure you want to sync database schema?", async () => {
-                              try {
-                                const res = await fetch("/api/users/sync-schema", { method: "POST" });
-                                const data = await res.json();
-                                showNotification(data.message || "Sync completed successfully!");
-                              } catch (err) {
-                                showNotification("Sync failed. Please check the logs.", 'error');
-                              }
-                            });
-                          }}
-                          style={{ 
-                            background: "#0284c7", 
-                            color: "white", 
-                            padding: "12px 24px", 
-                            borderRadius: "10px", 
-                            border: "none", 
-                            cursor: "pointer", 
-                            fontWeight: 700, 
-                            fontSize: "0.875rem",
-                            boxShadow: "0 4px 6px -1px rgba(2, 132, 199, 0.3)",
-                            transition: "all 0.2s ease",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px"
-                          }}
-                        >
-                          <RefreshCw size={18} /> Sync Database
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 )}
 
                 {activeOptionsTab === 'EDIT_REQUESTS' && (
