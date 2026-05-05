@@ -22,10 +22,12 @@ export const getEmailFromName = (name: string | null) => {
     "Hanusha": "hanusha@intellicar.in",
     "Sreenivas": "sreenivasulu.t@intellicar.in",
     "Sharath": "sharath.shetty@intellicar.in",
+    "Sharath R Shetty": "sharath.shetty@intellicar.in",
     "Chandana": "chandanak@intellicar.in",
     "Nikhat": "nikhat@intellicar.in",
     "Venkat": "venkata.g@intellicar.in",
-    "Sidharth Saneja": "saneja@intellicar.in"
+    "Sidharth Saneja": "saneja@intellicar.in",
+    "Saneja": "saneja@intellicar.in"
   };
   
   if (emailMap[normalized]) return emailMap[normalized];

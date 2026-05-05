@@ -4447,6 +4447,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 onUpdate={handleUpdate} 
                                 disabled={isOwnerRestricted}
                                 t={t}
+                                trackingStatus={task.trackingStatus}
                               />
                             </td>
                             <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
@@ -9520,11 +9521,13 @@ const DetailItemView = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any }) {
+function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatus }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any, trackingStatus?: string }) {
   let bg = "#f1f5f9";
   let color = "#475569";
 
-  if (status === "Completed") {
+  const isCompleted = status === "Completed" || COMPLETION_STATUSES.includes(status) || (type === "task" && !!trackingStatus && COMPLETION_STATUSES.includes(trackingStatus));
+
+  if (isCompleted) {
     bg = "#dcfce7";
     color = "#166534";
   } else if (status === "Pending" || status.includes("Pending")) {
@@ -9551,12 +9554,18 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: s
   };
 
   if (type === "task") {
+    const selectValue = isCompleted ? "Completed" : (status === "In Progress" ? "In Progress" : "Pending");
+    const displayLabel = (isCompleted && trackingStatus) ? trackingStatus : status;
+
+    if (disabled) {
+      return <span style={pillStyle}>{displayLabel}</span>;
+    }
+
     return (
       <select 
-        value={status} 
+        value={selectValue} 
         onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
         style={pillStyle}
-        disabled={disabled}
       >
         <option value="Pending">Pending</option>
         <option value="In Progress">In Progress</option>

@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
         SELECT * FROM "Task"
         ORDER BY "createdAt" DESC
       `;
-      // Transform statuses for display
+      // Transform for display but preserve raw status for the dropdown
       const transformed = tasks.map(t => ({
         ...t,
-        taskStatus: getTrackingStatus(t as any)
+        trackingStatus: getTrackingStatus(t as any)
       }));
       return NextResponse.json(transformed, { status: 200 });
     }
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       return false;
     }).map(t => ({
       ...t,
-      taskStatus: getTrackingStatus(t as any)
+      trackingStatus: getTrackingStatus(t as any)
     }));
 
     return NextResponse.json(filteredTasks, { status: 200 });

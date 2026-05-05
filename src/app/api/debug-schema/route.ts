@@ -22,7 +22,13 @@ export async function GET(req: NextRequest) {
       WHERE table_schema = 'public'
     `;
 
-    return NextResponse.json({ columns, tables }, { status: 200 });
+    const users = await sql`
+      SELECT name, email, role, department
+      FROM "User"
+      LIMIT 10
+    `;
+
+    return NextResponse.json({ columns, tables, users }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: "Debug failed", error: error.message }, { status: 500 });
   }
