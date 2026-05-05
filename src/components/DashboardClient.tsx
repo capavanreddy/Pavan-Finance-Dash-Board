@@ -8700,7 +8700,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                                     transition: ".4s", borderRadius: "34px", opacity: deptHasAccess ? 1 : 0.5 
                                                   }}>
                                                     <span style={{ 
-                                                      position: "absolute", content: '""', height: "14px", width: "14px", 
+                                                      position: "absolute", height: "14px", width: "14px", 
                                                       left: effectiveAccess ? "23px" : "3px", bottom: "3px", 
                                                       backgroundColor: "white", transition: ".4s", borderRadius: "50%" 
                                                     }}></span>
