@@ -191,7 +191,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(updatedTask, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ message: "Failed to update task", error: error.message }, { status: 500 });
+    console.error("Task update error:", error);
+    return NextResponse.json({ 
+      message: `DB Error: ${error.message || "Unknown error"}`, 
+      details: error.message,
+      error: error.message 
+    }, { status: 500 });
   }
 }
 
