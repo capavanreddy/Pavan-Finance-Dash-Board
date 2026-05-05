@@ -2701,7 +2701,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     const filteredReqs = sortedExternalRequests;
 
     const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
-    if (isAdmin) tableColumn.push("Origin", "Original Function", "Transferred By");
+    if (isAdmin) tableColumn.push("Request Type", "Original Function", "Transferred By");
 
     const tableRows = sortedExternalRequests.map((r, idx) => {
       const row = [
@@ -2805,7 +2805,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const worksheet = workbook.addWorksheet("Requests");
           worksheet.addRow(['Shared Inter-Dept Requests Report']);
           const headers = ['Sl No.', 'Request From', 'Finance Function', 'Nature', 'Status'];
-          if (isAdmin) headers.push('Origin', 'Original Function', 'Transferred By');
+          if (isAdmin) headers.push('Request Type', 'Original Function', 'Transferred By');
           worksheet.addRow(headers);
           externalRequests.forEach((r, i) => {
             const row = [i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status];
@@ -2856,7 +2856,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const doc = new jsPDF('landscape');
           doc.text("Shared Inter-Dept Requests Report", 14, 15);
           const headers = [["ID", "From", "Type", "Nature", "Status"]];
-          if (isAdmin) headers[0].push("Origin", "Original Function", "Transferred By");
+          if (isAdmin) headers[0].push("Request Type", "Original Function", "Transferred By");
           autoTable(doc, {
             head: headers,
             body: externalRequests.map(r => {
@@ -4291,7 +4291,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          Origin {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                          Request Type {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
@@ -5024,7 +5024,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     </div>
                                   )}
                                   
-                                  {(req.status === 'Under Process' || req.status === 'Processed') && req.convertedTaskId && (
+                                  {req.convertedTaskId && (
                                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                       <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
                                         TASK CREATED
