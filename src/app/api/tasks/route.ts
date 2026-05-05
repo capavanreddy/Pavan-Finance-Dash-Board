@@ -32,9 +32,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(transformed, { status: 200 });
     }
 
-    // Regular users only see tasks assigned to them or created by them
+    // Regular users only see tasks assigned to them or created by them AND approved tasks
     const allTasks = await sql`
       SELECT * FROM "Task"
+      WHERE "isApproved" = TRUE
       ORDER BY "createdAt" DESC
     `;
 
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "transferStatus" TEXT DEFAULT 'O'`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "frequency" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "editApproved" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "isApproved" BOOLEAN DEFAULT TRUE`;
     } catch (e) {
       console.log("Task migration check skipped/failed");
     }
@@ -163,12 +165,12 @@ export async function POST(req: NextRequest) {
         INSERT INTO "Task" (
           "taskName", "entityName", "taskType", "departmentName", "requestFrom",
           "ownerName", "reviewerName", "dueDate", "mailLink", "taskStatus",
-          "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "createdAt", "updatedAt"
+          "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "isApproved", "createdAt", "updatedAt"
         )
         VALUES (
           ${taskName}, ${entityName}, ${taskType}, ${departmentName}, ${requestFrom},
           ${ownerName}, ${resolvedReviewer}, ${parseDate(dueDate)}, ${mailLink || null}, 'Pending',
-          ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId || null}, NOW(), NOW()
+          ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId || null}, TRUE, NOW(), NOW()
         )
         RETURNING *
       `;

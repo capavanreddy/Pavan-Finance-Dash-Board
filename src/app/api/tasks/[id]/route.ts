@@ -124,6 +124,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           "frequency" = ${data.frequency !== undefined ? data.frequency : existingTask.frequency},
           "editRequested" = false,
           "editApproved" = false,
+          "isApproved" = ${data.isApproved !== undefined ? data.isApproved : existingTask.isApproved},
           "updatedAt" = NOW()
       WHERE id = ${taskId}
       RETURNING *

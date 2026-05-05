@@ -107,14 +107,14 @@ export async function POST(req: NextRequest) {
           INSERT INTO "Task" (
             "taskName", "entityName", "taskType", "departmentName", "financeFunction", "requestFrom",
             "ownerName", "reviewerName", "dueDate", "taskStatus", "reviewStatus",
-            "templateId", "periodKey", "frequency", "displayId", "createdAt", "updatedAt"
+            "templateId", "periodKey", "frequency", "displayId", "isApproved", "createdAt", "updatedAt"
           )
           VALUES (
             ${taskName}, ${template.entityName}, ${template.taskType}, ${template.departmentName || 'Finance'}, 
             ${template.financeFunction || null}, 'System (Auto-Daily)',
             ${template.defaultOwner}, ${resolvedReviewer}, ${now.toISOString()},
             'Pending', ${reviewStatus},
-            ${template.id}, ${periodKey}, 'Daily', ${displayId}, NOW(), NOW()
+            ${template.id}, ${periodKey}, 'Daily', ${displayId}, TRUE, NOW(), NOW()
           )
           ON CONFLICT ("templateId", "periodKey") DO NOTHING
           RETURNING *

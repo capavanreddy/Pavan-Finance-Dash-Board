@@ -46,7 +46,26 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // 2. Insert into Task table
+        // 2. Display ID Generation (MMYY-XX)
+        const now = new Date();
+        const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+        const yearStr = String(now.getFullYear()).slice(-2);
+        const prefix = `${monthStr}${yearStr}`;
+        let displayId = null;
+        try {
+          const sequences = await sql`
+            INSERT INTO "TaskSequence" ("monthYear", "nextVal")
+            VALUES (${prefix}, 1)
+            ON CONFLICT ("monthYear")
+            DO UPDATE SET "nextVal" = "TaskSequence"."nextVal" + 1
+            RETURNING "nextVal"
+          `;
+          displayId = `${prefix}-${String(sequences[0].nextVal).padStart(2, '0')}`;
+        } catch (e) {
+          console.error("Display ID generation error in recurring:", e);
+        }
+
+        // 3. Insert into Task table
         const resolvedReviewer = taskItem.reviewerName || "Not Applicable";
         const reviewStatus = resolvedReviewer === "Not Applicable" ? "Review Not Required" : "Task Pending From Owner";
 
@@ -54,13 +73,13 @@ export async function POST(req: NextRequest) {
           INSERT INTO "Task" (
             "taskName", "entityName", "taskType", "departmentName", "financeFunction", "requestFrom",
             "ownerName", "reviewerName", "dueDate", "taskStatus", "reviewStatus",
-            "templateId", "periodKey", "frequency", "createdAt", "updatedAt"
+            "templateId", "periodKey", "frequency", "displayId", "isApproved", "createdAt", "updatedAt"
           )
           VALUES (
             ${taskItem.taskName}, ${taskItem.entityName}, ${taskItem.taskType}, ${taskItem.departmentName || 'Finance'}, ${taskItem.financeFunction || null}, 'System (Recurring)',
             ${taskItem.ownerName}, ${resolvedReviewer}, ${taskItem.dueDate ? new Date(taskItem.dueDate).toISOString() : null},
             'Pending', ${reviewStatus},
-            ${taskItem.templateId}, ${taskItem.periodKey}, ${taskItem.freqLabel || null}, NOW(), NOW()
+            ${taskItem.templateId}, ${taskItem.periodKey}, ${taskItem.freqLabel || null}, ${displayId}, FALSE, NOW(), NOW()
           )
           RETURNING *
         `;

@@ -49,6 +49,7 @@ type Task = {
   frequency: string | null;
   displayId: string | null;
   captureLO?: string;
+  isApproved?: boolean;
 };
 
 type ExternalRequest = {
@@ -150,7 +151,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION'>('ACCOUNT');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION' | 'TASK_APPROVALS'>('ACCOUNT');
   const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | 'BULK_IMPORT_MATRIX' | 'DEPT_HEADS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
@@ -1689,6 +1690,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const filteredTasksToDisplay = tasks.filter(t => {
+    // Basic Approval Filter
+    if (t.isApproved === false) return false;
+
     // 1. Status Filter (Metric Cards)
     let statusMatch = true;
     if (activeFilter === 'PENDING_ACTION') {
@@ -4938,7 +4942,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             {canAllocateAnything && (
                               <td style={getTdStyle(t)}>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                  {(req.status === 'Pending' && !req.convertedTaskId && isAuthorizedAllocator) && (
+                                  {((!req.status || req.status === 'Pending' || req.status === 'Under Process' || req.status === 'New') && !req.convertedTaskId && isAuthorizedAllocator) && (
                                     <div style={{ display: "flex", gap: "8px" }}>
                                       <button 
                                         onClick={() => handleConvertToTask(req)}
@@ -5552,12 +5556,23 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                     >
                       Edit Request
                       {(tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length + los.filter(l => l.deleteRequested).length) > 0 && (
                         <span style={{ marginLeft: "8px", background: "#ef4444", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
                           {tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length + los.filter(l => l.deleteRequested).length}
+                        </span>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => setActiveOptionsTab('TASK_APPROVALS')} 
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'TASK_APPROVALS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'TASK_APPROVALS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
+                    >
+                      Task Approvals
+                      {tasks.filter(t => t.isApproved === false).length > 0 && (
+                        <span style={{ marginLeft: "8px", background: "#f59e0b", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
+                          {tasks.filter(t => t.isApproved === false).length}
                         </span>
                       )}
                     </button>
@@ -7650,6 +7665,47 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 )}
 
+                {activeOptionsTab === 'TASK_APPROVALS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Pending Task Approvals</h3>
+                    {tasks.filter(t => t.isApproved === false).length === 0 ? (
+                      <p>No pending approvals.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {tasks.filter(t => t.isApproved === false).map(task => (
+                          <div key={task.id} style={{ padding: "15px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "10px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <div>
+                                <strong>{task.taskName}</strong> - {task.entityName}
+                                <div style={{ fontSize: "0.8rem", color: t.textMuted }}>Owner: {task.ownerName}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button 
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isApproved: true }) });
+                                    if (res.ok) fetchTasks();
+                                  }}
+                                  style={{ background: "#22c55e", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                                >
+                                  Approve
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+                                    if (res.ok) fetchTasks();
+                                  }}
+                                  style={{ background: "#ef4444", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {activeOptionsTab === 'DATA' && (
                   <div>
                     <h3 style={{ margin: "0 0 24px 0" }}>Data Management</h3>
