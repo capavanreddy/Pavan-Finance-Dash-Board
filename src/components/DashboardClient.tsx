@@ -491,11 +491,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [newEmployeeData, setNewEmployeeData] = useState({
+    employeeId: '',
     name: '',
     email: '',
     department: '',
     role: 'USER'
   });
+
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userDeptFilter, setUserDeptFilter] = useState("ALL");
+  const [userRoleFilter, setUserRoleFilter] = useState("ALL");
 
   // New Filters
   const [taskTypeFilter, setTaskTypeFilter] = useState<string[]>([]);
@@ -932,13 +937,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       worksheet.addRow([
         'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '01-04-2026', ''
       ]);
+    } else if (type === 'employees') {
+      worksheet.columns = [
+        { header: 'Employee ID', key: 'employeeId', width: 15 },
+        { header: 'Full Name', key: 'name', width: 25 },
+        { header: 'Email Address', key: 'email', width: 30 },
+        { header: 'Department', key: 'department', width: 20 },
+        { header: 'Role (ADMIN/USER/VIEWER)', key: 'role', width: 25 },
+      ];
+      worksheet.addRow(['EMP001', 'Pavan Reddy', 'pavanreddy@intellicar.in', 'Finance', 'ADMIN']);
+      worksheet.addRow(['EMP002', 'John Doe', 'john@intellicar.in', 'HR', 'USER']);
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), `${type}_import_template.xlsx`);
   };
 
-  const handleExcelBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tasks' | 'lo' | 'recurring' | 'payments') => {
+  const handleExcelBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -1024,6 +1039,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           startDate: parseExcelDate(values[14]),
           endDate: parseExcelDate(values[15]),
         });
+      } else if (type === 'employees') {
+        checkRequired(1, "Employee ID");
+        checkRequired(2, "Full Name");
+        checkRequired(3, "Email Address");
+        rows.push({
+          employeeId: values[1],
+          name: values[2],
+          email: values[3],
+          department: values[4] || "Finance",
+          role: values[5] || "USER",
+        });
       }
     });
 
@@ -1045,12 +1071,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         type === 'tasks' ? '/api/tasks/bulk' : 
         type === 'lo' ? '/api/lo/bulk' : 
         type === 'payments' ? '/api/payments/bulk-import' :
+        type === 'employees' ? '/api/users/bulk-import' :
         '/api/recurring-templates/bulk';
       
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(type === 'payments' ? { items: rows } : rows)
+        body: JSON.stringify(
+          type === 'payments' ? { items: rows } : 
+          type === 'employees' ? { employees: rows } : 
+          rows
+        )
       });
 
       if (res.ok) {
@@ -1058,6 +1089,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setImportPreview(null);
         if (type === 'tasks') fetchTasks(); 
         else if (type === 'lo') fetchLOs();
+        else if (type === 'employees') fetchUsersList();
         else fetchTasks(); // Refresh for recurring/payments
       } else {
         const errorData = await res.json();
@@ -1140,32 +1172,22 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     });
   };
 
-  const handleResetUserPassword = async (userId: number, userName: string) => {
-    showPrompt(`Enter new password for ${userName}:`, async (newPassword: string) => {
-      if (!newPassword || newPassword.trim().length < 6) {
-        showNotification("Password must be at least 6 characters.", "error");
-        return;
-      }
-      setPasswordLoading(true);
+  const handleResetUserPassword = async (userId: string, userName: string) => {
+    showConfirm(`Send a password reset link to ${userName}?`, async () => {
       try {
-        const res = await fetch(`/api/users/${userId}/reset-password`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newPassword: newPassword.trim() })
+        const res = await fetch(`/api/users/${userId}/reset-password-email`, {
+          method: "POST"
         });
         if (res.ok) {
-          showNotification(`Password for ${userName} reset successfully!`);
+          showNotification(`Password reset link sent to ${userName}'s email.`, "success");
         } else {
-          const data = await res.json();
-          showNotification(`Error: ${data.error || "Failed to reset password"}`, "error");
+          showNotification("Failed to send reset link.", "error");
         }
       } catch (error) {
-        console.error("Error resetting password:", error);
-        showNotification("Network error. Failed to reset password.", "error");
-      } finally {
-        setPasswordLoading(false);
+        console.error("Reset failed", error);
+        showNotification("Failed to send reset link.", "error");
       }
-    }, "Intellicar@123");
+    });
   };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
@@ -1937,21 +1959,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           learnerComments: ackComments
         })
       });
+
       if (res.ok) {
-        showNotification("Learning acknowledged successfully!");
-        setShowAckModal(false);
-        setAckComments("");
-        setAcknowledgingLO(null);
-        fetchLOs();
+        showNotification(`${rows.length} records imported successfully!`);
+        if (type === 'tasks') fetchTasks();
+        else if (type === 'lo') fetchLOs();
+        else if (type === 'payments') fetchPaymentRequests();
+        else if (type === 'employees') fetchUsersList();
       } else {
         const data = await res.json();
-        showNotification(data.message || "Failed to acknowledge", "error");
+        showNotification(data.message || "Bulk upload failed", "error");
       }
-    } catch (error) {
-      console.error("Failed to acknowledge LO", error);
+    } catch (err) {
+      console.error("Bulk upload error", err);
     }
   };
-
   
   const generateLOReportData = () => {
     const filtered = los.filter(lo => {
@@ -2250,7 +2272,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
   };
 
   const filteredAndSortedUsers = useMemo(() => {
-    let items = [...usersList];
+    let items = usersList.filter(u => {
+      const matchesSearch = !userSearchQuery || 
+        (u.name?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+        (u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+        ((u as any).employeeId?.toLowerCase().includes(userSearchQuery.toLowerCase()));
+      
+      const matchesDept = userDeptFilter === "ALL" || u.department === userDeptFilter;
+      const matchesRole = userRoleFilter === "ALL" || u.role === userRoleFilter;
+      
+      return matchesSearch && matchesDept && matchesRole;
+    });
+
     if (userSortConfig) {
       items.sort((a: any, b: any) => {
         let valA = a[userSortConfig.key] || "";
@@ -2265,7 +2298,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       });
     }
     return items;
-  }, [usersList, userSortConfig]);
+  }, [usersList, userSortConfig, userSearchQuery, userDeptFilter, userRoleFilter]);
 
   // Base visibility filter for External Requests
   const visibleExternalRequests = externalRequests.filter(r => {
@@ -5542,7 +5575,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
               {/* Sidebar Tabs */}
-              <div style={{ width: "200px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "16px" }}>
+              <div style={{ width: "200px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "16px", overflowY: "auto", maxHeight: "100%" }}>
                 <button 
                   onClick={() => setActiveOptionsTab('ACCOUNT')} 
                   style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
@@ -5591,17 +5624,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       )}
                     </button>
                     <button 
-                      onClick={() => setActiveOptionsTab('TASK_APPROVALS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'TASK_APPROVALS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'TASK_APPROVALS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
-                    >
-                      Task Approvals
-                      {tasks.filter(t => t.isApproved === false).length > 0 && (
-                        <span style={{ marginLeft: "8px", background: "#f59e0b", color: "white", padding: "2px 6px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "bold" }}>
-                          {tasks.filter(t => t.isApproved === false).length}
-                        </span>
-                      )}
-                    </button>
-                    <button 
                       onClick={() => setActiveOptionsTab('MASTER_DATA')} 
                       style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_DATA' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MASTER_DATA' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                     >
@@ -5624,12 +5646,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'HOME_HUB' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'HOME_HUB' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                         >
                           Home Hub
-                        </button>
-                        <button 
-                          onClick={() => setActiveOptionsTab('MASTER_RESET')} 
-                          style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MASTER_RESET' ? "#fee2e2" : "transparent", color: activeOptionsTab === 'MASTER_RESET' ? "#b91c1c" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
-                        >
-                          <RotateCcw size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Master Reset
                         </button>
                       </>
                     )}
@@ -6461,14 +6477,43 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
                             <Users size={20} color="#166534" />
                           </div>
                           <h4 style={{ margin: 0, fontSize: "1.125rem", color: t.text }}>Active Employees</h4>
                         </div>
-                        <div style={{ display: "flex", gap: "12px" }}>
+                        
+                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                          <div style={{ position: "relative" }}>
+                            <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
+                            <input 
+                              type="text" 
+                              placeholder="Search employees..." 
+                              value={userSearchQuery}
+                              onChange={(e) => setUserSearchQuery(e.target.value)}
+                              style={{ padding: "8px 12px 8px 36px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", width: "200px", outline: "none" }}
+                            />
+                          </div>
+                          <select 
+                            value={userDeptFilter}
+                            onChange={(e) => setUserDeptFilter(e.target.value)}
+                            style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", outline: "none" }}
+                          >
+                            <option value="ALL">All Departments</option>
+                            {settings.masterDepartments.split(',').map(d => <option key={d.trim()} value={d.trim()}>{d.trim()}</option>)}
+                          </select>
+                          <select 
+                            value={userRoleFilter}
+                            onChange={(e) => setUserRoleFilter(e.target.value)}
+                            style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", outline: "none" }}
+                          >
+                            <option value="ALL">All Roles</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="USER">USER</option>
+                            <option value="VIEWER">VIEWER</option>
+                          </select>
                           <button 
                             onClick={() => setShowAddEmployeeModal(true)}
                             style={{ 
@@ -6490,11 +6535,24 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </button>
                           )}
                           <button 
-                            onClick={handleImportPredefined}
+                            onClick={() => downloadBulkTemplate('employees')}
+                            style={{ background: t.bg, color: "#2563eb", padding: "8px 16px", borderRadius: "10px", border: "1px solid #bfdbfe", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <Download size={16} /> Template
+                          </button>
+                          <button 
+                            onClick={() => document.getElementById('employee-bulk-upload')?.click()}
                             style={{ background: t.bg, color: t.textMuted, padding: "8px 16px", borderRadius: "8px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
                           >
                             <Users size={14} /> Import All Employees
                           </button>
+                          <input 
+                            id="employee-bulk-upload"
+                            type="file" 
+                            accept=".xlsx, .xls"
+                            style={{ display: "none" }}
+                            onChange={(e) => handleExcelBulkUpload(e, 'employees')}
+                          />
                         </div>
                     </div>
 
@@ -6505,6 +6563,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
                           <thead>
                             <tr style={{ borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
+                                <th style={{ padding: "12px 8px" }}>Emp ID</th>
                                 <th style={{ padding: "12px 8px", cursor: "pointer" }} onClick={() => handleUserSort('name')}>
                                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                                     Name {userSortConfig?.key === 'name' && (userSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -6535,7 +6594,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </thead>
                           <tbody>
                                                          {filteredAndSortedUsers.filter(u => (u as any).isApproved !== false).map(u => (
-                              <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                               <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <td style={{ padding: "12px 8px", fontWeight: 700, color: "#1e40af" }}>{(u as any).employeeId || "--"}</td>
                                 <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
                                 <td style={{ padding: "12px 8px" }}>{u.email}</td>
                                  <td style={{ padding: "12px 8px" }}>
@@ -7735,34 +7795,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <div>
                     <h3 style={{ margin: "0 0 24px 0" }}>Data Management</h3>
                     
-                    {isAdmin && (
-                      <div style={{ background: t.bg, padding: "24px", borderRadius: "16px", border: `1px solid ${t.border}`, marginBottom: "24px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                          <Database size={24} color="#2563eb" />
-                          <h4 style={{ margin: 0, fontSize: "1.125rem" }}>Database Maintenance</h4>
-                        </div>
-                        <p style={{ fontSize: "0.875rem", color: t.textMuted, marginBottom: "20px" }}>
-                          Use this to sync the database schema and ensure all new features are fully initialized.
-                        </p>
-                        <button 
-                          onClick={async () => {
-                            showConfirm("Are you sure you want to run the database migration/sync?", async () => {
-                              try {
-                                const res = await fetch('/api/admin/migrate');
-                                const data = await res.json();
-                                showNotification(data.message || "Sync completed successfully!");
-                              } catch (err) {
-                                showNotification("Sync failed. Please check the logs.", 'error');
-                              }
-                            });
-                          }}
-                          style={{ background: "#2563eb", color: "white", padding: "12px 24px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}
-                        >
-                          <RefreshCw size={18} /> Sync Database Schema
-                        </button>
-                      </div>
-                    )}
-
                     <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: t.text }}>Bulk Data Import</h4>
                     <p style={{ color: t.textMuted, marginBottom: "32px" }}>Download the template, fill it with your data, and upload it back. All imports follow a strictly defined schema.</p>
                     
@@ -9255,6 +9287,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
             
             <form onSubmit={handleAddEmployee} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>EMPLOYEE ID</label>
+                <input 
+                  type="text" required
+                  value={newEmployeeData.employeeId}
+                  onChange={e => setNewEmployeeData({...newEmployeeData, employeeId: e.target.value})}
+                  style={getInputStyle(t)} 
+                  placeholder="e.g. EMP001"
+                />
+              </div>
+
               <div>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>FULL NAME</label>
                 <input 

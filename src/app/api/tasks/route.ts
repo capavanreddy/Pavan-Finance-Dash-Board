@@ -43,10 +43,17 @@ export async function GET(req: NextRequest) {
     const filteredTasks = allTasks.filter(task => {
       const ownerEmail = getEmailFromName(task.ownerName);
       const reviewerEmail = getEmailFromName(task.reviewerName);
+      const requesterEmail = getEmailFromName(task.requestFrom);
       
       // Owner can always see their tasks
       if (ownerEmail === userEmail) return true;
       
+      // Creator can always see their tasks
+      if ((task as any).createdByEmail === userEmail) return true;
+      
+      // Fallback for tasks created before createdByEmail was added
+      if (requesterEmail === userEmail) return true;
+
       // Reviewer can only see the task if the owner has finished it
       if (reviewerEmail === userEmail) {
         // Use completion check on original data
@@ -172,12 +179,12 @@ export async function POST(req: NextRequest) {
         INSERT INTO "Task" (
           "taskName", "entityName", "taskType", "departmentName", "requestFrom",
           "ownerName", "reviewerName", "dueDate", "mailLink", "taskStatus",
-          "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "isApproved", "createdAt", "updatedAt"
+          "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "isApproved", "createdByEmail", "createdAt", "updatedAt"
         )
         VALUES (
           ${taskName}, ${entityName}, ${taskType}, ${departmentName}, ${requestFrom},
           ${ownerName}, ${resolvedReviewer}, ${parseDate(dueDate)}, ${mailLink || null}, 'Pending',
-          ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId || null}, TRUE, NOW(), NOW()
+          ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId || null}, TRUE, ${session.user.email}, NOW(), NOW()
         )
         RETURNING *
       `;

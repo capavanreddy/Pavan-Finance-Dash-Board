@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
 
     // New users are created as PENDING (isApproved: false)
     const users = await sql`
-      INSERT INTO "User" (id, name, email, password, department, "isApproved", role, "createdAt", "updatedAt")
-      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${department}, false, 'USER', NOW(), NOW())
+      INSERT INTO "User" (id, name, email, password, department, "employeeId", "isApproved", role, "createdAt", "updatedAt")
+      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${department}, ${employeeId}, false, 'USER', NOW(), NOW())
       RETURNING id, name, email
     `;
     const user = users[0];
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
                 <p>Hello Admin,</p>
                 <p>A new user has requested access to the Finance Task Manager Hub.</p>
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0 0 10px 0;"><strong>Employee ID:</strong> ${employeeId}</p>
                   <p style="margin: 0 0 10px 0;"><strong>Name:</strong> ${name}</p>
                   <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${email}</p>
                   <p style="margin: 0;"><strong>Department:</strong> ${department}</p>

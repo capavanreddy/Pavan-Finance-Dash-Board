@@ -14,16 +14,15 @@ export async function GET(req: NextRequest) {
     }
 
     // --- Self-healing Migration ---
-    // Add isSuspended column if it doesn't exist
     try {
       await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "employeeId" TEXT`;
     } catch (e) {
-      // Ignore errors if column already exists (though IF NOT EXISTS handles it)
       console.log("Migration check done or skipped");
     }
 
     const users = await sql`
-      SELECT id, name, email, role, department, "isApproved", "isAllocator", "isSuspended", "createdAt"
+      SELECT id, name, email, role, department, "employeeId", "isApproved", "isAllocator", "isSuspended", "createdAt"
       FROM "User"
       ORDER BY "createdAt" DESC
     `;
@@ -177,6 +176,7 @@ export async function POST(req: NextRequest) {
               <p style="font-size: 18px;">Hello <strong>${user.name}</strong>,</p>
               <p>Your account has been created by the Administrator.</p>
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+                <p style="margin: 0 0 10px 0;"><strong>Employee ID:</strong> ${user.employeeId}</p>
                 <p style="margin: 0 0 10px 0;"><strong>Login Email:</strong> ${user.email}</p>
                 <p style="margin: 0;"><strong>Default Password:</strong> Intellicar@123</p>
               </div>

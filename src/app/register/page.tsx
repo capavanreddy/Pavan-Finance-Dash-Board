@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
+import { User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Building2, Hash } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function Register() {
   const router = useRouter();
+  const [employeeId, setEmployeeId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,7 +53,7 @@ export default function Register() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, department }),
+        body: JSON.stringify({ name, email, password, department, employeeId }),
       });
 
       if (!res.ok) {
@@ -133,6 +134,23 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Employee ID</label>
+              <div style={{ position: 'relative' }}>
+                <Hash size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input 
+                  type="text" 
+                  value={employeeId}
+                  onChange={(e) => setEmployeeId(e.target.value)}
+                  placeholder="EMP001"
+                  required
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+              </div>
+            </div>
+
             <div>
               <label style={{ display: "block", marginBottom: "6px", fontSize: '0.875rem', fontWeight: 600, color: "#334155" }}>Full Name</label>
               <div style={{ position: 'relative' }}>

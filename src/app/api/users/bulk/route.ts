@@ -22,22 +22,19 @@ export async function PUT(req: NextRequest) {
 
     // Execute updates sequentially (Neon serverless over HTTP does not support transactions via .begin)
     for (const update of updates) {
-      const { userId, role, department, isSuspended } = update;
+      const { userId, role, department, employeeId, isSuspended } = update;
       
-      if (role !== undefined && department !== undefined && isSuspended !== undefined) {
-        await sql`UPDATE "User" SET role = ${role}, department = ${department}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
-      } else if (role !== undefined && department !== undefined) {
-        await sql`UPDATE "User" SET role = ${role}, department = ${department} WHERE id = ${userId}`;
-      } else if (role !== undefined && isSuspended !== undefined) {
-        await sql`UPDATE "User" SET role = ${role}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
-      } else if (department !== undefined && isSuspended !== undefined) {
-        await sql`UPDATE "User" SET department = ${department}, "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
-      } else if (role !== undefined) {
-        await sql`UPDATE "User" SET role = ${role} WHERE id = ${userId}`;
-      } else if (department !== undefined) {
-        await sql`UPDATE "User" SET department = ${department} WHERE id = ${userId}`;
-      } else if (isSuspended !== undefined) {
-        await sql`UPDATE "User" SET "isSuspended" = ${isSuspended} WHERE id = ${userId}`;
+      const fields: string[] = [];
+      const values: any[] = [];
+      
+      if (role !== undefined) { fields.push(`role = $${fields.length + 1}`); values.push(role); }
+      if (department !== undefined) { fields.push(`department = $${fields.length + 1}`); values.push(department); }
+      if (employeeId !== undefined) { fields.push(`"employeeId" = $${fields.length + 1}`); values.push(employeeId); }
+      if (isSuspended !== undefined) { fields.push(`"isSuspended" = $${fields.length + 1}`); values.push(isSuspended); }
+      
+      if (fields.length > 0) {
+        values.push(userId);
+        await sql`UPDATE "User" SET ${sql.unsafe(fields.join(', '))} WHERE id = $${fields.length + 1}`;
       }
     }
 
