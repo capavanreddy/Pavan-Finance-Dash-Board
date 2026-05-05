@@ -3367,7 +3367,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           {activeView === 'PAYMENT_REQUESTS' && (
             <PaymentRequestPortal 
               user={user} 
-              isAdmin={isAdmin} 
               settings={settings} 
               showNotification={showNotification} 
               showConfirm={showConfirm} 
