@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         ${data.entity}, ${new Date(data.dateOfIdentification).toISOString()}, 
         ${data.learningOpportunity}, ${data.identifiedBy},
         ${data.committedBy}, ${data.resolutionProvided}, ${data.modeOfCommunication}, 
-        ${data.emailSub}, ${data.comments}, ${session.user.email}, NOW(), NOW(),
+        ${data.emailSub || null}, ${data.comments || null}, ${session.user.email}, NOW(), NOW(),
         false, ${data.taskId || null}
       )
       RETURNING *
