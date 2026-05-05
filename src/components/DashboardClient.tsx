@@ -4506,6 +4506,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   }}>
                                     Captured
                                   </span>
+                                ) : task.requestStatus === "Processed" ? (
+                                  <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
                                 ) : (
                                   <select
                                     value={task.captureLO || "No"}
