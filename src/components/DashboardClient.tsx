@@ -53,6 +53,9 @@ type Task = {
   completedSubmissionAt?: string | null;
   reviewedSubmissionAt?: string | null;
   processedSubmissionAt?: string | null;
+  completedBy?: string | null;
+  reviewedBy?: string | null;
+  processedBy?: string | null;
 };
 
 type ExternalRequest = {
@@ -2385,16 +2388,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       { width: 25 }, // Owner
       { width: 18 }, // Due Date
       { width: 18 }, // Completion Date
+      { width: 25 }, // Completed By
       { width: 18 }, // Status
       { width: 25 }, // Reviewer
       { width: 25 }, // Review Status
       { width: 18 }, // Review Date
+      { width: 25 }, // Reviewed By
       { width: 40 }, // Owner Comments
       { width: 40 }, // Reviewer Comments
       { width: 30 }, // Mail Link
       { width: 20 }, // Origin
       { width: 25 }, // Original Category
-      { width: 25 }  // Transferred By
+      { width: 25 }, // Transferred By
+      { width: 25 }, // Processed By
+      { width: 20 }  // Processed At
     ];
 
     // Row 3: Column Headers (Dark Blue background, White text)
@@ -2402,9 +2409,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     const headers = [
       'SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 
       'Department', 'Requested By', 'Owner', 'Due Date', 
-      'Completion Date', 'Status', 'Reviewer', 'Review Status', 
-      'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link',
-      'Origin', 'Original Category', 'Transferred By'
+      'Completion Date', 'Completed By', 'Status', 'Reviewer', 'Review Status', 
+      'Review Date', 'Reviewed By', 'Owner Comments', 'Reviewer Comments', 'Mail Link',
+      'Origin', 'Original Category', 'Transferred By', 'Processed By', 'Processed At'
     ];
     
     headers.forEach((h, i) => {
@@ -2434,16 +2441,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         t.ownerName,
         formatDate(t.dueDate),
         formatDate(t.completionDate),
+        t.completedBy || "N/A",
         t.taskStatus,
         t.reviewerName,
         t.reviewStatus,
         formatDate(t.reviewCompletionDate),
+        t.reviewedBy || "N/A",
         t.ownerComments || "",
         t.reviewerComments || "",
         t.mailLink || "",
         t.transferStatus === 'T' ? 'Transferred' : 'Original',
         t.originalRequestType || "N/A",
-        t.requestFrom !== t.departmentName ? t.requestFrom : "N/A" 
+        t.requestFrom !== t.departmentName ? t.requestFrom : "N/A",
+        t.processedBy || "N/A",
+        t.processedSubmissionAt ? formatDateTime(t.processedSubmissionAt) : "N/A"
       ]);
       row.alignment = { vertical: 'middle', wrapText: true };
       row.eachCell((cell) => {
@@ -2565,18 +2576,21 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Task Status", "Reviewer", "Rev. Status", "Origin", "Orig. Category"];
+    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Comp. Date", "Comp. By", "Status", "Reviewer", "Rev. Status", "Rev. Date", "Rev. By", "Processed By"];
     const tableRows = sortedTasks.map(t => [
-      t.id,
+      t.displayId || t.id,
       t.taskName,
       t.entityName,
       t.ownerName,
       formatDate(t.dueDate),
+      formatDate(t.completionDate),
+      t.completedBy || "N/A",
       t.taskStatus,
       t.reviewerName || "N/A",
       t.reviewStatus,
-      t.transferStatus === 'T' ? 'Transferred' : 'Original',
-      t.originalRequestType || "N/A"
+      formatDate(t.reviewCompletionDate),
+      t.reviewedBy || "N/A",
+      t.processedBy || "N/A"
     ]);
 
     autoTable(doc, {
@@ -4363,8 +4377,28 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             <td style={getTdStyle(t)}>{task.ownerName}</td>
                             <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
-                            <td style={{ ...getTdStyle(t), fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} title={task.completedSubmissionAt ? `Submitted on: ${new Date(task.completedSubmissionAt).toLocaleString()}` : ""}>
-                              {formatDate(task.completionDate)}
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || isCurrentUserOwner) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
+                              title={task.completedSubmissionAt ? `Submitted on: ${new Date(task.completedSubmissionAt).toLocaleString()}${task.completedBy ? ` by ${task.completedBy}` : ""}` : ""}
+                              onClick={() => {
+                                if (!isAdmin && !isCurrentUserOwner) return;
+                                setEditingCell({ id: task.id, field: 'completionDate' });
+                                setEditValue(task.completionDate ? task.completionDate.split('T')[0] : '');
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === 'completionDate' ? (
+                                <input 
+                                  type="date"
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, 'completionDate', editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, 'completionDate', editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                formatDate(task.completionDate)
+                              )}
                             </td>
                             <td style={getTdStyle(t)}>
                               <StatusPill 
@@ -4377,8 +4411,28 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               />
                             </td>
                             <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
-                            <td style={{ ...getTdStyle(t), fontWeight: 600, color: "#64748b" }} title={task.reviewedSubmissionAt ? `Submitted on: ${new Date(task.reviewedSubmissionAt).toLocaleString()}` : ""}>
-                              {formatDate(task.reviewCompletionDate)}
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || isCurrentUserReviewer) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
+                              title={task.reviewedSubmissionAt ? `Reviewed on: ${new Date(task.reviewedSubmissionAt).toLocaleString()}${task.reviewedBy ? ` by ${task.reviewedBy}` : ""}` : ""}
+                              onClick={() => {
+                                if (!isAdmin && !isCurrentUserReviewer) return;
+                                setEditingCell({ id: task.id, field: 'reviewCompletionDate' });
+                                setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split('T')[0] : '');
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === 'reviewCompletionDate' ? (
+                                <input 
+                                  type="date"
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, 'reviewCompletionDate', editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, 'reviewCompletionDate', editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                formatDate(task.reviewCompletionDate)
+                              )}
                             </td>
                             <td style={getTdStyle(t)}>
                               <StatusPill 
@@ -4445,7 +4499,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
                                     textAlign: "center", whiteSpace: "nowrap"
                                   }}
-                                  title={task.processedSubmissionAt ? `Processed on: ${new Date(task.processedSubmissionAt).toLocaleString()}` : ""}
+                                  title={task.processedSubmissionAt ? `Processed on: ${new Date(task.processedSubmissionAt).toLocaleString()}${task.processedBy ? ` by ${task.processedBy}` : ""}` : ""}
                                 >
                                   {task.requestStatus || "Pending"}
                                 </span>

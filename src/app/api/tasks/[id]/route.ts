@@ -58,6 +58,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (data.taskStatus === "Completed" && !existingTask.completionDate) {
         completionDate = new Date().toISOString();
         completedSubmissionAt = new Date().toISOString();
+        const userName = session.user?.name || session.user?.email || "Unknown";
+        await sql`UPDATE "Task" SET "completedBy" = ${userName} WHERE id = ${taskId}`;
       }
 
       if (data.taskStatus === "Completed" && existingTask.taskStatus !== "Completed") {
@@ -78,6 +80,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           ? "Review Not Required" 
           : "Pending";
         completedSubmissionAt = new Date().toISOString();
+        const userName = session.user?.name || session.user?.email || "Unknown";
+        await sql`UPDATE "Task" SET "completedBy" = ${userName} WHERE id = ${taskId}`;
       } else {
         completionDate = null;
         taskStatus = "Pending";
@@ -91,6 +95,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         reviewCompletionDate = new Date(data.reviewCompletionDate).toISOString();
         reviewStatus = "Completed";
         reviewedSubmissionAt = new Date().toISOString();
+        const userName = session.user?.name || session.user?.email || "Unknown";
+        await sql`UPDATE "Task" SET "reviewedBy" = ${userName} WHERE id = ${taskId}`;
       } else {
         reviewCompletionDate = null;
         reviewStatus = "Pending";
@@ -109,6 +115,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       requestStatus = data.requestStatus;
       if (data.requestStatus === "Processed" && existingTask.requestStatus !== "Processed") {
         processedSubmissionAt = new Date().toISOString();
+        const userName = session.user?.name || session.user?.email || "Unknown";
+        await sql`UPDATE "Task" SET "processedBy" = ${userName} WHERE id = ${taskId}`;
       }
     }
 

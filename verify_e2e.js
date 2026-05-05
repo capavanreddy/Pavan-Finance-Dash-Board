@@ -1,0 +1,24 @@
+const { getDb } = require('./src/lib/db');
+
+async function verify() {
+  const sql = getDb();
+  console.log("Verifying PaymentRequest...");
+  const requests = await sql`SELECT * FROM "PaymentRequest" ORDER BY "createdAt" DESC LIMIT 1`;
+  console.log("Latest Request:", JSON.stringify(requests[0], null, 2));
+
+  console.log("\nVerifying PaymentOccurrence...");
+  const occurrences = await sql`
+    SELECT o.*, t."paymentDescription" 
+    FROM "PaymentOccurrence" o
+    JOIN "PaymentTemplate" t ON o."templateId" = t.id
+    ORDER BY o.id DESC LIMIT 1
+  `;
+  console.log("Latest Occurrence:", JSON.stringify(occurrences[0], null, 2));
+  
+  process.exit(0);
+}
+
+verify().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
