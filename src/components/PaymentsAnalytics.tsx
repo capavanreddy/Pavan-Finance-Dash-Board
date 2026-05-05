@@ -83,7 +83,9 @@ export default function PaymentsAnalytics({
   // Default Dates
   const getInitialDates = () => {
     const now = new Date();
-    const firstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    const firstDay = d.toISOString().split('T')[0];
     const lastDayDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const lastDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
     return { firstDay, lastDay };

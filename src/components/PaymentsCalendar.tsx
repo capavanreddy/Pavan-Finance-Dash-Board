@@ -106,7 +106,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
   const [paidAdviceFilter, setPaidAdviceFilter] = useState<string[]>([]);
   const [paidFromDate, setPaidFromDate] = useState(() => {
     const d = new Date();
-    d.setDate(1);
+    d.setDate(d.getDate() - 30);
     return d.toISOString().split('T')[0];
   });
   const [paidToDate, setPaidToDate] = useState(new Date().toISOString().split('T')[0]);

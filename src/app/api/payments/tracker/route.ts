@@ -12,9 +12,18 @@ export async function GET() {
     }
 
     const occurrences = await sql`
-      SELECT o.*, t."entityName", t."vendorName", t."paymentDescription", t."paymentType", t."departmentName", t."financeFunction", t.frequency
+      SELECT 
+        o.*, 
+        COALESCE(r."entityName", t."entityName") as "entityName",
+        COALESCE(r."vendorName", t."vendorName") as "vendorName",
+        COALESCE(r.description, t."paymentDescription") as "paymentDescription",
+        COALESCE(r."paymentType", t."paymentType") as "paymentType",
+        COALESCE(r.department, t."departmentName") as "departmentName",
+        t."financeFunction", 
+        t.frequency
       FROM "PaymentOccurrence" o
       JOIN "PaymentTemplate" t ON o."templateId" = t.id
+      LEFT JOIN "PaymentRequest" r ON o."requestId" = r.id
       ORDER BY o."dueDate" ASC
     `;
     return NextResponse.json(occurrences);

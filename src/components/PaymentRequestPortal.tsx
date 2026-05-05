@@ -180,9 +180,42 @@ export default function PaymentRequestPortal({
     endDate: ''
   });
 
+  // Stabilize the fetch effect by using primitive values
+  const filterString = JSON.stringify(filters);
   useEffect(() => {
     fetchRequests();
-  }, [activeTab, filters]);
+  }, [activeTab, filterString]);
+
+  const handleQuickDownload = async (req: PaymentRequest) => {
+    try {
+      const res = await fetch(`/api/payments/requests/${req.id}`);
+      if (res.ok) {
+        const fullData = await res.json();
+        const docs = [
+          ...(Array.isArray(fullData.supportings) ? fullData.supportings : []),
+          ...(Array.isArray(fullData.kycDocuments) ? fullData.kycDocuments : [])
+        ];
+        
+        if (docs.length === 0) {
+          showNotification("No documents found for this request", "info");
+          return;
+        }
+
+        // Trigger download for each document
+        docs.forEach((f: any) => {
+          const link = document.createElement('a');
+          link.href = f.data;
+          link.download = f.name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+        showNotification(`Downloading ${docs.length} file(s)...`);
+      }
+    } catch (err) {
+      showNotification("Failed to download documents", "error");
+    }
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -313,7 +346,6 @@ export default function PaymentRequestPortal({
     );
   };
 
-  // Extract unique options for multi-filters
   const deptOptions = settings.masterDepartments.split(',').map((d: string) => d.trim());
   const entityOptions = settings.masterEntities.split(',').map((e: string) => e.trim());
   const statusOptions = ['PENDING_DEPT', 'PENDING_FINANCE', 'APPROVED', 'REJECTED'];
@@ -371,10 +403,19 @@ export default function PaymentRequestPortal({
                     </td>
                   )}
                   <td style={tdStyle}>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: req.approvedBy ? '#10b981' : t.textMuted }}>
-                      {req.approvedBy || '--'}
-                    </div>
-                    {req.approvedBy && <div style={{ fontSize: '0.65rem', color: t.textMuted }}>Dept Head</div>}
+                    {req.processedBy ? (
+                      <div>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#2563eb' }}>{req.processedBy}</div>
+                        <div style={{ fontSize: '0.65rem', color: t.textMuted }}>Admin / Finance</div>
+                      </div>
+                    ) : req.approvedBy ? (
+                      <div>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#10b981' }}>{req.approvedBy}</div>
+                        <div style={{ fontSize: '0.65rem', color: t.textMuted }}>Dept Head</div>
+                      </div>
+                    ) : (
+                      <div style={{ color: t.textMuted }}>--</div>
+                    )}
                   </td>
                   <td style={tdStyle}>
                     <div style={{ padding: '4px 10px', borderRadius: '8px', background: status.bg, color: status.text, fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>
@@ -383,29 +424,38 @@ export default function PaymentRequestPortal({
                     {renderTimeline(req)}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
-                    <button 
-                      onClick={async () => {
-                        setLoading(true);
-                        try {
-                          const res = await fetch(`/api/payments/requests/${req.id}`);
-                          if (res.ok) {
-                            const fullData = await res.json();
-                            setViewRequest(fullData);
-                          } else {
-                            showNotification("Failed to load request details", "error");
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button 
+                        onClick={() => handleQuickDownload(req)}
+                        style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: `1px solid ${t.border}`, color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Quick Download"
+                      >
+                        <Download size={14} />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          setLoading(true);
+                          try {
+                            const res = await fetch(`/api/payments/requests/${req.id}`);
+                            if (res.ok) {
+                              const fullData = await res.json();
+                              setViewRequest(fullData);
+                            } else {
+                              showNotification("Failed to load request details", "error");
+                            }
+                          } catch (err) {
+                            showNotification("Error loading details", "error");
+                          } finally {
+                            setLoading(false);
                           }
-                        } catch (err) {
-                          showNotification("Error loading details", "error");
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      style={{ padding: '8px 16px', borderRadius: '10px', background: 'transparent', border: `1px solid ${t.border}`, color: t.text, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-                      onMouseOver={e => e.currentTarget.style.borderColor = '#2563eb'}
-                      onMouseOut={e => e.currentTarget.style.borderColor = t.border}
-                    >
-                      <Eye size={14} /> Review
-                    </button>
+                        }}
+                        style={{ padding: '8px 16px', borderRadius: '10px', background: 'transparent', border: `1px solid ${t.border}`, color: t.text, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.borderColor = '#2563eb'}
+                        onMouseOut={e => e.currentTarget.style.borderColor = t.border}
+                      >
+                        <Eye size={14} /> Review
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -698,13 +748,17 @@ export default function PaymentRequestPortal({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {viewRequest.deptHeadComments && (
                     <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #bcf0da' }}>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', marginBottom: '4px' }}>Dept Head Notes (${viewRequest.approvedBy})</div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Dept Head Review ({viewRequest.approvedBy || 'Unknown'})
+                      </div>
                       <div style={{ fontSize: '0.875rem', color: '#065f46' }}>{viewRequest.deptHeadComments}</div>
                     </div>
                   )}
                   {viewRequest.financeComments && (
                     <div style={{ padding: '14px', borderRadius: '14px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', marginBottom: '4px' }}>Finance Processing Notes</div>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Finance / Admin Processing ({viewRequest.processedBy || 'Unknown'})
+                      </div>
                       <div style={{ fontSize: '0.875rem', color: '#1e40af' }}>{viewRequest.financeComments}</div>
                     </div>
                   )}
