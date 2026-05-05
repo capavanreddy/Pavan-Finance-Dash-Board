@@ -4490,7 +4490,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               />
                             </td>
                             <td style={{ ...getTdStyle(t), textAlign: "center" }}>
-                              {["Completed", "Review Not Required"].includes(task.reviewStatus) ? (
+                              {task.reviewStatus === "Review Not Required" ? (
+                                <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
+                              ) : task.reviewStatus === "Completed" ? (
                                 los.some(lo => lo.taskId === task.id) ? (
                                   <span style={{ 
                                     padding: "4px 8px", 
@@ -4504,37 +4506,41 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     Captured
                                   </span>
                                 ) : (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!isAdmin && !isCurrentUserReviewer) return;
-                                      setLOCaptureForm({
-                                        ...loCaptureForm,
-                                        entity: task.entityName,
-                                        identifiedBy: task.reviewerName && task.reviewerName !== "Not Applicable" ? task.reviewerName : currentUserName || '',
-                                        taskId: task.id,
-                                        dateOfIdentification: new Date().toISOString().split('T')[0]
-                                      });
-                                      setShowLOCaptureModal(true);
-                                    }}
+                                  <select
+                                    value={task.captureLO || "No"}
                                     disabled={!isAdmin && !isCurrentUserReviewer}
-                                    style={{
-                                      padding: "4px 10px",
-                                      borderRadius: "8px",
-                                      fontSize: "0.75rem",
-                                      fontWeight: 700,
-                                      background: (isAdmin || isCurrentUserReviewer) ? "linear-gradient(135deg, #ec4899 0%, #be185d 100%)" : "#e2e8f0",
-                                      color: (isAdmin || isCurrentUserReviewer) ? "white" : "#94a3b8",
-                                      border: "none",
-                                      cursor: (isAdmin || isCurrentUserReviewer) ? "pointer" : "not-allowed",
-                                      boxShadow: (isAdmin || isCurrentUserReviewer) ? "0 2px 4px rgba(236,72,153,0.3)" : "none",
-                                      transition: "transform 0.2s"
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      const val = e.target.value;
+                                      if (val === "Yes") {
+                                        setLOCaptureForm({
+                                          ...loCaptureForm,
+                                          entity: task.entityName,
+                                          identifiedBy: task.reviewerName && task.reviewerName !== "Not Applicable" ? task.reviewerName : currentUserName || '',
+                                          committedBy: task.ownerName || '',
+                                          taskId: task.id,
+                                          dateOfIdentification: new Date().toISOString().split('T')[0]
+                                        });
+                                        setShowLOCaptureModal(true);
+                                      } else if (val === "No") {
+                                        handleUpdate(task.id, 'captureLO', 'No');
+                                      }
                                     }}
-                                    onMouseOver={(e) => { if (isAdmin || isCurrentUserReviewer) e.currentTarget.style.transform = "scale(1.05)"; }}
-                                    onMouseOut={(e) => { if (isAdmin || isCurrentUserReviewer) e.currentTarget.style.transform = "scale(1)"; }}
+                                    style={{
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 600,
+                                      border: `1px solid ${t.border}`,
+                                      background: t.bg,
+                                      color: t.text,
+                                      cursor: (!isAdmin && !isCurrentUserReviewer) ? "not-allowed" : "pointer",
+                                      outline: "none"
+                                    }}
                                   >
-                                    Yes
-                                  </button>
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                  </select>
                                 )
                               ) : (
                                 <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
