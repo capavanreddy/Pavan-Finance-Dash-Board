@@ -214,6 +214,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [editingLO, setEditingLO] = useState<LearningOpportunity | null>(null);
+  const [selectedTaskForView, setSelectedTaskForView] = useState<Task | null>(null);
 
   // Universal Navigation Watcher: Persists view state and handles menu auto-collapse
   useEffect(() => {
@@ -492,6 +493,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   // New Filters
   const [taskTypeFilter, setTaskTypeFilter] = useState<string[]>([]);
+  const [taskDeptFilter, setTaskDeptFilter] = useState<string[]>([]);
   const [requestTypeFilter, setRequestTypeFilter] = useState<string[]>([]);
 
   const fetchTasks = async () => {
@@ -1350,6 +1352,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         }
       }
 
+      // Validation: Completion date / Review date cannot be in the future
+      if (field === 'completionDate' || field === 'reviewCompletionDate') {
+        if (value) {
+           const inputDate = new Date(value);
+           const today = new Date();
+           inputDate.setHours(0,0,0,0);
+           today.setHours(0,0,0,0);
+           if (inputDate > today) {
+             showNotification(`Error: ${field === 'completionDate' ? 'Completion' : 'Review'} date cannot be a future date.`, "error");
+             setEditingCell(null);
+             return;
+           }
+        }
+      }
+
       // Review Status Automation
       if (field === 'taskStatus' || field === 'completionDate') {
         if (isTaskFinished && currentTask && rName !== 'Not Applicable' && rName !== 'N/A' && currentTask.reviewStatus === 'Task Pending From Owner') {
@@ -1741,6 +1758,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     // 4. Dropdown Filters
     let dropdownMatch = true;
     if (taskEntityFilter.length > 0 && !taskEntityFilter.includes(t.entityName)) dropdownMatch = false;
+    if (taskDeptFilter.length > 0 && !taskDeptFilter.includes(t.departmentName)) dropdownMatch = false;
     if (taskOwnerFilter.length > 0 && !taskOwnerFilter.includes(t.ownerName)) dropdownMatch = false;
     if (taskStatusFilter.length > 0 && !taskStatusFilter.includes(t.taskStatus)) dropdownMatch = false;
     if (taskReviewerFilter.length > 0 && !taskReviewerFilter.includes(t.reviewerName || "")) dropdownMatch = false;
@@ -1777,8 +1795,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   });
 
   // Unique values for task filters
-  // Unique values for task filters
   const uniqueTaskEntities = Array.from(new Set(tasks.map(t => t.entityName))).sort();
+  const uniqueTaskDepts = Array.from(new Set(tasks.map(t => t.departmentName))).sort();
   const uniqueTaskOwners = Array.from(new Set(tasks.map(t => t.ownerName))).sort();
   const uniqueTaskStatuses = Array.from(new Set(tasks.map(t => t.taskStatus))).sort();
   const uniqueTaskReviewers = Array.from(new Set(tasks.map(t => t.reviewerName).filter((r): r is string => !!r && r !== "Not Applicable"))).sort();
@@ -4096,6 +4114,15 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               />
 
               <MultiSelectFilter
+                options={uniqueTaskDepts}
+                selected={taskDeptFilter}
+                onChange={setTaskDeptFilter}
+                placeholder="All Departments"
+                theme={theme}
+                t={t}
+              />
+
+              <MultiSelectFilter
                 options={uniqueTaskOwners}
                 selected={taskOwnerFilter}
                 onChange={setTaskOwnerFilter}
@@ -4175,6 +4202,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('departmentName')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Dept {taskSortConfig?.key === 'departmentName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskType')}>
@@ -4282,10 +4314,27 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
-                      <td style={getTdStyle(t)}><span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span></td>
+                      <td style={getTdStyle(t)}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                           <button 
+                             onClick={() => setSelectedTaskForView(task)}
+                             style={{ background: "none", border: "none", color: "#6366f1", cursor: "pointer", padding: "4px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                             title="View Task Details"
+                             className="hover-bg-indigo-50"
+                           >
+                             <Eye size={16} />
+                           </button>
+                           <span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span>
+                        </div>
+                      </td>
                       <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
                       <td style={getTdStyle(t)}>{task.entityName}</td>
-                      <td style={{ ...getTdStyle(t), fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={{ ...getTdStyle(t), fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "250px", maxWidth: "500px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                      <td style={getTdStyle(t)}>
+                        <span style={{ padding: "4px 8px", background: "#f8fafc", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", border: "1px solid #e2e8f0" }}>
+                          {task.departmentName}
+                        </span>
+                      </td>
                       <td style={getTdStyle(t)}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
@@ -9343,9 +9392,98 @@ function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: s
         <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 500 }}>{title}</p>
         <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
       </div>
+      {selectedTaskForView && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", padding: "24px" }}>
+          <div style={{ background: "white", width: "100%", maxWidth: "800px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(to right, #f8fafc, #ffffff)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ background: "#eff6ff", padding: "10px", borderRadius: "12px", color: "#2563eb" }}>
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#1e293b" }}>Task Details</h3>
+                  <span style={{ fontSize: "0.8125rem", color: "#64748b", fontWeight: 600 }}>{selectedTaskForView.displayId || `#${selectedTaskForView.id}`}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedTaskForView(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "8px", borderRadius: "10px" }} className="hover-bg-slate-100">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ padding: "32px", maxHeight: "70vh", overflowY: "auto" }} className="custom-scrollbar">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.05em" }}>Task Name</label>
+                  <div style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#1e293b", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", lineHeight: 1.5 }}>
+                    {selectedTaskForView.taskName}
+                  </div>
+                </div>
+                
+                <DetailItemView label="Entity" value={selectedTaskForView.entityName} />
+                <DetailItemView label="Department" value={selectedTaskForView.departmentName} />
+                <DetailItemView label="Task Type" value={selectedTaskForView.taskType} />
+                <DetailItemView label="Frequency" value={selectedTaskForView.frequency || "Ad-hoc"} />
+                <DetailItemView label="Owner" value={selectedTaskForView.ownerName} />
+                <DetailItemView label="Reviewer" value={selectedTaskForView.reviewerName || "N/A"} />
+                <DetailItemView label="Due Date" value={selectedTaskForView.dueDate ? new Date(selectedTaskForView.dueDate).toLocaleDateString() : "N/A"} />
+                <DetailItemView label="Created At" value={new Date(selectedTaskForView.createdAt).toLocaleString()} />
+                
+                <div style={{ gridColumn: "span 1" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Task Status</label>
+                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontWeight: 700, fontSize: "0.875rem" }}>
+                    {selectedTaskForView.taskStatus}
+                  </div>
+                </div>
+                
+                <div style={{ gridColumn: "span 1" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Review Status</label>
+                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "8px", background: "#f5f3ff", color: "#7c3aed", fontWeight: 700, fontSize: "0.875rem" }}>
+                    {selectedTaskForView.reviewStatus}
+                  </div>
+                </div>
+
+                <DetailItemView label="Completion Date" value={selectedTaskForView.completionDate ? new Date(selectedTaskForView.completionDate).toLocaleDateString() : "Pending"} />
+                <DetailItemView label="Review Completion" value={selectedTaskForView.reviewCompletionDate ? new Date(selectedTaskForView.reviewCompletionDate).toLocaleDateString() : "Pending"} />
+                
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Owner Comments</label>
+                  <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", minHeight: "60px" }}>
+                    {selectedTaskForView.ownerComments || "No comments added."}
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Reviewer Comments</label>
+                  <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", minHeight: "60px" }}>
+                    {selectedTaskForView.reviewerComments || "No comments added."}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ padding: "24px 32px", borderTop: "1px solid #f1f5f9", textAlign: "right", background: "#f8fafc" }}>
+              <button 
+                onClick={() => setSelectedTaskForView(null)}
+                style={{ padding: "10px 24px", background: "#2563eb", border: "none", color: "white", borderRadius: "12px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const DetailItemView = ({ label, value }: { label: string; value: string }) => (
+  <div style={{ gridColumn: "span 1" }}>
+    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.05em" }}>{label}</label>
+    <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#1e293b" }}>
+      {value}
+    </div>
+  </div>
+);
 
 function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any }) {
   let bg = "#f1f5f9";
