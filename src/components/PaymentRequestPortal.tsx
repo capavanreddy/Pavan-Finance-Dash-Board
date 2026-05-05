@@ -657,17 +657,23 @@ export default function PaymentRequestPortal({
                   <Paperclip size={20} color="#2563eb" /> Attached Documents
                 </h5>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                  {([...(viewRequest.supportings || []), ...(viewRequest.kycDocuments || [])]).length > 0 ? (
-                    ([...(viewRequest.supportings || []), ...(viewRequest.kycDocuments || [])]).map((f: any, idx: number) => (
-                      <a key={idx} href={f.data} download={f.name} style={{ padding: '12px', borderRadius: '12px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.borderColor = '#2563eb'}>
-                        <FileText size={18} color="#2563eb" /> 
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                        <Download size={14} color="#64748b" />
-                      </a>
-                    ))
-                  ) : (
-                    <div style={{ gridColumn: 'span 2', color: t.textMuted, fontSize: '0.875rem', textAlign: 'center', padding: '20px' }}>No documents attached</div>
-                  )}
+                  {(() => {
+                    const docs = [
+                      ...(Array.isArray(viewRequest.supportings) ? viewRequest.supportings : []),
+                      ...(Array.isArray(viewRequest.kycDocuments) ? viewRequest.kycDocuments : [])
+                    ];
+                    return docs.length > 0 ? (
+                      docs.map((f: any, idx: number) => (
+                        <a key={idx} href={f.data} download={f.name} style={{ padding: '12px', borderRadius: '12px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.borderColor = '#2563eb'}>
+                          <FileText size={18} color="#2563eb" /> 
+                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                          <Download size={14} color="#64748b" />
+                        </a>
+                      ))
+                    ) : (
+                      <div style={{ gridColumn: 'span 2', color: t.textMuted, fontSize: '0.875rem', textAlign: 'center', padding: '20px' }}>No documents attached</div>
+                    );
+                  })()}
                 </div>
               </div>
 
