@@ -48,12 +48,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     let ownerComments = existingTask.ownerComments;
     let reviewerComments = existingTask.reviewerComments;
     let requestStatus = existingTask.requestStatus;
+    let completedSubmissionAt = existingTask.completedSubmissionAt;
+    let reviewedSubmissionAt = existingTask.reviewedSubmissionAt;
+    let processedSubmissionAt = existingTask.processedSubmissionAt;
 
     if (data.taskStatus) {
       taskStatus = data.taskStatus;
       
       if (data.taskStatus === "Completed" && !existingTask.completionDate) {
         completionDate = new Date().toISOString();
+        completedSubmissionAt = new Date().toISOString();
       }
 
       if (data.taskStatus === "Completed" && existingTask.taskStatus !== "Completed") {
@@ -73,6 +77,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         reviewStatus = (existingTask.reviewerName === "Not Applicable" || !existingTask.reviewerName) 
           ? "Review Not Required" 
           : "Pending";
+        completedSubmissionAt = new Date().toISOString();
       } else {
         completionDate = null;
         taskStatus = "Pending";
@@ -85,6 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (data.reviewCompletionDate) {
         reviewCompletionDate = new Date(data.reviewCompletionDate).toISOString();
         reviewStatus = "Completed";
+        reviewedSubmissionAt = new Date().toISOString();
       } else {
         reviewCompletionDate = null;
         reviewStatus = "Pending";
@@ -101,6 +107,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (data.requestStatus !== undefined) {
       requestStatus = data.requestStatus;
+      if (data.requestStatus === "Processed" && existingTask.requestStatus !== "Processed") {
+        processedSubmissionAt = new Date().toISOString();
+      }
     }
 
     const updatedTasks = await sql`
@@ -121,6 +130,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           "ownerComments" = ${ownerComments},
           "reviewerComments" = ${reviewerComments},
           "requestStatus" = ${requestStatus},
+          "completedSubmissionAt" = ${completedSubmissionAt},
+          "reviewedSubmissionAt" = ${reviewedSubmissionAt},
+          "processedSubmissionAt" = ${processedSubmissionAt},
           "frequency" = ${data.frequency !== undefined ? data.frequency : existingTask.frequency},
           "editRequested" = false,
           "editApproved" = false,

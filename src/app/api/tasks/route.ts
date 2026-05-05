@@ -132,6 +132,9 @@ export async function POST(req: NextRequest) {
       try {
         // Ensure displayId and TaskSequence exist
         await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "displayId" TEXT`;
+        await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "completedSubmissionAt" TIMESTAMP(3)`;
+        await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "reviewedSubmissionAt" TIMESTAMP(3)`;
+        await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "processedSubmissionAt" TIMESTAMP(3)`;
         await sql`CREATE TABLE IF NOT EXISTS "TaskSequence" ("monthYear" TEXT PRIMARY KEY, "nextVal" INTEGER DEFAULT 1)`;
         
         const sequences = await sql`

@@ -50,6 +50,9 @@ type Task = {
   displayId: string | null;
   captureLO?: string;
   isApproved?: boolean;
+  completedSubmissionAt?: string | null;
+  reviewedSubmissionAt?: string | null;
+  processedSubmissionAt?: string | null;
 };
 
 type ExternalRequest = {
@@ -2388,7 +2391,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       { width: 18 }, // Review Date
       { width: 40 }, // Owner Comments
       { width: 40 }, // Reviewer Comments
-      { width: 30 }  // Mail Link
+      { width: 30 }, // Mail Link
+      { width: 20 }, // Origin
+      { width: 25 }, // Original Category
+      { width: 25 }  // Transferred By
     ];
 
     // Row 3: Column Headers (Dark Blue background, White text)
@@ -2397,7 +2403,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       'SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 
       'Department', 'Requested By', 'Owner', 'Due Date', 
       'Completion Date', 'Status', 'Reviewer', 'Review Status', 
-      'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link'
+      'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link',
+      'Origin', 'Original Category', 'Transferred By'
     ];
     
     headers.forEach((h, i) => {
@@ -2433,7 +2440,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         formatDate(t.reviewCompletionDate),
         t.ownerComments || "",
         t.reviewerComments || "",
-        t.mailLink || ""
+        t.mailLink || "",
+        t.transferStatus === 'T' ? 'Transferred' : 'Original',
+        t.originalRequestType || "N/A",
+        t.requestFrom !== t.departmentName ? t.requestFrom : "N/A" 
       ]);
       row.alignment = { vertical: 'middle', wrapText: true };
       row.eachCell((cell) => {
@@ -2555,7 +2565,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Task Status", "Reviewer", "Rev. Status"];
+    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Task Status", "Reviewer", "Rev. Status", "Origin", "Orig. Category"];
     const tableRows = sortedTasks.map(t => [
       t.id,
       t.taskName,
@@ -2564,7 +2574,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       formatDate(t.dueDate),
       t.taskStatus,
       t.reviewerName || "N/A",
-      t.reviewStatus
+      t.reviewStatus,
+      t.transferStatus === 'T' ? 'Transferred' : 'Original',
+      t.originalRequestType || "N/A"
     ]);
 
     autoTable(doc, {
@@ -4221,7 +4233,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </th>
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestFrom')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Request From {taskSortConfig?.key === 'requestFrom' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                      Requested From {taskSortConfig?.key === 'requestFrom' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      Origin {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
@@ -4244,11 +4261,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Origin {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerName')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Reviewer {taskSortConfig?.key === 'reviewerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -4264,13 +4276,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       Review Status {taskSortConfig?.key === 'reviewStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
-                  {!isViewer && (
-                    <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                      </div>
-                    </th>
-                  )}
                   <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerComments')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       Owner Comments {taskSortConfig?.key === 'ownerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -4306,11 +4311,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     todayDate.setHours(0, 0, 0, 0);
                     const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < todayDate;
 
-                    const isOwnerLocked = COMPLETION_STATUSES.includes(task.taskStatus) && !isAdmin;
-                    const isReviewerLocked = (task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin;
-                    
-                    const canEditReviewFields = (isAdmin || isCurrentUserReviewer) && !isViewer;
-                    const canEditOwnerFields = (isAdmin || isCurrentUserOwner) && !isViewer;
+                    const isOwnerRestricted = (COMPLETION_STATUSES.includes(task.taskStatus) && !isAdmin) || (!isCurrentUserOwner && !isAdmin);
+                    const isReviewerRestricted = ((task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin) || (!isCurrentUserReviewer && !isAdmin);
                     
                     return (
                     <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
@@ -4336,7 +4338,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </span>
                       </td>
                       <td style={getTdStyle(t)}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                           <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
                             {task.taskType}
                           </span>
@@ -4351,49 +4353,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </span>
                       </td>
                       <td style={getTdStyle(t)}>{task.requestFrom}</td>
-                      <td style={getTdStyle(t)}>{task.ownerName}</td>
-                      <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
-                      
-                      {/* Editable Completion Date */}
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: isOwnerLocked || !canEditOwnerFields ? "not-allowed" : "pointer", minWidth: "140px" }}
-                        onClick={() => { 
-                          if (isOwnerLocked || !canEditOwnerFields) return;
-                          setEditingCell({ id: task.id, field: "completionDate" }); 
-                          setEditValue(task.completionDate ? task.completionDate.split("T")[0] : ""); 
-                        }}
-                      >
-                        {editingCell?.id === task.id && editingCell.field === "completionDate" ? (
-                          <input 
-                            type="date"
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "completionDate", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "completionDate", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: isOverdue ? "inherit" : (task.completionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
-                            {formatDate(task.completionDate)}
-                            {(isOwnerLocked || !canEditOwnerFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditOwnerFields ? "Only Owner can edit" : "Task Completed"}>🔒</span>}
-                          </span>
-                        )}
-                      </td>
-
-                      <td 
-                        style={{ ...getTdStyle(t), fontWeight: 600, cursor: (isOwnerLocked || isViewer) ? "default" : "pointer" }}
-                        onClick={() => {
-                          if (isOwnerLocked || isViewer) return;
-                          if (COMPLETION_STATUSES.includes(task.taskStatus)) return;
-                          showConfirm(`Mark "${task.taskName}" as Completed?`, () => {
-                            handleUpdate(task.id, "taskStatus", "Completed");
-                          });
-                        }}
-                        title={!isOwnerLocked && !COMPLETION_STATUSES.includes(task.taskStatus) ? "Click to mark as completed" : ""}
-                      >
-                        {task.taskStatus}
-                      </td>
                       <td style={getTdStyle(t)}>
                         <span style={{ 
                           padding: "2px 6px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 700,
@@ -4403,88 +4362,40 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           {task.transferStatus === 'T' ? 'Transferred' : 'Original'}
                         </span>
                       </td>
-                      <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
-                      
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields ? "not-allowed" : "pointer", minWidth: "140px" }}
-                        onClick={() => { 
-                          if (task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields) return;
-                          setEditingCell({ id: task.id, field: "reviewCompletionDate" }); 
-                          setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : ""); 
-                        }}
-                      >
-                        {task.reviewerName === "Not Applicable" ? (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                        ) : editingCell?.id === task.id && editingCell.field === "reviewCompletionDate" ? (
-                          <input 
-                            type="date"
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "reviewCompletionDate", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "reviewCompletionDate", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: isOverdue ? "inherit" : (task.reviewCompletionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
-                            {formatDate(task.reviewCompletionDate)}
-                            {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
-                          </span>
-                        )}
+                      <td style={getTdStyle(t)}>{task.ownerName}</td>
+                      <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
+                      <td style={{ ...getTdStyle(t), fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} title={task.completedSubmissionAt ? `Submitted on: ${new Date(task.completedSubmissionAt).toLocaleString()}` : ""}>
+                        {formatDate(task.completionDate)}
                       </td>
-
                       <td style={getTdStyle(t)}>
-                        <StatusPill t={t} 
-                          status={(task.reviewerName === "Not Applicable" || task.reviewerName === "N/A" || !task.reviewerName) ? "Review Not Required" : task.reviewStatus} 
+                        <StatusPill 
+                          status={task.taskStatus} 
+                          type="task" 
+                          taskId={task.id} 
+                          onUpdate={handleUpdate} 
+                          disabled={isOwnerRestricted}
+                          t={t}
+                        />
+                      </td>
+                      <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
+                      <td style={{ ...getTdStyle(t), fontWeight: 600, color: "#64748b" }} title={task.reviewedSubmissionAt ? `Submitted on: ${new Date(task.reviewedSubmissionAt).toLocaleString()}` : ""}>
+                        {formatDate(task.reviewCompletionDate)}
+                      </td>
+                      <td style={getTdStyle(t)}>
+                        <StatusPill 
+                          status={task.reviewStatus} 
                           type="review" 
                           taskId={task.id} 
                           onUpdate={handleUpdate} 
-                          disabled={isReviewerLocked || !canEditReviewFields}
+                          disabled={isReviewerRestricted}
+                          t={t}
                         />
                       </td>
-
-                      {!isViewer && (
-                        <td style={getTdStyle(t)}>
-                          {task.reviewerName === "Not Applicable" ? (
-                            <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                          ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
-                            <select 
-                              onChange={(e) => {
-                                if (e.target.value === 'YES') {
-                                  setLOCaptureForm({
-                                    ...loCaptureForm,
-                                    taskId: task.id,
-                                    entity: task.entityName || "",
-                                    dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
-                                    identifiedBy: task.reviewerName || "",
-                                    committedBy: task.ownerName || "",
-                                    learningOpportunity: "",
-                                    resolutionProvided: "",
-                                    modeOfCommunication: "Email",
-                                    comments: ""
-                                  });
-                                  setShowLOCaptureModal(true);
-                                }
-                              }}
-                              style={{ 
-                                padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, 
-                                fontSize: "0.75rem", fontWeight: 600, background: t.bg, color: t.textMuted, cursor: "pointer" 
-                              }}
-                            >
-                              <option value="NO">No</option>
-                              <option value="YES">Yes</option>
-                            </select>
-                          ) : (
-                            <span style={{ color: "#cbd5e1" }}>--</span>
-                          )}
-                        </td>
-                      )}
-                      
                       {/* Editable Owner Comments */}
                       <td 
-                        style={{ ...getTdStyle(t), cursor: isOwnerLocked ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                        style={{ ...getTdStyle(t), cursor: (isAdmin || isCurrentUserOwner) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
                         onClick={() => { 
-                          if (isOwnerLocked) return;
+                          if (!isAdmin && !isCurrentUserOwner) return;
                           setEditingCell({ id: task.id, field: "ownerComments" }); 
                           setEditValue(task.ownerComments || ""); 
                         }}
@@ -4504,9 +4415,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </td>
 
                       <td 
-                        style={{ ...getTdStyle(t), cursor: isReviewerLocked || !canEditReviewFields ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                        style={{ ...getTdStyle(t), cursor: (isAdmin || isCurrentUserReviewer) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
                         onClick={() => { 
-                          if (isReviewerLocked || !canEditReviewFields) return;
+                          if (!isAdmin && !isCurrentUserReviewer) return;
                           setEditingCell({ id: task.id, field: "reviewerComments" }); 
                           setEditValue(task.reviewerComments || ""); 
                         }}
@@ -4523,18 +4434,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         ) : (
                           <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
                             {task.reviewerComments || "Click to add..."}
-                            {(isReviewerLocked || !canEditReviewFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
                           </span>
                         )}
                       </td>
                       <td style={getTdStyle(t)}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ 
-                            padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
-                            background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
-                            color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
-                            textAlign: "center", whiteSpace: "nowrap"
-                          }}>
+                          <span 
+                            style={{ 
+                              padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
+                              background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
+                              color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
+                              textAlign: "center", whiteSpace: "nowrap"
+                            }}
+                            title={task.processedSubmissionAt ? `Processed on: ${new Date(task.processedSubmissionAt).toLocaleString()}` : ""}
+                          >
                             {task.requestStatus || "Pending"}
                           </span>
                           {isFinished(task) && task.requestStatus !== 'Processed' && 
@@ -4542,12 +4455,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                            (isCurrentUserOwner || isAdmin) && (
                             <button 
                               onClick={async () => {
-                                // Update Task
                                 await handleUpdate(task.id, "requestStatus", "Processed");
-                                // Update External Request
-                                if (task.linkedRequestId) {
-                                  await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
-                                }
                                 showNotification("Marked as Processed and Stakeholders notified!");
                               }}
                               style={{ 
@@ -4560,11 +4468,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           )}
                         </div>
                       </td>
-
-                      {/* Delete / Request Edit / Request De Actions */}
+                      
                       {!isViewer && (
                         <td style={{ ...getTdStyle(t), textAlign: "center" }}>
-                                                        <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
                             {(isAdmin || task.editApproved) && (
                                <button 
                                  onClick={() => { setPreFilledTask(task); setShowForm(true); }}
@@ -4644,10 +4551,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     )
                   })
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
