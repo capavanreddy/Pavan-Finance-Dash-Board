@@ -9361,37 +9361,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         </div>
       )}
 
-  </div>
-</div>
-  );
-}
-
-// Subcomponents
-
-function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void, t: any }) {
-  return (
-    <div 
-      onClick={onClick}
-      style={{ 
-        background: t.card, 
-        padding: "24px", 
-        borderRadius: "12px", 
-        border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
-        boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
-        display: "flex", 
-        alignItems: "center", 
-        gap: "16px",
-        cursor: onClick ? "pointer" : "default",
-        transition: "all 0.2s"
-      }}
-    >
-      <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {icon}
-      </div>
-      <div>
-        <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 500 }}>{title}</p>
-        <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
-      </div>
       {selectedTaskForView && (
         <div style={{ position: "fixed", inset: 0, zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", padding: "24px" }}>
           <div style={{ background: "white", width: "100%", maxWidth: "800px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }}>
@@ -9472,6 +9441,37 @@ function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: s
           </div>
         </div>
       )}
+  </div>
+</div>
+  );
+}
+
+// Subcomponents
+
+function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: string, value: number, icon: any, bg: string, isActive?: boolean, onClick?: () => void, t: any }) {
+  return (
+    <div 
+      onClick={onClick}
+      style={{ 
+        background: t.card, 
+        padding: "24px", 
+        borderRadius: "12px", 
+        border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
+        boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "16px",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.2s"
+      }}
+    >
+      <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {icon}
+      </div>
+      <div>
+        <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 500 }}>{title}</p>
+        <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
+      </div>
     </div>
   );
 }
