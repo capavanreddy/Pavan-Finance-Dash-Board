@@ -4007,7 +4007,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
             </div>
           </div>
-        ) : activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? (
+        </div>
+      </div>
+    </div>
+    ) : activeView === 'LOS' && loActiveFilter !== 'RESOURCES' ? (
           <div style={{ 
             marginBottom: "32px", 
             padding: "40px", 
@@ -5726,7 +5729,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       onClick={() => setActiveOptionsTab('DATA_MANAGEMENT')} 
                       style={{ width: "100%", padding: "10px 12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'DATA_MANAGEMENT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'DATA_MANAGEMENT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}
                     >
-                      <Settings2 size={18} /> Data Management
+                      <Database size={18} /> Database Management
                     </button>
                   </>
                 )}
@@ -5809,109 +5812,87 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 {activeOptionsTab === 'DATA_MANAGEMENT' && (
                   <div style={{ maxWidth: "800px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                      <div style={{ background: "#e0f2fe", padding: "10px", borderRadius: "10px" }}>
-                        <Settings2 size={24} color="#0369a1" />
+                      <div style={{ background: "#f1f5f9", padding: "10px", borderRadius: "12px" }}>
+                        <Database size={24} color="#475569" />
                       </div>
-                      <h3 style={{ margin: 0 }}>Data Management Hub</h3>
+                      <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: t.text }}>Database Management Hub</h3>
                     </div>
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
-                      {/* Master Reset Section */}
-                      <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "12px", padding: "24px" }}>
-                        <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-                          <AlertTriangle color="#f97316" size={20} />
-                          <h4 style={{ margin: 0, color: "#c2410c", fontWeight: 700 }}>Master Purge Protocol</h4>
+                      {/* Purge Option */}
+                      <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                          <Trash2 color="#ea580c" size={22} />
+                          <h4 style={{ margin: 0, color: "#c2410c", fontSize: "1.1rem", fontWeight: 700 }}>Purge Database</h4>
                         </div>
-                        <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: "#9a3412", lineHeight: 1.6 }}>
-                          Clear all transactional data (Tasks, LOs, Requests) and reset Task ID sequences. User accounts and master data are preserved.
-                        </p>
-                        <div style={{ display: "flex", gap: "12px" }}>
-                          <button 
-                            onClick={() => {
-                              showConfirm("CRITICAL: This will delete all transactions and reset task IDs to 01. A snapshot will be saved for safety. Proceed?", async () => {
-                                try {
-                                  const res = await fetch("/api/admin/master-reset", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ action: "RESET" })
-                                  });
-                                  const data = await res.json();
-                                  if (res.ok) {
-                                    showNotification(data.message);
-                                    window.location.reload();
-                                  } else {
-                                    showNotification(data.message, "error");
-                                  }
-                                } catch (e) {
-                                  showNotification("Reset failed", "error");
-                                }
-                              });
-                            }}
-                            style={{ background: "#ef4444", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
-                          >
-                            Execute Master Purge
-                          </button>
-                          <button 
-                            onClick={() => {
-                              showConfirm("Restore data from the latest snapshot? Current data will be replaced.", async () => {
-                                try {
-                                  const res = await fetch("/api/admin/master-reset", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ action: "REVERSE" })
-                                  });
-                                  const data = await res.json();
-                                  if (res.ok) {
-                                    showNotification(data.message);
-                                    window.location.reload();
-                                  } else {
-                                    showNotification(data.message, "error");
-                                  }
-                                } catch (e) {
-                                  showNotification("Restore failed", "error");
-                                }
-                              });
-                            }}
-                            style={{ background: "#0f172a", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
-                          >
-                            Reverse Previous Purge
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Database Sync Section */}
-                      <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "12px", padding: "24px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-                          <div style={{ padding: "12px", background: "#e0f2fe", borderRadius: "12px" }}>
-                            <RefreshCw size={24} color="#0284c7" />
-                          </div>
-                          <div>
-                            <h4 style={{ margin: "0 0 4px 0", color: "#0c4a6e", fontSize: "1rem", fontWeight: 700 }}>Database Schema Sync</h4>
-                            <p style={{ color: "#075985", margin: 0, fontSize: "0.8125rem", maxWidth: "450px" }}>
-                              Align the database schema with the latest application updates. Safe for existing data.
-                            </p>
-                          </div>
+                        <div style={{ marginBottom: "20px", padding: "12px", background: "white", borderRadius: "10px", border: "1px solid #ffedd5" }}>
+                          <p style={{ margin: 0, fontSize: "0.875rem", color: "#9a3412", fontWeight: 600 }}>Effect: Master Purge Protocol</p>
+                          <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", color: "#9a3412", opacity: 0.8, lineHeight: 1.5 }}>
+                            This will clear all transactional data including **Tasks, LOs, and Requests**. It will also **reset Task ID sequences** to 01. User accounts, settings, and master data will remain intact.
+                          </p>
                         </div>
                         <button 
                           onClick={() => {
-                            showConfirm("Are you sure you want to sync database schema?", async () => {
+                            showConfirm("CRITICAL: Delete all transactions and reset task IDs? A safety snapshot will be taken first.", async () => {
                               try {
-                                const res = await fetch("/api/users/sync-schema", { method: "POST" });
+                                const res = await fetch("/api/admin/master-reset", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "RESET" })
+                                });
                                 const data = await res.json();
-                                showNotification(data.message || "Sync completed successfully!");
-                              } catch (err) {
-                                showNotification("Sync failed. Please check the logs.", 'error');
-                              }
+                                if (res.ok) { showNotification(data.message); window.location.reload(); }
+                                else { showNotification(data.message, "error"); }
+                              } catch (e) { showNotification("Reset failed", "error"); }
                             });
                           }}
-                          style={{ background: "#0284c7", color: "white", padding: "10px 24px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}
+                          style={{ background: "#ea580c", color: "white", padding: "12px 24px", borderRadius: "8px", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}
+                          onMouseOver={e => e.currentTarget.style.background = "#c2410c"}
+                          onMouseOut={e => e.currentTarget.style.background = "#ea580c"}
                         >
-                          <RefreshCw size={18} /> Sync Database Schema
+                          Execute Purge
+                        </button>
+                      </div>
+
+                      {/* Reverse Option */}
+                      <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                          <RotateCcw color="#0284c7" size={22} />
+                          <h4 style={{ margin: 0, color: "#0369a1", fontSize: "1.1rem", fontWeight: 700 }}>Reverse Back</h4>
+                        </div>
+                        <div style={{ marginBottom: "20px", padding: "12px", background: "white", borderRadius: "10px", border: "1px solid #e0f2fe" }}>
+                          <p style={{ margin: 0, fontSize: "0.875rem", color: "#0369a1", fontWeight: 600 }}>Effect: Snapshot Restoration</p>
+                          <p style={{ margin: "4px 0 0 0", fontSize: "0.8125rem", color: "#0369a1", opacity: 0.8, lineHeight: 1.5 }}>
+                            This will restore the system to the state captured in the **latest safety snapshot**. Any data created after the snapshot will be replaced by the snapshot data.
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            showConfirm("Restore data from the latest snapshot? Current data will be replaced.", async () => {
+                              try {
+                                const res = await fetch("/api/admin/master-reset", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "REVERSE" })
+                                });
+                                const data = await res.json();
+                                if (res.ok) { showNotification(data.message); window.location.reload(); }
+                                else { showNotification(data.message, "error"); }
+                              } catch (e) { showNotification("Restore failed", "error"); }
+                            });
+                          }}
+                          style={{ background: "#0284c7", color: "white", padding: "12px 24px", borderRadius: "8px", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}
+                          onMouseOver={e => e.currentTarget.style.background = "#0369a1"}
+                          onMouseOut={e => e.currentTarget.style.background = "#0284c7"}
+                        >
+                          Execute Reverse
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
+
+
                 
                 {activeOptionsTab === 'SCHEDULE' && (
                   <div>
@@ -6789,7 +6770,40 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </tbody>
                         </table>
                       </div>
-                    )}
+
+                      {/* Database Sync Section (Restored to USERS) */}
+                      <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "12px", padding: "24px", marginTop: "24px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                          <div style={{ padding: "12px", background: "#e0f2fe", borderRadius: "12px" }}>
+                            <RefreshCw size={24} color="#0284c7" />
+                          </div>
+                          <div>
+                            <h4 style={{ margin: "0 0 4px 0", color: "#0c4a6e", fontSize: "1rem", fontWeight: 700 }}>Database Schema Sync</h4>
+                            <p style={{ color: "#075985", margin: 0, fontSize: "0.8125rem", maxWidth: "450px" }}>
+                              Align the database schema with the latest application updates. Safe for existing data.
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            showConfirm("Are you sure you want to sync database schema?", async () => {
+                              try {
+                                const res = await fetch("/api/users/sync-schema", { method: "POST" });
+                                const data = await res.json();
+                                showNotification(data.message || "Sync completed successfully!");
+                              } catch (err) {
+                                showNotification("Sync failed. Please check the logs.", 'error');
+                              }
+                            });
+                          }}
+                          style={{ background: "#0284c7", color: "white", padding: "10px 24px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}
+                        >
+                          <RefreshCw size={18} /> Sync Database Schema
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                )}
 
                 {activeOptionsTab === 'EDIT_REQUESTS' && (
                   <div>
@@ -6830,15 +6844,15 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         onClick={() => setEditRequestSubTab('LO')}
                         style={{ 
                           padding: "8px 16px", borderRadius: "8px", border: "none", 
-                          background: editRequestSubTab === 'LO' ? "#2563eb" : "#f1f5f9",
+                          background: editRequestSubTab === 'LO' ? "#8b5cf6" : "#f1f5f9",
                           color: editRequestSubTab === 'LO' ? "white" : "#64748b",
                           fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
                         }}
                       >
                         <BookOpen size={16} /> Edit LO
-                        {los.filter(l => l.editRequested).length > 0 && (
-                          <span style={{ background: editRequestSubTab === 'LO' ? "white" : "#ef4444", color: editRequestSubTab === 'LO' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
-                            {los.filter(l => l.editRequested).length}
+                        {los.filter(lo => lo.editRequested && !lo.editApproved).length > 0 && (
+                          <span style={{ background: editRequestSubTab === 'LO' ? "white" : "#ef4444", color: editRequestSubTab === 'LO' ? "#8b5cf6" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
+                            {los.filter(lo => lo.editRequested && !lo.editApproved).length}
                           </span>
                         )}
                       </button>
@@ -6851,10 +6865,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "8px"
                         }}
                       >
-                        <Wallet size={16} /> Edit Payment
-                        {paymentRequests.filter(r => r.editRequested).length > 0 && (
+                        <CreditCard size={16} /> Edit Payment
+                        {paymentRequests.filter(req => req.type === 'TRACKER' && req.editRequested && !req.editApproved).length > 0 && (
                           <span style={{ background: editRequestSubTab === 'PAYMENT' ? "white" : "#ef4444", color: editRequestSubTab === 'PAYMENT' ? "#2563eb" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
-                            {paymentRequests.filter(r => r.editRequested).length}
+                            {paymentRequests.filter(req => req.type === 'TRACKER' && req.editRequested && !req.editApproved).length}
                           </span>
                         )}
                       </button>
@@ -6868,9 +6882,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         }}
                       >
                         <Trash2 size={16} /> Delete Payment
-                        {paymentRequests.filter(r => r.deleteRequested).length > 0 && (
+                        {paymentRequests.filter(req => req.deleteRequested).length > 0 && (
                           <span style={{ background: editRequestSubTab === 'DELETE_PAYMENT' ? "white" : "#ef4444", color: editRequestSubTab === 'DELETE_PAYMENT' ? "#ef4444" : "white", padding: "1px 6px", borderRadius: "10px", fontSize: "0.7rem" }}>
-                            {paymentRequests.filter(r => r.deleteRequested).length}
+                            {paymentRequests.filter(req => req.deleteRequested).length}
                           </span>
                         )}
                       </button>
@@ -6964,168 +6978,101 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </div>
                     ) : editRequestSubTab === 'LO' ? (
                       <div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                              <div>
-                                <h3 style={{ margin: "0 0 8px 0", color: t.text }}>Learning Opportunity (LO) Admin</h3>
-                                <p style={{ color: t.textMuted, margin: 0, fontSize: "0.875rem" }}>Manage LO edit requests and view/export all records.</p>
-                              </div>
-                              <button onClick={exportLOsToExcel} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                <FileSpreadsheet size={18} /> Export All
-                              </button>
-                            </div>
-    
-                            {/* LO Edit Requests Section */}
-                            <div style={{ marginBottom: "32px" }}>
-                              <h4 style={{ fontSize: "0.9375rem", color: t.textMuted, marginBottom: "12px", fontWeight: 600 }}>Pending LO Edit Requests</h4>
-                              {los.filter(l => l.editRequested).length === 0 ? (
-                                <div style={{ padding: "24px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                                  <p style={{ color: t.textMuted, margin: 0, fontSize: "0.875rem" }}>No pending LO edit requests.</p>
-                                </div>
-                              ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                  {los.filter(l => l.editRequested).map(lo => (
-                                    <div key={`lo-edit-${lo.id}`} style={{ padding: "16px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                                        <div>
-                                          <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9375rem", color: t.text }}>LO #{lo.id}: {lo.entity}</h5>
-                                          <p style={{ margin: 0, fontSize: "0.8125rem", color: t.textMuted }}>Edit requested by: <strong>{lo.identifiedBy}</strong></p>
-                                        </div>
-                                        <div style={{ display: "flex", gap: "8px" }}>
-                                          <button onClick={() => handleApproveEditLO(lo.id, 'APPROVE')} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Approve</button>
-                                          <button onClick={() => handleApproveEditLO(lo.id, 'REJECT')} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Reject</button>
-                                        </div>
-                                      </div>
-                                      <div style={{ padding: "10px", background: t.bg, borderRadius: "6px", fontSize: "0.8125rem", borderLeft: "3px solid #cbd5e1" }}>
-                                        <strong>Reason:</strong> {lo.editRequestReason}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* LO Deletion Requests Section */}
-                            <div>
-                              <h4 style={{ fontSize: "0.9375rem", color: t.textMuted, marginBottom: "12px", fontWeight: 600 }}>Pending LO Deletion Requests</h4>
-                              {los.filter(l => l.deleteRequested).length === 0 ? (
-                                <div style={{ padding: "24px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                                  <p style={{ color: t.textMuted, margin: 0, fontSize: "0.875rem" }}>No pending LO deletion requests.</p>
-                                </div>
-                              ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                  {los.filter(l => l.deleteRequested).map(lo => (
-                                    <div key={`lo-del-${lo.id}`} style={{ padding: "16px", background: "#fef2f2", borderRadius: "12px", border: "1px solid #fee2e2", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                                        <div>
-                                          <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9375rem", color: "#991b1b" }}>LO #{lo.id}: {lo.entity}</h5>
-                                          <p style={{ margin: 0, fontSize: "0.8125rem", color: "#b91c1c" }}>Deletion requested by: <strong>{lo.committedBy}</strong></p>
-                                        </div>
-                                        <div style={{ display: "flex", gap: "8px" }}>
-                                          <button onClick={() => handleApproveDeleteLO(lo.id, 'APPROVE')} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Approve Delete</button>
-                                          <button onClick={() => handleApproveDeleteLO(lo.id, 'REJECT')} style={{ background: "#64748b", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}>Reject</button>
-                                        </div>
-                                      </div>
-                                      <div style={{ padding: "10px", background: "white", borderRadius: "6px", fontSize: "0.8125rem", borderLeft: "3px solid #ef4444" }}>
-                                        <strong>Reason:</strong> {lo.deleteRequestReason}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ) : editRequestSubTab === 'PAYMENT' ? (
-                          <div>
-                            <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Edit Requests</h3>
-                            <p style={{ color: t.textMuted, marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to update payment dates or amounts for processed payments.</p>
-                            
-                            {paymentRequests.filter(r => r.editRequested).length === 0 ? (
-                              <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                                <p style={{ color: t.textMuted, margin: 0 }}>No pending payment edit requests.</p>
-                              </div>
-                            ) : (
-                              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                {paymentRequests.filter(r => r.editRequested).map(req => (
-                                  <div key={`pay-edit-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                                      <div>
-                                        <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
-                                        <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
-                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#3b82f6", fontWeight: 600 }}>
-                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
-                                        </p>
-                                      </div>
-                                      <div style={{ display: "flex", gap: "8px" }}>
-                                        <button 
-                                          onClick={() => handleApprovePaymentEdit(req)}
-                                          style={{ background: "#22c55e", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
-                                        >
-                                          {req.type === 'MASTER' ? "Approve Master Edit" : "Approve"}
-                                        </button>
-                                        <button 
-                                          onClick={() => handleRejectPaymentEdit(req)}
-                                          style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
-                                        >
-                                          Reject
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div style={{ padding: "12px", background: t.bg, borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #f59e0b" }}>
-                                      <strong>Request Reason:</strong> {req.editRequestReason}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                        <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending LO Edit Requests</h3>
+                        <p style={{ color: t.textMuted, marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to edit Learning Opportunities.</p>
+                        {los.filter(lo => lo.editRequested && !lo.editApproved).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: t.textMuted, margin: 0 }}>No pending LO edit requests.</p>
                           </div>
                         ) : (
-                          <div style={{ display: "contents" }}>
-                            <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Deletion Requests</h3>
-                            <p style={{ color: t.textMuted, marginBottom: "24px", fontSize: "0.875rem" }}>Review requests to permanently remove specific payment records created by mistake.</p>
-                            
-                            {paymentRequests.filter(r => r.deleteRequested).length === 0 ? (
-                              <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
-                                <p style={{ color: t.textMuted, margin: 0 }}>No pending payment deletion requests.</p>
-                              </div>
-                            ) : (
-                              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                {paymentRequests.filter(r => r.deleteRequested).map(req => (
-                                  <div key={`pay-del-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                                      <div>
-                                        <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
-                                        <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
-                                        <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600 }}>
-                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
-                                        </p>
-                                      </div>
-                                      <div style={{ display: "flex", gap: "8px" }}>
-                                        <button 
-                                          onClick={() => handleApproveDeletePayment(req)}
-                                          style={{ background: "#ef4444", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
-                                        >
-                                          {req.type === 'MASTER' ? "Approve Master Delete" : "Approve Delete"}
-                                        </button>
-                                        <button 
-                                          onClick={() => handleRejectDeletePayment(req)}
-                                          style={{ background: "#64748b", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem" }}
-                                        >
-                                          Reject
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div style={{ padding: "12px", background: "#fef2f2", borderRadius: "8px", fontSize: "0.875rem", borderLeft: "4px solid #ef4444" }}>
-                                      <div><strong>Requested By:</strong> {req.deleteRequestedBy || "User"}</div>
-                                      <div style={{ marginTop: "4px" }}><strong>Reason:</strong> {req.deleteRequestReason}</div>
-                                    </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {los.filter(lo => lo.editRequested && !lo.editApproved).map(lo => (
+                              <div key={`lo-edit-${lo.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{lo.entity} - {new Date(lo.dateOfIdentification).toLocaleDateString()}</h4>
+                                    <p style={{ margin: "4px 0", fontSize: "0.875rem" }}>{lo.learningOpportunity}</p>
                                   </div>
-                                ))}
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={async () => {
+                                      await fetch(`/api/lo/${lo.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ editApproved: true }) });
+                                      fetchLOs();
+                                    }} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Approve</button>
+                                    <button onClick={async () => {
+                                      await fetch(`/api/lo/${lo.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ editRequested: false, editRequestReason: "" }) });
+                                      fetchLOs();
+                                    }} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Reject</button>
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: "12px", padding: "8px", background: t.bg, borderRadius: "6px", fontSize: "0.8125rem" }}>
+                                  <strong>Reason:</strong> {lo.editRequestReason}
+                                </div>
                               </div>
-                            )}
+                            ))}
                           </div>
                         )}
                       </div>
-                    )}
+                    ) : editRequestSubTab === 'PAYMENT' ? (
+                      <div>
+                        <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Edit Requests</h3>
+                        {paymentRequests.filter(req => req.type === 'TRACKER' && req.editRequested && !req.editApproved).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: t.textMuted, margin: 0 }}>No pending payment edit requests.</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {paymentRequests.filter(req => req.type === 'TRACKER' && req.editRequested && !req.editApproved).map(req => (
+                              <div key={`pay-edit-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{req.vendorName} - {req.paymentDescription}</h4>
+                                    <p style={{ margin: "4px 0", fontSize: "0.875rem" }}>Due: {req.dueDate ? new Date(req.dueDate).toLocaleDateString() : 'N/A'} | Amount: ₹{req.amount?.toLocaleString()}</p>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={() => handleApprovePaymentEdit(req.id)} style={{ background: "#22c55e", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Approve</button>
+                                    <button onClick={() => handleRejectPaymentEdit(req.id)} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Reject</button>
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: "12px", padding: "8px", background: t.bg, borderRadius: "6px", fontSize: "0.8125rem" }}>
+                                  <strong>Reason:</strong> {req.editRequestReason}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : editRequestSubTab === 'DELETE_PAYMENT' ? (
+                      <div>
+                        <h3 style={{ margin: "0 0 16px 0", color: t.text }}>Pending Payment Deletion Requests</h3>
+                        {paymentRequests.filter(req => req.deleteRequested).length === 0 ? (
+                          <div style={{ padding: "40px", textAlign: "center", background: t.bg, borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                            <p style={{ color: t.textMuted, margin: 0 }}>No pending deletion requests.</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            {paymentRequests.filter(req => req.deleteRequested).map(req => (
+                              <div key={`pay-del-${req.id}`} style={{ padding: "20px", background: t.card, borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{req.vendorName} - {req.paymentDescription}</h4>
+                                    <span style={{ fontSize: "0.75rem", background: "#fee2e2", color: "#ef4444", padding: "2px 8px", borderRadius: "4px", fontWeight: 600 }}>{req.type}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={() => handleApproveDeletePayment(req)} style={{ background: "#ef4444", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Approve Delete</button>
+                                    <button onClick={() => handleRejectDeletePayment(req)} style={{ background: "#64748b", color: "white", padding: "6px 12px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Reject</button>
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: "12px", padding: "8px", background: "#fef2f2", borderRadius: "8px", fontSize: "0.8125rem", borderLeft: "4px solid #ef4444" }}>
+                                  <strong>Reason:</strong> {req.deleteRequestReason}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
 
                 {activeOptionsTab === 'MASTER_DATA' && (
                   <div>
@@ -8227,7 +8174,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         )}
                       </div>
                     </div>
+                  </div>
+                )}
 
+                {activeOptionsTab === 'MATRICES' && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                     {/* Matrix A: Module Access (Accordion) */}
                     <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
                       <div 
@@ -8589,15 +8540,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       )}
                     </div>
 
-
-                    {/* User Module Controls (Matrix D) */}
+                    {/* User Module Controls */}
                     <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
                       <div 
                         onClick={() => setActiveMatrixTab(activeMatrixTab === 'USER_CONTROLS' ? '' : 'USER_CONTROLS')}
                         style={{ padding: "20px 24px", background: activeMatrixTab === 'USER_CONTROLS' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'USER_CONTROLS' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
                       >
                         <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'USER_CONTROLS' ? "#2563eb" : "#0f172a" }}>
-                          <ShieldCheck size={20} /> User Module Controls
+                          <Shield size={20} /> User Module Controls
                         </h4>
                         <ChevronDown size={20} style={{ transform: activeMatrixTab === 'USER_CONTROLS' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: t.textMuted }} />
                       </div>
@@ -8606,21 +8556,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                             <div>
-                              <h5 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>Granular User Exceptions</h5>
-                              <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>Disable specific modules for individual users, even if their department has access.</p>
+                              <h5 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>Individual User Exceptions</h5>
+                              <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>Manually toggle access for specific modules per user.</p>
                             </div>
-                            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                              {/* Department Filter */}
-                              <MultiSelectFilter
-                                options={settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort() || []}
-                                selected={matrixDeptFilter}
-                                onChange={setMatrixDeptFilter}
-                                placeholder="All Departments"
-                                theme={theme}
-                                t={t}
-                              />
-
-                              <div style={{ position: "relative" }}>
+                            <div style={{ position: "relative" }}>
                                 <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
                                 <input 
                                   type="text" 
@@ -8629,10 +8568,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onChange={(e) => setExtReqSearch(e.target.value)} 
                                   style={{ padding: "8px 12px 8px 36px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.875rem", width: "200px", background: t.card, color: t.text }}
                                 />
-                              </div>
                             </div>
                           </div>
-
                           <div style={{ overflowX: "auto" }}>
                             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                               <thead>
@@ -8646,10 +8583,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {usersList
                                   .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
-                                  .filter(u => matrixDeptFilter.length === 0 || matrixDeptFilter.includes(u.department))
                                   .filter(u => (u as any).isApproved !== false)
                                   .map((u) => {
-                                    const accessMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
                                     const exceptions = JSON.parse(settings.userModuleExceptions || '{}');
                                     const userExceptions = exceptions[u.email] || [];
                                     
@@ -8667,53 +8602,26 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                            </div>
                                         </td>
                                         {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities', 'Payments'].map(module => {
-                                          const deptHasAccess = accessMatrix[module]?.includes(u.department);
-                                          const isManuallyBlocked = userExceptions.includes(module);
-                                          const effectiveAccess = deptHasAccess && !isManuallyBlocked;
-                                          
+                                          const isBlocked = userExceptions.includes(module);
                                           return (
                                             <td key={module} style={{ padding: "12px", textAlign: "center" }}>
-                                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                                                <label className="switch" style={{ position: "relative", display: "inline-block", width: "40px", height: "20px" }}>
-                                                  <input 
-                                                    type="checkbox" 
-                                                    disabled={!deptHasAccess}
-                                                    checked={effectiveAccess}
-                                                    onChange={(e) => {
-                                                      let updatedExceptions = [...userExceptions];
-                                                      if (!e.target.checked) {
-                                                        if (!updatedExceptions.includes(module)) updatedExceptions.push(module);
-                                                      } else {
-                                                        updatedExceptions = updatedExceptions.filter(m => m !== module);
-                                                      }
-                                                      setSettings({
-                                                        ...settings,
-                                                        userModuleExceptions: JSON.stringify({ ...exceptions, [u.email]: updatedExceptions })
-                                                      });
-                                                    }}
-                                                    style={{ opacity: 0, width: 0, height: 0 }}
-                                                  />
-                                                  <span style={{ 
-                                                    position: "absolute", cursor: deptHasAccess ? "pointer" : "not-allowed", 
-                                                    top: 0, left: 0, right: 0, bottom: 0, 
-                                                    backgroundColor: !deptHasAccess ? "#e2e8f0" : (effectiveAccess ? "#10b981" : "#ef4444"), 
-                                                    transition: ".4s", borderRadius: "34px", opacity: deptHasAccess ? 1 : 0.5 
-                                                  }}>
-                                                    <span style={{ 
-                                                      position: "absolute", height: "14px", width: "14px", 
-                                                      left: effectiveAccess ? "23px" : "3px", bottom: "3px", 
-                                                      backgroundColor: "white", transition: ".4s", borderRadius: "50%" 
-                                                    }}></span>
-                                                  </span>
-                                                </label>
-                                                {!deptHasAccess ? (
-                                                  <span style={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>Dept Blocked</span>
-                                                ) : isManuallyBlocked ? (
-                                                  <span style={{ fontSize: "0.6rem", color: "#ef4444", fontWeight: 700 }}>User Blocked</span>
-                                                ) : (
-                                                  <span style={{ fontSize: "0.6rem", color: "#10b981", fontWeight: 700 }}>Active</span>
-                                                )}
-                                              </div>
+                                              <input 
+                                                type="checkbox" 
+                                                checked={!isBlocked}
+                                                onChange={(e) => {
+                                                  let updated = [...userExceptions];
+                                                  if (!e.target.checked) {
+                                                    if (!updated.includes(module)) updated.push(module);
+                                                  } else {
+                                                    updated = updated.filter(m => m !== module);
+                                                  }
+                                                  setSettings({
+                                                    ...settings,
+                                                    userModuleExceptions: JSON.stringify({ ...exceptions, [u.email]: updated })
+                                                  });
+                                                }}
+                                                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                                              />
                                             </td>
                                           );
                                         })}
@@ -9681,3 +9589,5 @@ const getInputStyle = (t: any) => ({
   boxShadow: "0 0 0 2px rgba(59,130,246,0.2)",
   fontFamily: "inherit"
 });
+
+export default DashboardClient;
