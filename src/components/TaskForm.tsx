@@ -333,7 +333,21 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
             <>
               <div>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Task Name *</label>
-                <input name="taskName" required value={formData.taskName} onChange={handleChange} style={dynamicInputStyle} placeholder="Enter task name" />
+                <input 
+                  name="taskName" 
+                  required 
+                  value={formData.taskName} 
+                  onChange={handleChange} 
+                  style={{ 
+                    ...dynamicInputStyle, 
+                    background: !!initialData?.linkedRequestId ? "#f8fafc" : t.input,
+                    color: !!initialData?.linkedRequestId ? "#64748b" : t.text,
+                    cursor: !!initialData?.linkedRequestId ? "not-allowed" : "text",
+                    borderColor: !!initialData?.linkedRequestId ? "#e2e8f0" : t.border
+                  }} 
+                  readOnly={!!initialData?.linkedRequestId}
+                  placeholder="Enter task name" 
+                />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -363,11 +377,11 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     maxHeight: "120px", 
                     overflowY: "auto",
                     padding: "12px",
-                    background: t.bg,
+                    background: !!initialData?.linkedRequestId ? "#f8fafc" : t.bg,
                     borderRadius: "8px",
-                    border: `1px solid ${t.border}`,
+                    border: `1px solid ${!!initialData?.linkedRequestId ? "#e2e8f0" : t.border}`,
                     pointerEvents: (isEditing || initialData?.linkedRequestId) ? "none" : "auto",
-                    opacity: (isEditing || initialData?.linkedRequestId) ? 0.7 : 1
+                    opacity: (isEditing || initialData?.linkedRequestId) ? 0.9 : 1
                   }}>
                     {allowedEntities.map(entity => (
                       <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: isEditing ? "default" : "pointer", padding: "4px", borderRadius: "4px", color: t.text }}>
@@ -401,7 +415,13 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     required 
                     value={formData.frequency} 
                     onChange={handleChange} 
-                    style={dynamicInputStyle}
+                    style={{ 
+                      ...dynamicInputStyle, 
+                      background: (!isEditing && !!initialData?.linkedRequestId) ? "#f8fafc" : t.input,
+                      color: (!isEditing && !!initialData?.linkedRequestId) ? "#64748b" : t.text,
+                      cursor: (!isEditing && !!initialData?.linkedRequestId) ? "not-allowed" : "pointer",
+                      borderColor: (!isEditing && !!initialData?.linkedRequestId) ? "#e2e8f0" : t.border
+                    }}
                     disabled={!isEditing && !!initialData?.linkedRequestId}
                   >
                     <option value="">Choose Frequency</option>
@@ -422,7 +442,14 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     required 
                     value={formData.departmentName} 
                     onChange={handleChange} 
-                    style={{ ...dynamicInputStyle, pointerEvents: initialData?.linkedRequestId ? "none" : "auto", opacity: initialData?.linkedRequestId ? 0.7 : 1 }}
+                    style={{ 
+                      ...dynamicInputStyle, 
+                      background: !!initialData?.linkedRequestId ? "#f8fafc" : t.input,
+                      color: !!initialData?.linkedRequestId ? "#64748b" : t.text,
+                      cursor: !!initialData?.linkedRequestId ? "not-allowed" : "pointer",
+                      borderColor: !!initialData?.linkedRequestId ? "#e2e8f0" : t.border,
+                      pointerEvents: initialData?.linkedRequestId ? "none" : "auto"
+                    }}
                     tabIndex={initialData?.linkedRequestId ? -1 : 0}
                   >
                     <option value="">Choose</option>
@@ -490,7 +517,14 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                    required 
                    value={formData.requestFrom} 
                    onChange={handleChange} 
-                   style={{ ...dynamicInputStyle, pointerEvents: initialData?.linkedRequestId ? "none" : "auto", opacity: initialData?.linkedRequestId ? 0.7 : 1 }}
+                   style={{ 
+                     ...dynamicInputStyle, 
+                     background: !!initialData?.linkedRequestId ? "#f8fafc" : t.input,
+                     color: !!initialData?.linkedRequestId ? "#64748b" : t.text,
+                     cursor: !!initialData?.linkedRequestId ? "not-allowed" : "text",
+                     borderColor: !!initialData?.linkedRequestId ? "#e2e8f0" : t.border,
+                     pointerEvents: initialData?.linkedRequestId ? "none" : "auto" 
+                   }}
                    readOnly={!!initialData?.linkedRequestId}
                    placeholder="Your answer" 
                  />
