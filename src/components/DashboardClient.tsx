@@ -2349,7 +2349,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       return (r.status === 'Pending' || r.status === 'Under Process' || !r.status || r.status === 'New') && !r.convertedTaskId;
     }
 
-    // New Request Type Filter (Original vs Transferred)
+    // New Request Source Filter (Original vs Transferred)
     if (requestTypeFilter.length > 0) {
       if (requestTypeFilter.includes('ORIGINAL') && !requestTypeFilter.includes('TRANSFERRED') && r.transferStatus === 'T') return false;
       if (requestTypeFilter.includes('TRANSFERRED') && !requestTypeFilter.includes('ORIGINAL') && r.transferStatus !== 'T') return false;
@@ -2703,7 +2703,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     const filteredReqs = sortedExternalRequests;
 
     const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
-    if (isAdmin) tableColumn.push("Request Type", "Original Function", "Transferred By");
+    if (isAdmin) tableColumn.push("Request Source", "Original Function", "Transferred By");
 
     const tableRows = sortedExternalRequests.map((r, idx) => {
       const row = [
@@ -2807,7 +2807,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const worksheet = workbook.addWorksheet("Requests");
           worksheet.addRow(['Shared Inter-Dept Requests Report']);
           const headers = ['Sl No.', 'Request From', 'Finance Function', 'Nature', 'Status'];
-          if (isAdmin) headers.push('Request Type', 'Original Function', 'Transferred By');
+          if (isAdmin) headers.push('Request Source', 'Original Function', 'Transferred By');
           worksheet.addRow(headers);
           externalRequests.forEach((r, i) => {
             const row = [i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status];
@@ -2858,7 +2858,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const doc = new jsPDF('landscape');
           doc.text("Shared Inter-Dept Requests Report", 14, 15);
           const headers = [["ID", "From", "Type", "Nature", "Status"]];
-          if (isAdmin) headers[0].push("Request Type", "Original Function", "Transferred By");
+          if (isAdmin) headers[0].push("Request Source", "Original Function", "Transferred By");
           autoTable(doc, {
             head: headers,
             body: externalRequests.map(r => {
@@ -4293,7 +4293,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          Request Type {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                          Request Source {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
@@ -7464,7 +7464,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       </div>
 
-                      {/* Request Types */}
+                      {/* Request Sources */}
                       <div style={{ padding: "20px", background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: t.text }}>
                           <FileText size={18} color="#8b5cf6" />
