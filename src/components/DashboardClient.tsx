@@ -300,7 +300,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setProcessingMode("");
         setProcessingMailLink("");
         setProcessingAttachments([]);
-        fetchData();
+        fetchTasks();
+        fetchExternalRequests();
       } else {
         const error = await res.json();
         showNotification(`Error: ${error.message}`, "error");
