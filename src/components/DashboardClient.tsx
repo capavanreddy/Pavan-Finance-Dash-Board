@@ -903,6 +903,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const handleConvertToTask = (req: ExternalRequest) => {
     setPreFilledTask({
       taskName: req.natureOfRequest,
+      entityName: req.entityName,
+      taskType: req.requestType,
       departmentName: req.departmentName,
       requestFrom: req.requestFrom,
       linkedRequestId: req.id,

@@ -31,7 +31,7 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
     linkedRequestId: initialData?.linkedRequestId || null,
     transferStatus: initialData?.transferStatus || 'O',
     originalRequestType: initialData?.originalRequestType || null,
-    frequency: initialData?.frequency || ""
+    frequency: initialData?.frequency || "Ad"
   });
 
   const [selectedEntities, setSelectedEntities] = useState<string[]>(initialData?.entityName ? [initialData.entityName] : []);
@@ -245,11 +245,20 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
               padding: "16px",
               marginBottom: "8px"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <AlertCircle size={18} color="#0284c7" />
-                <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>
-                  Any change in finance function?
-                </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "4px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Current Finance Function</label>
+                  <div style={{ padding: "8px 12px", background: "white", border: "1px solid #bae6fd", borderRadius: "6px", fontSize: "0.875rem", fontWeight: 700, color: "#0369a1" }}>
+                    {initialData?.taskType || "N/A"}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <AlertCircle size={18} color="#0284c7" />
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0369a1" }}>
+                    Any change in finance function?
+                  </span>
+                </div>
               </div>
               
               <div style={{ display: "flex", gap: "12px", marginBottom: changeRequestType ? "12px" : "0" }}>
@@ -333,8 +342,16 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Select Entities *</label>
                     <button 
                       type="button" 
-                      onClick={handleSelectAll}
-                      style={{ fontSize: "0.7rem", color: t.accent, background: "none", border: "none", cursor: "pointer", fontWeight: 700, textTransform: "uppercase" }}
+                      onClick={() => !(isEditing || initialData?.linkedRequestId) && handleSelectAll()}
+                      style={{ 
+                        fontSize: "0.7rem", 
+                        color: (isEditing || initialData?.linkedRequestId) ? t.textMuted : t.accent, 
+                        background: "none", 
+                        border: "none", 
+                        cursor: (isEditing || initialData?.linkedRequestId) ? "default" : "pointer", 
+                        fontWeight: 700, 
+                        textTransform: "uppercase" 
+                      }}
                     >
                       {selectedEntities.length === allowedEntities.length ? "Deselect All" : "Consolidate (Select All)"}
                     </button>
@@ -349,8 +366,8 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     background: t.bg,
                     borderRadius: "8px",
                     border: `1px solid ${t.border}`,
-                    pointerEvents: isEditing ? "none" : "auto",
-                    opacity: isEditing ? 0.7 : 1
+                    pointerEvents: (isEditing || initialData?.linkedRequestId) ? "none" : "auto",
+                    opacity: (isEditing || initialData?.linkedRequestId) ? 0.7 : 1
                   }}>
                     {allowedEntities.map(entity => (
                       <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: isEditing ? "default" : "pointer", padding: "4px", borderRadius: "4px", color: t.text }}>
@@ -379,16 +396,35 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Frequency (Freq) *</label>
-                  <select name="frequency" required value={formData.frequency} onChange={handleChange} style={dynamicInputStyle}>
+                  <select 
+                    name="frequency" 
+                    required 
+                    value={formData.frequency} 
+                    onChange={handleChange} 
+                    style={dynamicInputStyle}
+                    disabled={!isEditing && !!initialData?.linkedRequestId}
+                  >
                     <option value="">Choose Frequency</option>
-                    {settings?.masterFrequencies?.split(',').filter((t: string) => t.trim()).map((freq: string) => (
-                      <option key={freq.trim()} value={freq.trim()}>{freq.trim()}</option>
-                    ))}
+                    {settings?.masterFrequencies?.split(',').filter((t: string) => t.trim()).map((freq: string) => {
+                      // Only show 'Ad' for new tasks or conversions
+                      const isAd = freq.trim() === 'Ad';
+                      if (!isEditing && !isAd) return null;
+                      return (
+                        <option key={freq.trim()} value={freq.trim()}>{freq.trim()}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Department *</label>
-                  <select name="departmentName" required value={formData.departmentName} onChange={handleChange} style={dynamicInputStyle}>
+                  <select 
+                    name="departmentName" 
+                    required 
+                    value={formData.departmentName} 
+                    onChange={handleChange} 
+                    style={{ ...dynamicInputStyle, pointerEvents: initialData?.linkedRequestId ? "none" : "auto", opacity: initialData?.linkedRequestId ? 0.7 : 1 }}
+                    tabIndex={initialData?.linkedRequestId ? -1 : 0}
+                  >
                     <option value="">Choose</option>
                     {settings?.masterDepartments?.split(',').filter((d: string) => d.trim()).map((dept: string) => (
                       <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
@@ -449,7 +485,15 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
 
               <div style={{ marginTop: "16px" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Request From *</label>
-                <input name="requestFrom" required value={formData.requestFrom} onChange={handleChange} style={dynamicInputStyle} placeholder="Your answer" />
+                 <input 
+                   name="requestFrom" 
+                   required 
+                   value={formData.requestFrom} 
+                   onChange={handleChange} 
+                   style={{ ...dynamicInputStyle, pointerEvents: initialData?.linkedRequestId ? "none" : "auto", opacity: initialData?.linkedRequestId ? 0.7 : 1 }}
+                   readOnly={!!initialData?.linkedRequestId}
+                   placeholder="Your answer" 
+                 />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

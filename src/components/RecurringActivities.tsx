@@ -1784,7 +1784,10 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     style={inputStyle}
                   >
                     <option value="">Select Frequency...</option>
-                    {(settings.masterFrequencies || "").split(',').map((f: string) => <option key={f.trim()} value={f.trim()}>{f.trim()}</option>)}
+                    {(settings.masterFrequencies || "").split(',')
+                      .map((f: string) => f.trim())
+                      .filter((f: string) => f !== 'Ad' && f !== '')
+                      .map((f: string) => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
 
