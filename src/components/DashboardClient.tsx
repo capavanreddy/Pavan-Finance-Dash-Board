@@ -864,62 +864,85 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const workbook = new ExcelJS.Workbook();
     
-    // 1. Add Instructions Sheet
+    // 1. Filter Finance Users
+    const financeUsers = usersList
+      .filter(u => u.department === 'Finance' && u.isApproved !== false)
+      .map(u => u.name)
+      .sort();
+
+    // 2. Add Instructions Sheet (Simplified)
     const insSheet = workbook.addWorksheet('Instructions');
     insSheet.columns = [
       { header: 'Field Name', key: 'field', width: 25 },
-      { header: 'Requirement', key: 'req', width: 15 },
-      { header: 'Data Source', key: 'source', width: 25 },
-      { header: 'Description', key: 'desc', width: 50 },
+      { header: 'Data Source / Validation', key: 'source', width: 35 },
+      { header: 'Description & Guidance', key: 'desc', width: 60 },
     ];
 
-    const headerRow = insSheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    const insHeaderRow = insSheet.getRow(1);
+    insHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    insHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
 
-    const addIns = (field: string, req: string, source: string, desc: string) => {
-      const row = insSheet.addRow([field, req, source, desc]);
-      if (req === 'Mandatory') {
-        row.getCell(2).font = { bold: true, color: { argb: 'FFEF4444' } };
-      }
-      if (source === 'Master Data') {
-        row.getCell(3).font = { bold: true, color: { argb: 'FF2563EB' } };
+    const addIns = (field: string, source: string, desc: string) => {
+      const row = insSheet.addRow([field, source, desc]);
+      if (source.includes('Dropdown') || source.includes('Master Data')) {
+        row.getCell(2).font = { bold: true, color: { argb: 'FF2563EB' } };
       }
     };
 
-    // 2. Add Master Data Reference Sheet (Hidden or visible based on preference, here visible for clarity)
+    // 3. Add Master Data Reference Sheet (Dynamic)
     const masterSheet = workbook.addWorksheet('Master Data Reference');
-    masterSheet.addRow(['MASTER DATA REFERENCE']).font = { bold: true, size: 14 };
-    masterSheet.addRow(['Use these exact values in the Data sheet to avoid mismatches.']);
+    masterSheet.addRow(['MASTER DATA REFERENCE (SYSTEM SYNCED)']).font = { bold: true, size: 14 };
+    masterSheet.addRow(['DO NOT MODIFY THIS SHEET. These values are synced from your Control Center.']);
     masterSheet.addRow([]);
 
-    const addMasterDataList = (title: string, values: string) => {
+    const ranges: Record<string, string> = {};
+    let currentRefRow = 3; 
+
+    const addMasterDataList = (title: string, values: string | string[]) => {
+      currentRefRow++;
       masterSheet.addRow([title]).font = { bold: true, color: { argb: 'FF2563EB' } };
-      const list = values.split(',').map(v => v.trim()).filter(Boolean);
-      list.forEach(v => masterSheet.addRow([v]));
+      
+      const list = Array.isArray(values) ? values : values.split(',').map(v => v.trim()).filter(Boolean);
+      const start = currentRefRow + 1;
+      
+      if (list.length === 0) {
+        masterSheet.addRow(['(No values found)']);
+        currentRefRow++;
+      } else {
+        list.forEach(v => {
+          masterSheet.addRow([v]);
+          currentRefRow++;
+        });
+      }
+      
+      const end = currentRefRow;
+      ranges[title] = `'Master Data Reference'!$A$${start}:$A$${end}`;
       masterSheet.addRow([]);
+      currentRefRow++;
     };
 
     addMasterDataList('Entities', settings.masterEntities);
     addMasterDataList('Departments', settings.masterDepartments);
     addMasterDataList('Task Types', settings.masterTaskTypes);
     addMasterDataList('Frequencies', settings.masterFrequencies);
-    addMasterDataList('Finance Functions (Request Types)', settings.masterRequestTypes);
+    addMasterDataList('Finance Functions', settings.masterRequestTypes);
     addMasterDataList('Payment Types', settings.masterPaymentTypes);
+    addMasterDataList('Finance Users', financeUsers);
+    addMasterDataList('Roles', ['ADMIN', 'USER', 'VIEWER']);
 
-    // 3. Add Main Data Sheet
+    // 4. Add Main Data Sheet
     const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : type === 'employees' ? 'Employees' : 'PaymentsMaster';
     const worksheet = workbook.addWorksheet(sheetName);
     
     if (type === 'tasks') {
-      addIns('Task Name', 'Mandatory', 'User Input', 'The name or title of the task.');
-      addIns('Entity', 'Mandatory', 'Master Data', 'Must match one of the values in Master Data sheet.');
-      addIns('Type', 'Optional', 'Master Data', 'The category of task (e.g. GST, TDS).');
-      addIns('Dept', 'Optional', 'Master Data', 'Target department.');
-      addIns('Requester', 'Optional', 'User Input', 'Person requesting the task.');
-      addIns('Owner', 'Optional', 'User Input', 'Assigned owner email or name.');
-      addIns('Reviewer', 'Optional', 'User Input', 'Assigned reviewer email or name.');
-      addIns('Due Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY (e.g. 25-12-2026)');
+      addIns('Task Name', 'User Input (Text)', 'The name or title of the task.');
+      addIns('Entity', 'Dropdown (Master Data)', 'Pick from the available entities.');
+      addIns('Type', 'Dropdown (Master Data)', 'Category of task (e.g. GST, TDS).');
+      addIns('Dept', 'Dropdown (Master Data)', 'Department handling the task.');
+      addIns('Requester', 'User Input (Name)', 'Person requesting the task.');
+      addIns('Owner', 'Dropdown (Finance Users)', 'Assigned Finance team member.');
+      addIns('Reviewer', 'Dropdown (Finance Users)', 'Assigned reviewer.');
+      addIns('Due Date', 'User Input (Date)', 'Format: DD-MM-YYYY (e.g. 25-12-2026)');
 
       worksheet.columns = [
         { header: 'Task Name', key: 'taskName', width: 25 },
@@ -929,16 +952,26 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Requester', key: 'requestFrom', width: 20 },
         { header: 'Owner', key: 'ownerName', width: 20 },
         { header: 'Reviewer', key: 'reviewerName', width: 20 },
-        { header: 'Due Date (DD-MM-YYYY)', key: 'dueDate', width: 25 },
+        { header: 'Due Date (DD-MM-YYYY)', key: 'dueDate', width: 20 },
       ];
-      worksheet.addRow(['Sample Task', 'Intellicar-BLR', 'Daily', 'Finance', 'Manager Name', 'Owner Name', 'Reviewer Name', '31-12-2026']);
+
+      // Apply Data Validation (Dropdowns)
+      for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`B${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Entities']] };
+        worksheet.getCell(`C${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Task Types']] };
+        worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Departments']] };
+        worksheet.getCell(`F${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`G${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+      }
+      
+      worksheet.addRow(['Sample Task', '', '', 'Finance', 'Manager Name', '', '', '31-12-2026']);
     } else if (type === 'lo') {
-      addIns('Entity', 'Mandatory', 'Master Data', 'Must match one of the values in Master Data sheet.');
-      addIns('Date', 'Mandatory', 'User Input', 'Format: DD-MM-YYYY (e.g. 21-04-2026)');
-      addIns('LO Description', 'Mandatory', 'User Input', 'Details of the finding or mistake.');
-      addIns('Identified By', 'Optional', 'User Input', 'Person who spotted the error.');
-      addIns('Committed By', 'Optional', 'User Input', 'Person who committed the error.');
-      addIns('Resolution', 'Optional', 'User Input', 'Action taken to fix it.');
+      addIns('Entity', 'Dropdown (Master Data)', 'Pick from the available entities.');
+      addIns('Date', 'User Input (Date)', 'Format: DD-MM-YYYY (e.g. 21-04-2026)');
+      addIns('LO Description', 'User Input (Text)', 'Details of the finding or mistake.');
+      addIns('Identified By', 'Dropdown (Finance Users)', 'Finance member who spotted the error.');
+      addIns('Committed By', 'Dropdown (Finance Users)', 'Finance member who committed the error.');
+      addIns('Resolution', 'User Input (Text)', 'Action taken to fix it.');
 
       worksheet.columns = [
         { header: 'Entity', key: 'entity', width: 20 },
@@ -948,21 +981,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Committed By', key: 'committedBy', width: 20 },
         { header: 'Resolution', key: 'resolutionProvided', width: 40 },
       ];
-      worksheet.addRow(['Intellicar-BLR', '21-04-2026', 'Sample LO description...', 'Name A', 'Name B', 'Done']);
+
+      for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`A${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Entities']] };
+        worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+      }
+      worksheet.addRow(['', '21-04-2026', 'Sample LO description...', '', '', 'Fixed']);
     } else if (type === 'recurring') {
-      addIns('Task Name Pattern', 'Mandatory', 'User Input', 'Use {{MONTH}}, {{YEAR}} placeholders.');
-      addIns('Entity Name', 'Optional', 'Master Data', 'Target entity.');
-      addIns('Task Type', 'Optional', 'Master Data', 'Category of task.');
-      addIns('Department', 'Optional', 'Master Data', 'Target department.');
-      addIns('Finance Function', 'Optional', 'Master Data', 'Departmental sub-function.');
-      addIns('Frequency', 'Mandatory', 'Master Data', 'M, Q, Y, W, D, etc.');
-      addIns('Day Offset', 'Optional', 'User Input', 'Date (1-31) or Day Index (0-6).');
-      addIns('Month Offset', 'Optional', 'User Input', 'Number of months to offset.');
-      addIns('Default Owner', 'Optional', 'User Input', 'Assigned owner.');
-      addIns('Default Reviewer', 'Optional', 'User Input', 'Assigned reviewer.');
-      addIns('Start Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY');
-      addIns('End Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY');
-      addIns('Is Active', 'Optional', 'User Input', 'TRUE or FALSE');
+      addIns('Task Name Pattern', 'User Input', 'Use {{MONTH}}, {{YEAR}} placeholders.');
+      addIns('Entity Name', 'Dropdown (Master Data)', 'Target entity.');
+      addIns('Task Type', 'Dropdown (Master Data)', 'Category of task.');
+      addIns('Department', 'Dropdown (Master Data)', 'Target department.');
+      addIns('Finance Function', 'Dropdown (Master Data)', 'Departmental sub-function.');
+      addIns('Frequency', 'Dropdown (Master Data)', 'Pick from valid frequency codes.');
+      addIns('Day Offset', 'User Input', 'Date (1-31) or Day Name.');
+      addIns('Default Owner', 'Dropdown (Finance Users)', 'Assigned owner.');
+      addIns('Default Reviewer', 'Dropdown (Finance Users)', 'Assigned reviewer.');
 
       worksheet.columns = [
         { header: 'Task Name Pattern', key: 'taskNamePattern', width: 30 },
@@ -970,44 +1005,31 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Task Type', key: 'taskType', width: 15 },
         { header: 'Department', key: 'departmentName', width: 15 },
         { header: 'Finance Function', key: 'financeFunction', width: 20 },
-        { header: 'Frequency (M/Q/Y/W/D/BW/H/2Y/Ad)', key: 'frequency', width: 30 },
-        { header: 'Day Offset (Date/DayIdx)', key: 'dayOffset', width: 25 },
-        { header: 'Month Offset', key: 'monthOffset', width: 15 },
+        { header: 'Frequency', key: 'frequency', width: 15 },
+        { header: 'Day Offset', key: 'dayOffset', width: 15 },
         { header: 'Default Owner', key: 'defaultOwner', width: 20 },
         { header: 'Default Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 25 },
-        { header: 'End Date (DD-MM-YYYY)', key: 'endDate', width: 25 },
-        { header: 'Is Active (TRUE/FALSE)', key: 'isActive', width: 20 },
-        { header: 'Freq Label', key: 'freqLabel', width: 20 },
+        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 20 },
+        { header: 'Is Active (TRUE/FALSE)', key: 'isActive', width: 15 },
       ];
-      worksheet.addRow([
-        'Sample Recurring Task - [Month] [Year]', 
-        'Intellicar-BLR', 
-        'External', 
-        'Finance', 
-        'Direct Tax', 
-        'M', 
-        '10', 
-        '0', 
-        'Owner Name', 
-        'Reviewer Name', 
-        '01-04-2026', 
-        '', 
-        'TRUE', 
-        'Monthly'
-      ]);
+
+      for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`B${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Entities']] };
+        worksheet.getCell(`C${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Task Types']] };
+        worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Departments']] };
+        worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Functions']] };
+        worksheet.getCell(`F${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Frequencies']] };
+        worksheet.getCell(`H${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`I${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+      }
     } else if (type === 'payments') {
-      addIns('Entity Name', 'Mandatory', 'Master Data', 'Target entity.');
-      addIns('Description', 'Mandatory', 'User Input', 'Purpose of payment.');
-      addIns('Vendor Name', 'Optional', 'User Input', 'Beneficiary name.');
-      addIns('Payment Type', 'Optional', 'Master Data', 'Category of payment.');
-      addIns('Department', 'Optional', 'Master Data', 'Target department.');
-      addIns('Finance Function', 'Optional', 'Master Data', 'Sub-function.');
-      addIns('Frequency', 'Optional', 'Master Data', 'M, Q, Y, W, etc.');
-      addIns('Due Day', 'Optional', 'User Input', '1-31');
-      addIns('Weekly Day', 'Optional', 'User Input', 'Monday, Tuesday, etc.');
-      addIns('Owner', 'Optional', 'User Input', 'Assigned owner.');
-      addIns('Reviewer', 'Optional', 'User Input', 'Assigned reviewer.');
+      addIns('Entity Name', 'Dropdown (Master Data)', 'Target entity.');
+      addIns('Payment Type', 'Dropdown (Master Data)', 'Category of payment.');
+      addIns('Department', 'Dropdown (Master Data)', 'Target department.');
+      addIns('Finance Function', 'Dropdown (Master Data)', 'Sub-function.');
+      addIns('Frequency', 'Dropdown (Master Data)', 'Payment cycle.');
+      addIns('Owner', 'Dropdown (Finance Users)', 'Assigned Finance owner.');
+      addIns('Reviewer', 'Dropdown (Finance Users)', 'Assigned reviewer.');
 
       worksheet.columns = [
         { header: 'Entity Name', key: 'entityName', width: 25 },
@@ -1016,42 +1038,51 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Payment Type', key: 'paymentType', width: 20 },
         { header: 'Department', key: 'departmentName', width: 20 },
         { header: 'Finance Function', key: 'financeFunction', width: 20 },
-        { header: 'Frequency (M/Q/Y/W/BW/H/D)', key: 'frequency', width: 25 },
+        { header: 'Frequency', key: 'frequency', width: 15 },
         { header: 'Due Day (1-31)', key: 'dueDay', width: 15 },
-        { header: 'Weekly Day (Monday...)', key: 'weeklyDay', width: 20 },
         { header: 'Vendor Email', key: 'vendorEmail', width: 25 },
-        { header: 'Prod Email', key: 'prodEmail', width: 25 },
         { header: 'Owner', key: 'defaultOwner', width: 20 },
         { header: 'Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 25 },
-        { header: 'End Date (DD-MM-YYYY)', key: 'endDate', width: 25 },
+        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 20 },
       ];
-      worksheet.addRow([
-        'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '01-04-2026', ''
-      ]);
+
+      for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`A${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Entities']] };
+        worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Payment Types']] };
+        worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Departments']] };
+        worksheet.getCell(`F${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Functions']] };
+        worksheet.getCell(`G${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Frequencies']] };
+        worksheet.getCell(`J${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`K${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+      }
     } else if (type === 'employees') {
-      addIns('Employee ID', 'Mandatory', 'User Input', 'Unique employee identifier.');
-      addIns('Full Name', 'Mandatory', 'User Input', 'Official name.');
-      addIns('Email Address', 'Mandatory', 'User Input', 'Company email.');
-      addIns('Department', 'Optional', 'Master Data', 'Target department.');
-      addIns('Role', 'Optional', 'User Input', 'ADMIN, USER, or VIEWER.');
+      addIns('Department', 'Dropdown (Master Data)', 'Target department.');
+      addIns('Role', 'Dropdown (Roles)', 'ADMIN, USER, or VIEWER.');
 
       worksheet.columns = [
         { header: 'Employee ID', key: 'employeeId', width: 15 },
         { header: 'Full Name', key: 'name', width: 25 },
         { header: 'Email Address', key: 'email', width: 30 },
         { header: 'Department', key: 'department', width: 20 },
-        { header: 'Role (ADMIN/USER/VIEWER)', key: 'role', width: 25 },
+        { header: 'Role', key: 'role', width: 15 },
       ];
-      worksheet.addRow(['EMP001', 'Pavan Reddy', 'pavanreddy@intellicar.in', 'Finance', 'ADMIN']);
-      worksheet.addRow(['EMP002', 'John Doe', 'john@intellicar.in', 'HR', 'USER']);
+
+      for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Departments']] };
+        worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Roles']] };
+      }
     }
 
-    // Set first sheet as active (Instructions)
-    workbook.views = [{ x: 0, y: 0, width: 10000, height: 20000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
+    // Styling Main Headers
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
 
+    // Set active sheet
+    workbook.views = [{ x: 0, y: 0, width: 10000, height: 20000, firstSheet: 0, activeTab: 2, visibility: 'visible' }];
+    
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `${type}_import_template.xlsx`);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `ITPL_${type.toUpperCase()}_Template_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
 
