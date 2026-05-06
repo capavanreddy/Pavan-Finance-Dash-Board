@@ -1080,21 +1080,19 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                </select>
              </div>
              
-             {/* 3-Way Filter Segmented Control */}
-             <div style={{ display: "flex", background: "#f1f5f9", padding: "4px", borderRadius: "10px", gap: "2px" }}>
-               <button 
-                 onClick={() => setStatusFilter('ALL')}
-                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'ALL' ? "white" : "transparent", color: statusFilter === 'ALL' ? "#0f172a" : "#64748b", boxShadow: statusFilter === 'ALL' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
-               >Show All</button>
-               <button 
-                 onClick={() => setStatusFilter('PENDING')}
-                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'PENDING' ? "white" : "transparent", color: statusFilter === 'PENDING' ? "#2563eb" : "#64748b", boxShadow: statusFilter === 'PENDING' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
-               >Pending Conversions</button>
-               <button 
-                 onClick={() => setStatusFilter('CONVERTED')}
-                 style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", background: statusFilter === 'CONVERTED' ? "white" : "transparent", color: statusFilter === 'CONVERTED' ? "#059669" : "#64748b", boxShadow: statusFilter === 'CONVERTED' ? "0 1px 3px 0 rgba(0,0,0,0.1)" : "none" }}
-               >Converted</button>
-             </div>
+             {/* Status Filter Dropdown */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <Filter size={14} color="#64748b" />
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", fontWeight: 600, color: "#334155", cursor: "pointer" }}
+                >
+                  <option value="ALL">Show All Status</option>
+                  <option value="PENDING">Pending Conversions</option>
+                  <option value="CONVERTED">Converted Tasks</option>
+                </select>
+              </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "240px" }}>
                 <Search size={16} color="#64748b" />
