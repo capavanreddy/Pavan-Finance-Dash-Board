@@ -1050,13 +1050,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const workbook = new ExcelJS.Workbook();
     
     // 1. Filter Finance Users
-    const financeUsers = [
-      "N/A",
-      ...usersList
-        .filter(u => u.department === 'Finance' && u.isApproved !== false)
-        .map(u => u.name)
-        .sort()
-    ];
+    const sortedUsers = usersList
+      .filter(u => u.department === 'Finance' && u.isApproved !== false)
+      .map(u => u.name)
+      .sort();
+
+    const financeUsers = [...sortedUsers];
+    const reviewerUsers = ["N/A", ...sortedUsers];
 
     // 2. Add Instructions Sheet (Simplified)
     const insSheet = workbook.addWorksheet('Instructions');
@@ -1116,6 +1116,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     addMasterDataList('Finance Functions', settings.masterRequestTypes);
     addMasterDataList('Payment Types', settings.masterPaymentTypes);
     addMasterDataList('Finance Users', financeUsers);
+    addMasterDataList('Reviewers', reviewerUsers);
     addMasterDataList('Roles', ['ADMIN', 'USER', 'VIEWER']);
 
     // 4. Add Main Data Sheet
@@ -1152,7 +1153,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         worksheet.getCell(`D${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Departments']] };
         worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Frequencies']] };
         worksheet.getCell(`G${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
-        worksheet.getCell(`H${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`H${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Reviewers']] };
       }
     } else if (type === 'lo') {
       addIns('Entity', 'Dropdown (Master Data)', 'Pick from the available entities.');
@@ -1208,7 +1209,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         worksheet.getCell(`E${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Functions']] };
         worksheet.getCell(`F${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Frequencies']] };
         worksheet.getCell(`H${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
-        worksheet.getCell(`I${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`I${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Reviewers']] };
       }
     } else if (type === 'payments') {
       addIns('Entity Name', 'Dropdown (Master Data)', 'Target entity.');
@@ -1241,7 +1242,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         worksheet.getCell(`F${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Functions']] };
         worksheet.getCell(`G${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Frequencies']] };
         worksheet.getCell(`J${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
-        worksheet.getCell(`K${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
+        worksheet.getCell(`K${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Reviewers']] };
       }
     } else if (type === 'employees') {
       addIns('Department', 'Dropdown (Master Data)', 'Target department.');
