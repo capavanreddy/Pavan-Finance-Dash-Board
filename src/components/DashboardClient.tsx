@@ -5397,7 +5397,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 />
 
                 <MultiSelectFilter
-                  options={["New", "Pending for Acceptance", "Request Accepted", "Processed", "Rejected"]}
+                  options={["Pending for Acceptance", "Request Accepted", "Processed", "Rejected"]}
                   selected={extReqStatusFilter}
                   onChange={setExtReqStatusFilter}
                   placeholder="All Status"
@@ -5542,19 +5542,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
                             <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal" }}>{req.reasonForRequest || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
-                            <td style={getTdStyle(t)}>
-                                {(!req.status || req.status === 'Pending' || req.status === 'New') && (
-                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5" }}>
+                            <td style={{ ...getTdStyle(t), minWidth: "160px" }}>
+                                {(!req.status || req.status === 'Pending') && (
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5", whiteSpace: "nowrap" }}>
                                     Pending for Acceptance
                                   </span>
                                 )}
                                 {req.status === 'Under Process' && (
-                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#eff6ff", fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", border: "1px solid #dbeafe" }}>
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#eff6ff", fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", border: "1px solid #dbeafe", whiteSpace: "nowrap" }}>
                                     Request Accepted
                                   </span>
                                 )}
                                 {req.status === 'Processed' && (
-                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#f0fdf4", fontSize: "0.75rem", fontWeight: 700, color: "#166534", border: "1px solid #dcfce7" }}>
+                                  <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#f0fdf4", fontSize: "0.75rem", fontWeight: 700, color: "#166534", border: "1px solid #dcfce7", whiteSpace: "nowrap" }}>
                                     Processed
                                   </span>
                                 )}
@@ -5564,7 +5564,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     onMouseEnter={() => setHoveredRejectId(req.id)}
                                     onMouseLeave={() => setHoveredRejectId(null)}
                                   >
-                                    <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fef2f2", fontSize: "0.75rem", fontWeight: 700, color: "#991b1b", border: "1px solid #fee2e2", cursor: "help" }}>
+                                    <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fef2f2", fontSize: "0.75rem", fontWeight: 700, color: "#991b1b", border: "1px solid #fee2e2", cursor: "help", whiteSpace: "nowrap" }}>
                                       Rejected
                                     </span>
                                     {hoveredRejectId === req.id && (
