@@ -195,25 +195,33 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0, 
-      backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50,
-      padding: "20px"
+      backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000,
+      padding: "40px 20px"
     }}>
       <div style={{
         background: t.card, borderRadius: "24px", width: "100%", maxWidth: "650px",
-        maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-        position: "relative", border: `1px solid ${t.border}`, overflow: "hidden"
+        maxHeight: "90vh", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        position: "relative", border: `1px solid ${t.border}`, overflow: "hidden",
+        display: "flex", flexDirection: "column",
+        animation: "modalIn 0.3s ease-out"
       }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        ` }} />
+        
         <div style={{ 
           padding: "24px 32px", 
           background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", 
           color: "white", 
           display: "flex", 
           justifyContent: "space-between", 
-          alignItems: "center", 
-          position: "sticky", 
-          top: 0, 
-          zIndex: 10 
+          alignItems: "center",
+          flexShrink: 0,
+          zIndex: 10
         }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>{isEditing ? "Edit Task" : "Create New Task"}</h3>
@@ -224,8 +232,9 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
-          {error && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "12px", borderRadius: "6px", fontSize: "0.875rem" }}>{error}</div>}
+        <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}> 
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {error && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "12px", borderRadius: "6px", fontSize: "0.875rem", marginBottom: "16px" }}>{error}</div>}
           
           {/* Request Type Transfer Option - Only show when converting from external request */}
           {initialData?.linkedRequestId && (
@@ -473,6 +482,7 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
         </form>
       </div>
     </div>
+  </div>
   );
 }
 
