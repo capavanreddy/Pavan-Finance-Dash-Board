@@ -1084,16 +1084,16 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", alignItems: "center", gap: "12px" }}>
         <div style={{ display: "flex", background: t.card, padding: "4px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
           <button 
-            onClick={() => setActiveTab('TRACKER')}
-            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'TRACKER' ? "#2563eb" : "transparent", color: activeTab === 'TRACKER' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s" }}
-          >
-            Payments Tracker
-          </button>
-          <button 
             onClick={() => setActiveTab('MASTER')}
             style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'MASTER' ? "#2563eb" : "transparent", color: activeTab === 'MASTER' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s" }}
           >
             Payments Master Sheet
+          </button>
+          <button 
+            onClick={() => setActiveTab('TRACKER')}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'TRACKER' ? "#2563eb" : "transparent", color: activeTab === 'TRACKER' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s" }}
+          >
+            Payments Tracker
           </button>
           <button 
             onClick={() => setActiveTab('LIST')}
@@ -1102,16 +1102,16 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
             <ListChecks size={16} /> Payment List
           </button>
           <button 
-            onClick={() => setActiveTab('ANALYTICS')}
-            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'ANALYTICS' ? "#2563eb" : "transparent", color: activeTab === 'ANALYTICS' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
-          >
-            <TrendingUp size={16} /> Analytics
-          </button>
-          <button 
             onClick={() => setActiveTab('PAID')}
             style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'PAID' ? "#2563eb" : "transparent", color: activeTab === 'PAID' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
           >
             <CheckCircle2 size={16} /> Payments Made
+          </button>
+          <button 
+            onClick={() => setActiveTab('ANALYTICS')}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: activeTab === 'ANALYTICS' ? "#2563eb" : "transparent", color: activeTab === 'ANALYTICS' ? "white" : t.textMuted, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            <TrendingUp size={16} /> Analytics
           </button>
         </div>
       </div>
