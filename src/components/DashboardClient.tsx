@@ -10201,6 +10201,12 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatu
   if (isCompleted) {
     bg = "#dcfce7";
     color = "#166534";
+  } else if (trackingStatus === "Over Due") {
+    bg = "#fee2e2";
+    color = "#b91c1c";
+  } else if (trackingStatus === "Due on Today") {
+    bg = "#fff7ed";
+    color = "#c2410c";
   } else if (status === "Pending" || status.includes("Pending")) {
     bg = "#fef9c3";
     color = "#854d0e";
@@ -10226,7 +10232,7 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatu
 
   if (type === "task") {
     const selectValue = isCompleted ? "Completed" : (status === "In Progress" ? "In Progress" : "Pending");
-    const displayLabel = (isCompleted && trackingStatus) ? trackingStatus : status;
+    const displayLabel = trackingStatus || status;
 
     if (disabled) {
       return <span style={pillStyle}>{displayLabel}</span>;
