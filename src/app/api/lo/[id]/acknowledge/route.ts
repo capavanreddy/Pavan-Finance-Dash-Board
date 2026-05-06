@@ -19,6 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       SET 
         "isAcknowledged" = true,
         "acknowledgedAt" = NOW(),
+        "acknowledgedBy" = ${session.user.name || session.user.email},
         "learnerComments" = ${learnerComments},
         "updatedAt" = NOW()
       WHERE "id" = ${parseInt(id)}

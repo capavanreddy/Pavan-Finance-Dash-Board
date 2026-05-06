@@ -54,12 +54,8 @@ export async function GET(req: NextRequest) {
       // Fallback for tasks created before createdByEmail was added
       if (requesterEmail === userEmail) return true;
 
-      // Reviewer can only see the task if the owner has finished it
-      if (reviewerEmail === userEmail) {
-        // Use completion check on original data
-        const isCompleted = task.taskStatus === "Completed" || !!task.completionDate;
-        return isCompleted || task.reviewStatus === "Pending" || task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required";
-      }
+      // Reviewer can always see their tasks
+      if (reviewerEmail === userEmail) return true;
 
       return false;
     }).map(t => ({
@@ -114,6 +110,7 @@ export async function POST(req: NextRequest) {
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "createdByEmail" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "displayId" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "source" TEXT DEFAULT 'TDB'`;
+      await sql`ALTER TABLE "LearningOpportunity" ADD COLUMN IF NOT EXISTS "acknowledgedBy" TEXT`;
     } catch (e) {
       console.error("Task migration check skipped/failed", e);
     }

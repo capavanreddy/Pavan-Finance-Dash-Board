@@ -95,6 +95,7 @@ model LearningOpportunity {
   // New Acknowledgment Fields
   isAcknowledged      Boolean   @default(false)
   acknowledgedAt      DateTime?
+  acknowledgedBy      String?
   learnerComments     String?
 }
 

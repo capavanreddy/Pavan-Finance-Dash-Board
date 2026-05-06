@@ -272,8 +272,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   }, []);
 
   // Advanced Controls State
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [dateFilterPreset, setDateFilterPreset] = useState("ALL_TIME");
@@ -5659,6 +5670,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 SI No {loSortConfig?.key === 'id' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('createdAt')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Submitted At {loSortConfig?.key === 'createdAt' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                                 Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -5694,6 +5710,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 Status {loSortConfig?.key === 'isAcknowledged' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('acknowledgedAt')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Ack At {loSortConfig?.key === 'acknowledgedAt' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
                             <th style={getThStyle(t)}>Ack Remarks</th>
                             {!isViewer && <th style={getThStyle(t)}>Actions</th>}
                           </tr>
@@ -5721,9 +5742,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                           ownerName: lo.committedBy,
                                           status: lo.isAcknowledged ? "Acknowledged" : "Pending",
                                           createdAt: lo.createdAt || lo.dateOfIdentification,
-                                          ackBy: lo.ackBy,
-                                          ackAt: lo.ackAt,
-                                          ackComments: lo.ackComments
+                                          ackBy: lo.acknowledgedBy,
+                                          ackAt: lo.acknowledgedAt,
+                                          ackComments: lo.learnerComments
                                       })}
                                       style={{ background: "none", border: "none", color: "#6366f1", cursor: "pointer", padding: "4px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
                                       title="Quick View"
@@ -5733,6 +5754,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   {idx + 1}
                                 </div>
                               </td>
+                              <td style={{ ...getTdStyle(t), fontSize: "0.8125rem", whiteSpace: "nowrap" }}>{lo.createdAt ? formatDateTime(lo.createdAt) : "--"}</td>
                               <td style={getTdStyle(t)}>{formatDate(lo.dateOfIdentification)}</td>
                               <td style={getTdStyle(t)}>{lo.entity}</td>
                               <td style={getTdStyle(t)}>{lo.identifiedBy}</td>
@@ -5740,10 +5762,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{lo.resolutionProvided || "--"}</td>
                               <td style={getTdStyle(t)}>{lo.committedBy}</td>
                               <td style={getTdStyle(t)}>
-                                <span style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, background: lo.isAcknowledged ? "#dcfce7" : "#fef3c7", color: lo.isAcknowledged ? "#15803d" : "#b45309" }}>
+                                <span 
+                                  title={lo.isAcknowledged ? `Acknowledged by ${lo.acknowledgedBy || 'User'} on ${formatDateTime(lo.acknowledgedAt!)}` : 'Pending acknowledgment'}
+                                  style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, background: lo.isAcknowledged ? "#dcfce7" : "#fef3c7", color: lo.isAcknowledged ? "#15803d" : "#b45309", cursor: lo.isAcknowledged ? "help" : "default" }}>
                                   {lo.isAcknowledged ? "Acknowledged" : "Pending"}
                                 </span>
                               </td>
+                              <td style={{ ...getTdStyle(t), fontSize: "0.8125rem", whiteSpace: "nowrap" }}>{lo.acknowledgedAt ? formatDateTime(lo.acknowledgedAt) : "--"}</td>
                               <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal", fontSize: "0.8125rem", color: t.text }}>{lo.learnerComments || "--"}</td>
                               {!isViewer && (
                                 <td style={getTdStyle(t)}>
