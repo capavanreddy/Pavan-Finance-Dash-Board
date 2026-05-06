@@ -13,7 +13,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
-import { COMPLETION_STATUSES } from "@/lib/taskUtils";
+import { getTrackingStatus, COMPLETION_STATUSES } from "@/lib/taskUtils";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import PaymentRequestPortal from "@/components/PaymentRequestPortal";
 
@@ -4731,6 +4731,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 disabled={isOwnerRestricted}
                                 t={t}
                                 trackingStatus={task.trackingStatus}
+                                dueDate={task.dueDate}
+                                completionDate={task.completionDate}
                               />
                             </td>
                             <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
@@ -10192,7 +10194,15 @@ const DetailItemView = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatus }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any, trackingStatus?: string }) {
+function StatusPill({ 
+  status, type, taskId, onUpdate, disabled, t, trackingStatus, dueDate, completionDate 
+}: { 
+  status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any, 
+  trackingStatus?: string, dueDate?: any, completionDate?: any 
+}) {
+  // Recalculate tracking status locally for real-time accuracy and fallback
+  const effectiveTrackingStatus = trackingStatus || (type === "task" ? getTrackingStatus({ taskStatus: status, dueDate, completionDate }) : null);
+
   let bg = "#f1f5f9";
   let color = "#475569";
 
@@ -10201,10 +10211,10 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatu
   if (isCompleted) {
     bg = "#dcfce7";
     color = "#166534";
-  } else if (trackingStatus === "Over Due") {
+  } else if (effectiveTrackingStatus === "Over Due") {
     bg = "#fee2e2";
     color = "#b91c1c";
-  } else if (trackingStatus === "Due on Today") {
+  } else if (effectiveTrackingStatus === "Due on Today") {
     bg = "#fff7ed";
     color = "#c2410c";
   } else if (status === "Pending" || status.includes("Pending")) {
@@ -10232,7 +10242,7 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatu
 
   if (type === "task") {
     const selectValue = isCompleted ? "Completed" : (status === "In Progress" ? "In Progress" : "Pending");
-    const displayLabel = trackingStatus || status;
+    const displayLabel = effectiveTrackingStatus || status;
 
     if (disabled) {
       return <span style={pillStyle}>{displayLabel}</span>;

@@ -10,17 +10,19 @@ export function getTrackingStatus(task: { taskStatus: string; dueDate: string | 
 
   const isCompleted = task.taskStatus === 'Completed' || !!completionDate;
 
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getDate() === d2.getDate() && 
+    d1.getMonth() === d2.getMonth() && 
+    d1.getFullYear() === d2.getFullYear();
+
   if (!isCompleted) {
     if (!dueDate) return "Not Yet Due";
-    if (dueDate.getTime() === today.getTime()) return "Due on Today";
+    if (isSameDay(dueDate, today)) return "Due on Today";
     if (dueDate < today) return "Over Due";
     return "Not Yet Due";
   } else {
-    // If completed but no completion date recorded yet (fallback)
-    if (!completionDate) return "On-Time";
-    if (!dueDate) return "On-Time";
-
-    if (completionDate.getTime() === dueDate.getTime()) return "On-Time";
+    if (!completionDate || !dueDate) return "On-Time";
+    if (isSameDay(completionDate, dueDate)) return "On-Time";
     if (completionDate < dueDate) return "Early Closure";
     return "Delay in Closure";
   }
