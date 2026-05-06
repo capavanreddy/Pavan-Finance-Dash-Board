@@ -966,7 +966,6 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         worksheet.getCell(`G${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
         worksheet.getCell(`H${i}`).dataValidation = { type: 'list', allowBlank: true, formulae: [ranges['Finance Users']] };
       }
-      }
     } else if (type === 'lo') {
       addIns('Entity', 'Dropdown (Master Data)', 'Pick from the available entities.');
       addIns('Date', 'User Input (Date)', 'Format: DD-MM-YYYY (e.g. 21-04-2026)');
