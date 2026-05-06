@@ -5310,7 +5310,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   onClick={() => setExtReqFilter('ALL')} 
                 />
                 <MetricCard t={t} 
-                  title="Pending" 
+                  title="Pending for Acceptance" 
                   value={visibleExternalRequests.filter(r => r.status === 'Pending' || !r.status || r.status === 'New' || r.status === '').length} 
                   icon={<Clock size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
@@ -5318,7 +5318,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   onClick={() => setExtReqFilter('ALLOCATION')} 
                 />
                 <MetricCard t={t} 
-                  title="Under Process" 
+                  title="Request Accepted" 
                   value={visibleExternalRequests.filter(r => r.status === 'Under Process').length} 
                   icon={<AlertCircle size={20} color="#ffffff" />} 
                   bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" 
@@ -5397,7 +5397,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 />
 
                 <MultiSelectFilter
-                  options={["New", "Pending", "Under Process", "Processed", "Rejected"]}
+                  options={["New", "Pending for Acceptance", "Request Accepted", "Processed", "Rejected"]}
                   selected={extReqStatusFilter}
                   onChange={setExtReqStatusFilter}
                   placeholder="All Status"
@@ -5545,12 +5545,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <td style={getTdStyle(t)}>
                                 {(!req.status || req.status === 'Pending' || req.status === 'New') && (
                                   <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5" }}>
-                                    Pending
+                                    Pending for Acceptance
                                   </span>
                                 )}
                                 {req.status === 'Under Process' && (
                                   <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#eff6ff", fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", border: "1px solid #dbeafe" }}>
-                                    Under Process
+                                    Request Accepted
                                   </span>
                                 )}
                                 {req.status === 'Processed' && (
