@@ -4732,7 +4732,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserOwner) return;
                                 if (task.reviewCompletionDate && !isAdmin) {
-                                  showNotification("Editing locked: Task has already been reviewed.", "warning");
+                                  showNotification("Editing locked: Task has already been reviewed.", "error");
                                   return;
                                 }
                                 setEditingCell({ id: task.id, field: 'completionDate' });
