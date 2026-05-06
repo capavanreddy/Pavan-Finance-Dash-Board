@@ -4090,12 +4090,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <Quote size={40} color="#059669" style={{ marginBottom: "20px", opacity: 0.2 }} />
                     <h3 style={{ 
                       fontSize: "1.75rem", 
-                      fontFamily: "'Outfit', serif", 
+                      fontFamily: "var(--font-libre-baskerville), serif", 
                       fontStyle: "italic", 
                       maxWidth: "900px", 
                       margin: "0 auto 24px auto", 
                       lineHeight: 1.4,
-                      fontWeight: 600,
+                      fontWeight: 400,
                       letterSpacing: "-0.01em",
                       color: "#2563eb"
                     }}>
