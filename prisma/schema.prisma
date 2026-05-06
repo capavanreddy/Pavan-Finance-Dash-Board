@@ -3,278 +3,331 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  password      String?   // For credential login
-  role          String    @default("USER")
-  department    String?   @default("Finance")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  isApproved    Boolean   @default(true)
-  isAllocator   Boolean   @default(false)
+  id           String    @id @default(cuid())
+  name         String?
+  email        String?   @unique
+  password     String?
+  role         String    @default("USER")
+  department   String?   @default("Finance")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  isApproved   Boolean   @default(true)
+  isAllocator  Boolean   @default(false)
+  isSuspended  Boolean?  @default(false)
+  employeeId   String?
+  resetToken   String?
+  resetExpires DateTime? @db.Timestamp(6)
 }
 
 model Task {
-  id                  Int       @id @default(autoincrement())
-  displayId           String?   @unique
-  taskName            String
-  entityName          String
-  taskType            String
-  departmentName      String
-  requestFrom         String
-  ownerName           String
-  reviewerName        String?   @default("Not Applicable")
-  dueDate             DateTime?
-  mailLink            String?
-  ownerMailId         String?
-  reviewerEmail       String?
-  taskStatus          String    @default("Pending")
-  reviewStatus        String    @default("Task Pending From Owner")
-  completionDate      DateTime?
-  reviewCompletionDate DateTime?
-  ownerComments       String?
-  reviewerComments    String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  editRequested       Boolean   @default(false)
-  editApproved        Boolean   @default(false)
-  editRequestBy       String?   // "OWNER" or "REVIEWER"
-  editRequestReason   String?
-  deleteRequested     Boolean   @default(false)
-  deleteRequestReason String?
-  
-  // Link to External Request
-  linkedRequestId     Int?
-  requestStatus       String?   @default("Pending")
-  frequency           String?
-  templateId          Int?
-  periodKey           String?
-  financeFunction     String?
-  source              String?   @default("TDB")
+  id                    Int       @id @default(autoincrement())
+  taskName              String
+  entityName            String
+  taskType              String
+  departmentName        String
+  requestFrom           String
+  ownerName             String
+  reviewerName          String?   @default("Not Applicable")
+  dueDate               DateTime?
+  mailLink              String?
+  ownerMailId           String?
+  reviewerEmail         String?
+  taskStatus            String    @default("Pending")
+  reviewStatus          String    @default("Task Pending From Owner")
+  completionDate        DateTime?
+  reviewCompletionDate  DateTime?
+  ownerComments         String?
+  reviewerComments      String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  editRequested         Boolean   @default(false)
+  editRequestBy         String?
+  editRequestReason     String?
+  deleteRequested       Boolean   @default(false)
+  deleteRequestReason   String?
+  linkedRequestId       Int?
+  requestStatus         String?   @default("Pending")
+  periodKey             String?
+  templateId            Int?
+  originalRequestType   String?
+  transferStatus        String?   @default("O")
+  financeFunction       String?
+  frequency             String?
+  editApproved          Boolean?  @default(false)
+  deleteRequestedBy     String?
+  displayId             String?
+  isApproved            Boolean?  @default(true)
+  completedSubmissionAt DateTime?
+  reviewedSubmissionAt  DateTime?
+  processedSubmissionAt DateTime?
+  completedBy           String?
+  reviewedBy            String?
+  processedBy           String?
+  createdByEmail        String?
+  captureLO             String?
+  source                String?   @default("TDB")
 
-  @@unique([templateId, periodKey])
+  @@unique([templateId, periodKey], map: "task_template_period_idx")
 }
 
 model TaskSequence {
-  monthYear String @id // Format: MMYY
-  nextVal   Int    @default(1)
+  monthYear String @id
+  nextVal   Int?   @default(1)
 }
 
 model DataBackup {
-  id        String   @id @default(cuid())
-  snapshot  Json
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  snapshot  Json?
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model LearningOpportunity {
-  id                  Int       @id @default(autoincrement())
-  entity              String
+  id                   Int       @id @default(autoincrement())
+  entity               String
   dateOfIdentification DateTime
-  learningOpportunity String
-  identifiedBy        String
-  committedBy         String
-  resolutionProvided  String
-  modeOfCommunication String
-  emailSub            String?
-  comments            String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  editRequested       Boolean   @default(false)
-  editApproved        Boolean   @default(false)
-  editRequestReason   String?
-  deleteRequested     Boolean   @default(false)
-  deleteRequestReason String?
-  createdByEmail      String?
-  
-  // New Acknowledgment Fields
-  isAcknowledged      Boolean   @default(false)
-  acknowledgedAt      DateTime?
-  acknowledgedBy      String?
-  learnerComments     String?
+  learningOpportunity  String
+  identifiedBy         String
+  committedBy          String
+  resolutionProvided   String
+  modeOfCommunication  String
+  emailSub             String?
+  comments             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  editRequested        Boolean   @default(false)
+  editApproved         Boolean   @default(false)
+  editRequestReason    String?
+  deleteRequested      Boolean   @default(false)
+  deleteRequestReason  String?
+  createdByEmail       String?
+  isAcknowledged       Boolean?  @default(false)
+  learnerComments      String?
+  acknowledgedAt       DateTime? @db.Timestamp(6)
+  taskId               Int?
+  acknowledgedBy       String?
 }
 
 model LearningResource {
-  id          Int      @id @default(autoincrement())
-  name        String
-  type        String   // "PDF", "LINK", "IMAGE"
-  url         String?  // For external links
-  data        String?  // For Base64 content
-  category    String   @default("General")
-  uploadedBy  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         Int       @id @default(autoincrement())
+  name       String
+  type       String
+  url        String?
+  data       String?
+  uploadedBy String?
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  category   String?   @default("Miscellaneous")
 }
 
 model RecurringTemplate {
-  id                    Int      @id @default(autoincrement())
-  taskNamePattern       String
-  entityName            String
-  taskType              String?  @default("External")
-  departmentName        String?  @default("Finance")
-  financeFunction       String?
-  frequency             String
-  dayOffset             Int?     @default(0)
-  monthOffset           Int?     @default(0)
-  defaultOwner          String?
-  defaultReviewer       String?
-  isActive              Boolean  @default(true)
-  startDate             DateTime?
-  endDate               DateTime?
-  stopDate              DateTime?
-  isStopped             Boolean  @default(false)
-  weeklyDay             String?
-  excludedDates         String?  // JSON string
-  freqLabel             String?
-  lastGeneratedPeriod   String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                  Int       @id @default(autoincrement())
+  taskNamePattern     String
+  entityName          String
+  taskType            String
+  departmentName      String?   @default("Finance")
+  frequency           String
+  dayOffset           Int?      @default(1)
+  monthOffset         Int?      @default(0)
+  defaultOwner        String?
+  defaultReviewer     String?
+  isActive            Boolean?  @default(true)
+  lastGeneratedPeriod String?
+  createdAt           DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt           DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  financeFunction     String?
+  startDate           DateTime? @db.Date
+  endDate             DateTime? @db.Date
+  stopDate            DateTime? @db.Date
+  isStopped           Boolean?  @default(false)
+  weeklyDay           String?
+  excludedDates       Json?
+  freqLabel           String?
 }
 
 model ExternalRequest {
-  id                  Int       @id @default(autoincrement())
-  requestFrom         String
-  requesterEmail      String
-  requestDate         DateTime  @default(now())
-  natureOfRequest     String
-  departmentName      String
-  requestType         String
-  status              String    @default("Under Process")
+  id                     Int      @id @default(autoincrement())
+  requestFrom            String
+  requesterEmail         String
+  requestDate            DateTime @default(now())
+  natureOfRequest        String
+  reasonForRequest       String?
+  departmentName         String
+  requestType            String
+  status                 String   @default("Under Process")
   assignedAllocatorEmail String?
-  convertedTaskId     Int?
-  rejectReason        String?
-  frequency           String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  convertedTaskId        Int?
+  rejectReason           String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  entityName             String?
+  originalRequestType    String?
+  transferStatus         String?  @default("O")
+  transferredBy          String?
+  frequency              String?
 }
 
 model SystemSettings {
-  id                    String   @id @default("singleton")
-  reminderFrequency     String   @default("DAILY")
-  reminderTimes         String   @default("09:00,18:00")
-  managerReportFrequency String   @default("DAILY")
-  managerReportTimes     String   @default("10:00")
-  loReportFrequency     String   @default("WEEKLY")
-  loReportTimes         String   @default("10:00")
-  lastReminderSentAt    DateTime?
-  lastManagerReportSentAt DateTime?
-  lastLoReportSentAt    DateTime?
-  managerEmail          String   @default("pavanreddy@intellicar.in")
-  loReportEmail         String   @default("pavanreddy@intellicar.in")
-  paymentReportFrequency String  @default("OFF")
-  paymentReportTimes     String  @default("10:00")
-  paymentReportEmail     String  @default("pavanreddy@intellicar.in")
-  
-  // Task Automation
-  dailyTaskGenerationTime String   @default("06:00")
-  holidayList            String   @default("[]") // JSON array of YYYY-MM-DD strings
-  lastDailyGenerationAt  DateTime?
-
-  // Master Data Lists (Comma separated)
-  masterDepartments     String   @default("Finance,HR,IT,Operations,Sales,Marketing,Admin")
-  masterEntities        String   @default("Intellicar-BLR,Intellicar-DEL,Intellicar-MUM,ITPL-Bangalore")
-  masterTaskTypes       String   @default("Daily,Weekly,Monthly,Quarterly,Yearly,Statutory,Internal")
-  masterFrequencies     String   @default("Daily,Weekly,Fortnightly,Monthly,Quarterly,Half Yearly,Yearly,Ad-hoc")
-  masterCommunicationModes String  @default("Email,Verbal Discussion,Hangouts,Whatsapp-IC Group")
-  masterRequestTypes    String   @default("Accounts Receivable,Accounts Payable,General & Administration,Payroll")
-  masterRequestStatuses String   @default("Under Process,Pending for Review,Processed")
-  masterResourceCategories String @default("Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous")
-
-  // Matrices (JSON strings)
-  moduleAccessMatrix    String   @default("{}")
-  allocationMatrix      String   @default("{}")
-  departmentHeadMatrix  String   @default("{}")
+  id                       String    @id
+  reminderFrequency        String    @default("DAILY")
+  reminderTimes            String    @default("09:00,18:00")
+  managerReportFrequency   String    @default("DAILY")
+  managerReportTimes       String    @default("10:00")
+  loReportFrequency        String    @default("WEEKLY")
+  loReportTimes            String    @default("10:00")
+  lastReminderSentAt       DateTime?
+  lastManagerReportSentAt  DateTime?
+  lastLoReportSentAt       DateTime?
+  managerEmail             String    @default("pavanreddy@intellicar.in")
+  loReportEmail            String    @default("pavanreddy@intellicar.in")
+  masterDepartments        String    @default("Finance,HR,IT,Operations,Sales,Marketing,Admin")
+  masterEntities           String    @default("Intellicar-BLR,Intellicar-DEL,Intellicar-MUM,ITPL-Bangalore")
+  masterTaskTypes          String    @default("Daily,Weekly,Monthly,Quarterly,Yearly,Statutory,Internal")
+  masterCommunicationModes String    @default("Email,Verbal Discussion,Hangouts,Whatsapp-IC Group")
+  masterRequestTypes       String    @default("Accounts Receivable,Accounts Payable,General & Administration,Payroll")
+  masterRequestStatuses    String    @default("Under Process,Pending for Review,Processed")
+  moduleAccessMatrix       String    @default("{}")
+  allocationMatrix         String    @default("{}")
+  matrixModuleAccess       String?   @default("")
+  matrixAllocationAccess   String?   @default("")
+  recurringMatrix          String?   @default("{}")
+  entityMatrix             String?   @default("{}")
+  homeContent              String?   @default("{}")
+  masterWeekDays           String?   @default("Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday")
+  masterFrequencies        String?   @default("Ad,M,Y,2Y,H,Q,W,BW,D")
+  masterPaymentTypes       String?   @default("AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment")
+  paymentReportFrequency   String?   @default("OFF")
+  paymentReportTimes       String?   @default("10:00")
+  paymentReportEmail       String?   @default("pavanreddy@intellicar.in")
+  userModuleExceptions     String?   @default("{}")
+  dailyTaskGenerationTime  String?   @default("06:00")
+  holidayList              String?   @default("[]")
+  lastDailyGenerationAt    DateTime? @db.Timestamp(6)
+  masterResourceCategories String?   @default("Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous")
+  bulkImportMatrix         String?   @default("{}")
+  masterBankAccounts       String?   @default("")
+  paymentReportDay         String?   @default("Monday")
+  paymentReportDate        Int?      @default(1)
+  departmentHeadMatrix     String?   @default("{}")
 }
 
 model PaymentTemplate {
-  id                    Int      @id @default(autoincrement())
-  entityName            String
-  paymentDescription    String
-  vendorName            String
-  paymentType           String?
-  departmentName        String?
-  financeFunction       String?
-  frequency             String
-  vendorEmail           String?
-  prodEmail             String?
-  defaultOwner          String?
-  defaultReviewer       String?
-  dueDay                Int?
-  weeklyDay             String?
-  startDate             DateTime? @db.Date
-  endDate               DateTime? @db.Date
-  stopDate              DateTime? @db.Date
-  amountToRelease       Decimal?  @default(0) @db.Decimal(12, 2)
-  isStopped             Boolean?  @default(false)
-  lastGeneratedPeriod   String?
-  deleteRequested       Boolean?  @default(false)
-  deleteRequestReason   String?
-  editRequested         Boolean?  @default(false)
-  editApproved          Boolean?  @default(false)
-  editRequestReason     String?
-  isActive              Boolean?  @default(true)
-  createdAt             DateTime? @default(now())
-  updatedAt             DateTime? @default(now())
-  occurrences           PaymentOccurrence[]
+  id                  Int                 @id @default(autoincrement())
+  entityName          String
+  paymentDescription  String
+  vendorName          String
+  paymentType         String?
+  departmentName      String?
+  financeFunction     String?
+  frequency           String
+  vendorEmail         String?
+  prodEmail           String?
+  defaultOwner        String?
+  defaultReviewer     String?
+  leadTime            Int?                @default(0)
+  startDate           DateTime?           @db.Date
+  endDate             DateTime?           @db.Date
+  stopDate            DateTime?           @db.Date
+  isStopped           Boolean?            @default(false)
+  createdAt           DateTime?           @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime?           @default(now()) @db.Timestamptz(6)
+  dueDay              Int?
+  weeklyDay           String?
+  lastGeneratedPeriod String?
+  isActive            Boolean?            @default(true)
+  deleteRequested     Boolean?            @default(false)
+  deleteRequestReason String?
+  editRequested       Boolean?            @default(false)
+  editApproved        Boolean?            @default(false)
+  editRequestReason   String?
+  amountToRelease     Decimal?            @default(0) @db.Decimal
+  occurrences         PaymentOccurrence[]
 }
 
 model PaymentOccurrence {
-  id                Int             @id @default(autoincrement())
-  templateId        Int
-  template          PaymentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  dueDate           DateTime        @db.Date
-  actualDate        DateTime?       @db.Date
-  amountToRelease   Decimal?        @default(0) @db.Decimal(12, 2)
-  amountPaid        Decimal?        @db.Decimal(12, 2)
-  paidFromAccount   String?
-  isPaid            Boolean?        @default(false)
-  isListed          Boolean?        @default(false)
-  isHold            Boolean?        @default(false)
-  holdReason        String?
-  editRequested     Boolean?        @default(false)
-  editApproved      Boolean?        @default(false)
+  id                  Int              @id @default(autoincrement())
+  templateId          Int?
+  dueDate             DateTime         @db.Date
+  actualDate          DateTime?        @db.Date
+  amountPaid          Decimal?         @db.Decimal
+  isPaid              Boolean?         @default(false)
+  createdAt           DateTime?        @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime?        @default(now()) @db.Timestamptz(6)
+  isHold              Boolean?         @default(false)
+  holdReason          String?
+  editRequested       Boolean?         @default(false)
+  editApproved        Boolean?         @default(false)
   editRequestReason   String?
-  utrNumber         String?
-  adviceShared      Boolean?        @default(false)
-  adviceRecipient   String?
-  adviceCC          String?
-  adviceAttachment  String?
-  isCancelled       Boolean?        @default(false)
-  cancelledReason   String?
-  deleteRequested   Boolean?        @default(false)
+  isCancelled         Boolean?         @default(false)
+  cancelledReason     String?
+  deleteRequested     Boolean?         @default(false)
   deleteRequestReason String?
-  deleteRequestedBy String?
-  createdAt         DateTime?       @default(now())
-  updatedAt         DateTime?       @default(now())
+  deleteRequestedBy   String?
+  isListed            Boolean?         @default(false)
+  amountToRelease     Decimal?         @default(0) @db.Decimal
+  paidFromAccount     String?
+  utrNumber           String?
+  adviceShared        Boolean?         @default(false)
+  adviceRecipient     String?
+  adviceCC            String?
+  adviceAttachment    String?
+  requestId           Int?
+  template            PaymentTemplate? @relation(fields: [templateId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model PaymentRequest {
-  id                Int       @id @default(autoincrement())
-  requesterId       String
-  requesterName     String
-  requesterEmail    String
-  department        String
-  entityName        String
-  vendorName        String
-  description       String
-  paymentType       String
-  frequency         String
-  amount            Decimal   @db.Decimal(12, 2)
-  dueDate           DateTime  @db.Date
-  isNewVendor       Boolean   @default(false)
-  kycDocuments      Json?     // Stores URLs for Registration, GST, MSME, Cheque, PAN
-  status            String    @default("PENDING_DEPT") // PENDING_DEPT, PENDING_FINANCE, APPROVED, REJECTED
-  approvedBy        String?   // Name of the Dept Head
-  approvedByEmail   String?
-  processedBy       String?   // Name of Finance user
-  processedByEmail  String?
-  deptHeadComments  String?
-  financeComments   String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               Int       @id @default(autoincrement())
+  requesterId      String
+  requesterName    String
+  requesterEmail   String
+  department       String
+  entityName       String
+  vendorName       String
+  description      String
+  paymentType      String
+  frequency        String
+  amount           Decimal   @db.Decimal(12, 2)
+  dueDate          DateTime  @db.Date
+  isNewVendor      Boolean?  @default(false)
+  kycDocuments     Json?
+  status           String?   @default("PENDING_DEPT")
+  approvedBy       String?
+  approvedByEmail  String?
+  processedBy      String?
+  processedByEmail String?
+  deptHeadComments String?
+  financeComments  String?
+  createdAt        DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
+  supportings      Json?
+}
+
+model DailyTaskCompletion {
+  id          Int       @id @default(autoincrement())
+  templateId  Int
+  taskDate    DateTime  @db.Date
+  status      String    @default("Not Completed")
+  completedAt DateTime? @db.Timestamptz(6)
+  completedBy String?
+  createdAt   DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([templateId, taskDate])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime @db.Timestamptz(6)
+
+  @@id([identifier, token])
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
 }

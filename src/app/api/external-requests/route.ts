@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { requestFrom, requesterEmail, natureOfRequest, departmentName, requestType, entityNames, frequency } = body;
+  const { requestFrom, requesterEmail, natureOfRequest, reasonForRequest, departmentName, requestType, entityNames, frequency } = body;
 
   try {
     const sql = getDb();
@@ -56,11 +56,12 @@ export async function POST(request: Request) {
       await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "transferStatus" TEXT DEFAULT 'O'`;
       await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "transferredBy" TEXT`;
       await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "frequency" TEXT`;
+      await sql`ALTER TABLE "ExternalRequest" ADD COLUMN IF NOT EXISTS "reasonForRequest" TEXT`;
     } catch (e) {
       console.log("ExternalRequest migration check failed/skipped");
     }
 
-    if (!requestFrom || !requesterEmail || !natureOfRequest || !departmentName || !requestType || !entityNames || !entityNames.length) {
+    if (!requestFrom || !requesterEmail || !natureOfRequest || !reasonForRequest || !departmentName || !requestType || !entityNames || !entityNames.length) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
@@ -68,11 +69,11 @@ export async function POST(request: Request) {
     for (const entityName of entityNames) {
       const result = await sql`
         INSERT INTO "ExternalRequest" (
-          "requestFrom", "requesterEmail", "natureOfRequest", "departmentName", 
+          "requestFrom", "requesterEmail", "natureOfRequest", "reasonForRequest", "departmentName", 
           "requestType", "originalRequestType", "transferStatus", "status", "entityName", "frequency", "createdAt", "updatedAt"
         )
         VALUES (
-          ${requestFrom}, ${requesterEmail}, ${natureOfRequest}, ${departmentName},
+          ${requestFrom}, ${requesterEmail}, ${natureOfRequest}, ${reasonForRequest || null}, ${departmentName},
           ${requestType}, ${requestType}, 'O', 'Pending', ${entityName}, ${frequency || null}, NOW(), NOW()
         )
         RETURNING *

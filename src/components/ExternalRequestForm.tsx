@@ -17,6 +17,7 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
     requestFrom: user?.name || "",
     requesterEmail: user?.email || "",
     natureOfRequest: "",
+    reasonForRequest: "",
     departmentName: "",
     requestType: "",
     entityNames: [] as string[],
@@ -65,6 +66,10 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.natureOfRequest || !formData.reasonForRequest) {
+      setError("Both 'What is Needed' and 'Reason for Request' are mandatory.");
+      return;
+    }
     if (formData.entityNames.length === 0) {
       setError("Please select at least one entity.");
       return;
@@ -176,7 +181,7 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
             <div>
-              <label style={labelStyle}>Origin *</label>
+              <label style={labelStyle}>Finance Function *</label>
               <select 
                 name="requestType" 
                 required 
@@ -184,7 +189,7 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
                 onChange={handleChange} 
                 style={inputStyle}
               >
-                <option value="">Select Origin</option>
+                <option value="">Select Finance Function</option>
                 {settings?.masterRequestTypes?.split(',').filter((t: string) => t.trim()).map((type: string) => (
                   <option key={type.trim()} value={type.trim()}>{type.trim()}</option>
                 ))}
@@ -193,14 +198,26 @@ export default function ExternalRequestForm({ onClose, onSuccess, settings, user
           </div>
 
           <div>
-            <label style={labelStyle}>Nature of Request *</label>
+            <label style={labelStyle}>What is Needed *</label>
             <textarea 
               name="natureOfRequest" 
               required 
               value={formData.natureOfRequest} 
               onChange={handleChange} 
-              style={{ ...inputStyle, minHeight: "120px", resize: "none" }} 
+              style={{ ...inputStyle, minHeight: "80px", resize: "none" }} 
               placeholder="Describe what you need from the Finance team..."
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Reason for Request *</label>
+            <textarea 
+              name="reasonForRequest" 
+              required 
+              value={formData.reasonForRequest} 
+              onChange={handleChange} 
+              style={{ ...inputStyle, minHeight: "80px", resize: "none" }} 
+              placeholder="Explain why this information or document is needed..."
             />
           </div>
 

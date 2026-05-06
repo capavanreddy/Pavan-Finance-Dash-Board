@@ -117,10 +117,11 @@ function buildEmailData(type: NotificationType, payload: any) {
         badgeText: 'New Request',
         badgeType: 'blue',
         rows: [
-          { label: 'Nature of Request', value: payload.natureOfRequest },
+          { label: 'What is Needed', value: payload.natureOfRequest },
+          { label: 'Reason for Request', value: payload.reasonForRequest || "N/A" },
           { label: 'Request From', value: payload.requestFrom },
           { label: 'Requester Email', value: payload.requesterEmail },
-          { label: 'Request Type', value: payload.requestType }
+          { label: 'Finance Function', value: payload.requestType }
         ],
         ctaLink: `${baseUrl}`
       };
@@ -133,7 +134,7 @@ function buildEmailData(type: NotificationType, payload: any) {
         badgeText: 'Action Required',
         badgeType: 'red',
         rows: [
-          { label: 'Nature of Request', value: payload.natureOfRequest },
+          { label: 'What is Needed', value: payload.natureOfRequest },
           { label: 'Status', value: 'REJECTED' },
           { label: 'Remarks/Reason', value: payload.rejectReason || 'No reason provided' }
         ],

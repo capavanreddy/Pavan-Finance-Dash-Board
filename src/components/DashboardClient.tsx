@@ -2905,7 +2905,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Finance Function', key: 'type', width: 20 },
-      { header: 'Nature of Request', key: 'nature', width: 40 },
+      { header: 'What is Needed', key: 'nature', width: 40 },
+      { header: 'Reason for Request', key: 'reason', width: 40 },
       { header: 'Status', key: 'status', width: 15 }
     ];
 
@@ -2929,6 +2930,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         date: new Date(r.createdAt).toLocaleDateString(),
         type: r.requestType,
         nature: r.natureOfRequest,
+        reason: r.reasonForRequest || "N/A",
         status: r.status || "New",
         ...(isAdmin ? {
           origin: r.transferStatus === 'T' ? 'Transferred' : 'Original',
@@ -2951,7 +2953,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
     const filteredReqs = sortedExternalRequests;
 
-    const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
+    const tableColumn = ["Sl No.", "From", "Date", "Type", "What is Needed", "Reason", "Status"];
     if (isAdmin) tableColumn.push("Origin", "Original Function", "Transferred By");
 
     const tableRows = sortedExternalRequests.map((r, idx) => {
@@ -2961,6 +2963,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         new Date(r.createdAt).toLocaleDateString(),
         r.requestType,
         r.natureOfRequest,
+        r.reasonForRequest || "N/A",
         r.status || "New"
       ];
       if (isAdmin) {
@@ -5260,7 +5263,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleExtReqSort('natureOfRequest')}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          Nature of Request {extReqSortConfig?.key === 'natureOfRequest' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                          What is Needed {extReqSortConfig?.key === 'natureOfRequest' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleExtReqSort('reasonForRequest' as any)}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Reason for Request {extReqSortConfig?.key === 'reasonForRequest' && (extReqSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleExtReqSort('status')}>
@@ -5295,6 +5303,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => setSelectedExternalReqForView({
                                       id: req.id,
                                       requirement: req.natureOfRequest,
+                                      reason: req.reasonForRequest || "N/A",
                                       fromDepartment: req.departmentName,
                                       toDepartment: req.requestType,
                                       raisedBy: req.requestFrom,
@@ -5322,7 +5331,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </span>
                               </div>
                             </td>
-                            <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
+                            <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
+                            <td style={{ ...getTdStyle(t), maxWidth: "250px", whiteSpace: "normal" }}>{req.reasonForRequest || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
                             <td style={getTdStyle(t)}>
                                 {(!req.status || req.status === 'Pending' || req.status === 'New') && (
                                   <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5" }}>
@@ -7803,11 +7813,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       </div>
 
-                      {/* Origin Settings */}
+                      {/* Finance Function Settings */}
                       <div style={{ padding: "20px", background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: t.text }}>
                           <FileText size={18} color="#8b5cf6" />
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Origin</h4>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Finance Function</h4>
                         </div>
                         <p style={{ fontSize: "0.75rem", color: t.textMuted, margin: "0 0 12px 0" }}>Used in Inter Department Request form.</p>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -10072,9 +10082,16 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             <div style={{ padding: "32px", maxHeight: "70vh", overflowY: "auto" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Requirement</label>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>What is Needed</label>
                   <div style={{ fontSize: "1rem", color: "#1e293b", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", lineHeight: 1.5 }}>
                     {selectedExternalReqForView.requirement}
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Reason for Request</label>
+                  <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", minHeight: "60px" }}>
+                    {selectedExternalReqForView.reason}
                   </div>
                 </div>
                 
