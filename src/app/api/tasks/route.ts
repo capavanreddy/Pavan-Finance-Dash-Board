@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       mailLink,
       linkedRequestId,
       assignments, // New: Array of { entityName, ownerName, reviewerName }
+      transferredBy,
+      transferredAt
     } = data);
 
     // Ensure columns exist (Self-healing)
@@ -163,12 +165,12 @@ export async function POST(req: NextRequest) {
           INSERT INTO "Task" (
             "taskName", "entityName", "taskType", "departmentName", "requestFrom",
             "ownerName", "reviewerName", "dueDate", "mailLink", "taskStatus",
-            "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "source", "isApproved", "createdByEmail", "createdAt", "updatedAt"
+            "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "source", "isApproved", "createdByEmail", "transferredBy", "transferredAt", "createdAt", "updatedAt"
           )
           VALUES (
             ${taskName}, ${entityName}, ${taskType}, ${departmentName}, ${requestFrom},
             ${ownerName}, ${resolvedReviewer}, ${parseDate(dueDate)}, ${mailLink || null}, 'Pending',
-            ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId}, ${linkedRequestId ? 'IDR' : 'TDB'}, TRUE, ${session.user.email}, NOW(), NOW()
+            ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId}, ${linkedRequestId ? 'IDR' : 'TDB'}, TRUE, ${session.user.email}, ${transferredBy || null}, ${transferredAt || null}, NOW(), NOW()
           )
           RETURNING *
         `;

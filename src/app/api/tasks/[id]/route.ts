@@ -211,9 +211,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           "processedMode" = ${processedMode},
           "processedMailLink" = ${processedMailLink},
           "processedAttachments" = ${processedAttachments !== undefined ? JSON.stringify(processedAttachments) : (existingTask.processedAttachments ? JSON.stringify(existingTask.processedAttachments) : null)},
-          "transferredBy" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.financeFunction !== undefined && data.financeFunction !== existingTask.financeFunction) ? userName : existingTask.transferredBy },
-          "transferredAt" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.financeFunction !== undefined && data.financeFunction !== existingTask.financeFunction) ? new Date().toISOString() : existingTask.transferredAt },
-          "transferStatus" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.financeFunction !== undefined && data.financeFunction !== existingTask.financeFunction) ? 'T' : (data.transferStatus !== undefined ? data.transferStatus : existingTask.transferStatus) }
+          "transferredBy" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.taskType !== undefined && data.taskType !== existingTask.taskType) ? userName : (data.transferredBy !== undefined ? data.transferredBy : existingTask.transferredBy) },
+          "transferredAt" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.taskType !== undefined && data.taskType !== existingTask.taskType) ? new Date().toISOString() : (data.transferredAt !== undefined ? data.transferredAt : existingTask.transferredAt) },
+          "transferStatus" = ${ (data.departmentName !== undefined && data.departmentName !== existingTask.departmentName) || (data.taskType !== undefined && data.taskType !== existingTask.taskType) ? 'T' : (data.transferStatus !== undefined ? data.transferStatus : existingTask.transferStatus) }
       WHERE id = ${taskId}
       RETURNING *
     `;

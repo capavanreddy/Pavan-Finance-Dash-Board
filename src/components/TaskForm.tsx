@@ -31,7 +31,9 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
     linkedRequestId: initialData?.linkedRequestId || null,
     transferStatus: initialData?.transferStatus || 'O',
     originalRequestType: initialData?.originalRequestType || null,
-    frequency: initialData?.frequency || "Ad"
+    frequency: initialData?.frequency || "Ad",
+    transferredBy: initialData?.transferredBy || null,
+    transferredAt: initialData?.transferredAt || null
   });
 
   const [selectedEntities, setSelectedEntities] = useState<string[]>(initialData?.entityName ? [initialData.entityName] : []);

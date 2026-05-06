@@ -973,7 +973,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       requestFrom: req.requestFrom,
       linkedRequestId: req.id,
       transferStatus: req.transferStatus,
-      originalRequestType: req.originalRequestType
+      originalRequestType: req.originalRequestType,
+      transferredBy: req.transferredBy,
+      transferredAt: req.transferredAt
     });
     setShowForm(true);
   };
