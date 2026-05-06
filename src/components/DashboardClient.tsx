@@ -18,6 +18,24 @@ import { getTrackingStatus, COMPLETION_STATUSES } from "@/lib/taskUtils";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import PaymentRequestPortal from "@/components/PaymentRequestPortal";
 
+const GlobalStyles = () => (
+  <style jsx global>{`
+    .hover-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .hover-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12) !important;
+    }
+    .btn-polish {
+      transition: all 0.2s ease;
+    }
+    .btn-polish:active {
+      transform: scale(0.96);
+    }
+  `}</style>
+);
+
 type Task = {
   id: number;
   taskName: string;
@@ -3496,6 +3514,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: t.bg, color: t.text, overflow: "hidden", transition: "all 0.3s ease" }}>
+      <GlobalStyles />
       {/* Top Navigation Bar (Full Width) */}
       <header style={{ 
         height: "80px", width: "100%", background: t.card, display: "flex", 
@@ -3977,13 +3996,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <div style={{ display: "flex", gap: "8px" }}>
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
                     !isViewer && (
-                      <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                      <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "14px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                         <Plus size={18} /> New Task
                       </button>
                     )
                   ) : (activeView as string) === 'LOS' ? (
                     !isViewer && (
-                      <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "12px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
+                      <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "14px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
                         <Lightbulb size={18} color="#f59e0b" /> Update LO
                       </button>
                     )
@@ -4019,7 +4038,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     {/* Mission Card */}
                     <div style={{ 
                       padding: "28px", 
-                      borderRadius: "24px", 
+                      borderRadius: "28px", 
                       background: "rgba(255, 255, 255, 0.72)", 
                       backdropFilter: "blur(18px)",
                       border: "1px solid rgba(59, 130, 246, 0.2)",
@@ -4047,7 +4066,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     {/* Vision Card */}
                     <div style={{ 
                       padding: "28px", 
-                      borderRadius: "24px", 
+                      borderRadius: "28px", 
                       background: "rgba(255, 255, 255, 0.72)", 
                       backdropFilter: "blur(18px)",
                       border: "1px solid rgba(16, 185, 129, 0.2)",
@@ -4081,7 +4100,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     textAlign: "center", 
                     background: "rgba(255, 255, 255, 0.72)", 
                     backdropFilter: "blur(18px)",
-                    borderRadius: "32px",
+                    borderRadius: "28px",
                     border: "1px solid rgba(16, 185, 129, 0.2)",
                     boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
                     overflow: "hidden"
