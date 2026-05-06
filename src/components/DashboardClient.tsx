@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard, Paperclip } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard, Paperclip, ShieldAlert } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
@@ -8645,6 +8645,27 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <div>
                     <h3 style={{ margin: "0 0 24px 0" }}>Data Management</h3>
                     
+                    {isAdmin && (
+                      <div style={{ 
+                        background: "rgba(79, 70, 229, 0.05)", 
+                        border: "1px solid rgba(79, 70, 229, 0.2)", 
+                        padding: "16px 20px", 
+                        borderRadius: "14px", 
+                        marginBottom: "24px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px"
+                      }}>
+                        <ShieldAlert size={20} color="#4f46e5" />
+                        <div>
+                          <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#4f46e5", display: "block", marginBottom: "2px" }}>Admin Security Note</span>
+                          <span style={{ fontSize: "0.875rem", color: t.text }}>
+                            Excel Reference Sheets are locked with password: <strong style={{ fontFamily: "monospace", background: "#ffffff", padding: "2px 6px", borderRadius: "4px", border: "1px solid #e2e8f0" }}>Intellicar@123</strong>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: t.text }}>Bulk Data Import</h4>
                     <p style={{ color: t.textMuted, marginBottom: "32px" }}>Download the template, fill it with your data, and upload it back. All imports follow a strictly defined schema.</p>
                     
