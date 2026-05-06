@@ -47,12 +47,6 @@ export async function GET(req: NextRequest) {
       
       // Owner can always see their tasks
       if (ownerEmail === userEmail) return true;
-      
-      // Creator can always see their tasks
-      if ((task as any).createdByEmail === userEmail) return true;
-      
-      // Fallback for tasks created before createdByEmail was added
-      if (requesterEmail === userEmail) return true;
 
       // Reviewer can always see their tasks
       if (reviewerEmail === userEmail) return true;
