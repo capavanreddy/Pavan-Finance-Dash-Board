@@ -863,10 +863,64 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const workbook = new ExcelJS.Workbook();
+    
+    // 1. Add Instructions Sheet
+    const insSheet = workbook.addWorksheet('Instructions');
+    insSheet.columns = [
+      { header: 'Field Name', key: 'field', width: 25 },
+      { header: 'Requirement', key: 'req', width: 15 },
+      { header: 'Data Source', key: 'source', width: 25 },
+      { header: 'Description', key: 'desc', width: 50 },
+    ];
+
+    const headerRow = insSheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+
+    const addIns = (field: string, req: string, source: string, desc: string) => {
+      const row = insSheet.addRow([field, req, source, desc]);
+      if (req === 'Mandatory') {
+        row.getCell(2).font = { bold: true, color: { argb: 'FFEF4444' } };
+      }
+      if (source === 'Master Data') {
+        row.getCell(3).font = { bold: true, color: { argb: 'FF2563EB' } };
+      }
+    };
+
+    // 2. Add Master Data Reference Sheet (Hidden or visible based on preference, here visible for clarity)
+    const masterSheet = workbook.addWorksheet('Master Data Reference');
+    masterSheet.addRow(['MASTER DATA REFERENCE']).font = { bold: true, size: 14 };
+    masterSheet.addRow(['Use these exact values in the Data sheet to avoid mismatches.']);
+    masterSheet.addRow([]);
+
+    const addMasterDataList = (title: string, values: string) => {
+      masterSheet.addRow([title]).font = { bold: true, color: { argb: 'FF2563EB' } };
+      const list = values.split(',').map(v => v.trim()).filter(Boolean);
+      list.forEach(v => masterSheet.addRow([v]));
+      masterSheet.addRow([]);
+    };
+
+    addMasterDataList('Entities', settings.masterEntities);
+    addMasterDataList('Departments', settings.masterDepartments);
+    addMasterDataList('Task Types', settings.masterTaskTypes);
+    addMasterDataList('Frequencies', settings.masterFrequencies);
+    addMasterDataList('Finance Functions (Request Types)', settings.masterRequestTypes);
+    addMasterDataList('Payment Types', settings.masterPaymentTypes);
+
+    // 3. Add Main Data Sheet
     const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : type === 'employees' ? 'Employees' : 'PaymentsMaster';
     const worksheet = workbook.addWorksheet(sheetName);
     
     if (type === 'tasks') {
+      addIns('Task Name', 'Mandatory', 'User Input', 'The name or title of the task.');
+      addIns('Entity', 'Mandatory', 'Master Data', 'Must match one of the values in Master Data sheet.');
+      addIns('Type', 'Optional', 'Master Data', 'The category of task (e.g. GST, TDS).');
+      addIns('Dept', 'Optional', 'Master Data', 'Target department.');
+      addIns('Requester', 'Optional', 'User Input', 'Person requesting the task.');
+      addIns('Owner', 'Optional', 'User Input', 'Assigned owner email or name.');
+      addIns('Reviewer', 'Optional', 'User Input', 'Assigned reviewer email or name.');
+      addIns('Due Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY (e.g. 25-12-2026)');
+
       worksheet.columns = [
         { header: 'Task Name', key: 'taskName', width: 25 },
         { header: 'Entity', key: 'entityName', width: 20 },
@@ -879,6 +933,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       ];
       worksheet.addRow(['Sample Task', 'Intellicar-BLR', 'Daily', 'Finance', 'Manager Name', 'Owner Name', 'Reviewer Name', '31-12-2026']);
     } else if (type === 'lo') {
+      addIns('Entity', 'Mandatory', 'Master Data', 'Must match one of the values in Master Data sheet.');
+      addIns('Date', 'Mandatory', 'User Input', 'Format: DD-MM-YYYY (e.g. 21-04-2026)');
+      addIns('LO Description', 'Mandatory', 'User Input', 'Details of the finding or mistake.');
+      addIns('Identified By', 'Optional', 'User Input', 'Person who spotted the error.');
+      addIns('Committed By', 'Optional', 'User Input', 'Person who committed the error.');
+      addIns('Resolution', 'Optional', 'User Input', 'Action taken to fix it.');
+
       worksheet.columns = [
         { header: 'Entity', key: 'entity', width: 20 },
         { header: 'Date (DD-MM-YYYY)', key: 'dateOfIdentification', width: 25 },
@@ -889,6 +950,20 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       ];
       worksheet.addRow(['Intellicar-BLR', '21-04-2026', 'Sample LO description...', 'Name A', 'Name B', 'Done']);
     } else if (type === 'recurring') {
+      addIns('Task Name Pattern', 'Mandatory', 'User Input', 'Use {{MONTH}}, {{YEAR}} placeholders.');
+      addIns('Entity Name', 'Optional', 'Master Data', 'Target entity.');
+      addIns('Task Type', 'Optional', 'Master Data', 'Category of task.');
+      addIns('Department', 'Optional', 'Master Data', 'Target department.');
+      addIns('Finance Function', 'Optional', 'Master Data', 'Departmental sub-function.');
+      addIns('Frequency', 'Mandatory', 'Master Data', 'M, Q, Y, W, D, etc.');
+      addIns('Day Offset', 'Optional', 'User Input', 'Date (1-31) or Day Index (0-6).');
+      addIns('Month Offset', 'Optional', 'User Input', 'Number of months to offset.');
+      addIns('Default Owner', 'Optional', 'User Input', 'Assigned owner.');
+      addIns('Default Reviewer', 'Optional', 'User Input', 'Assigned reviewer.');
+      addIns('Start Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY');
+      addIns('End Date', 'Optional', 'User Input', 'Format: DD-MM-YYYY');
+      addIns('Is Active', 'Optional', 'User Input', 'TRUE or FALSE');
+
       worksheet.columns = [
         { header: 'Task Name Pattern', key: 'taskNamePattern', width: 30 },
         { header: 'Entity Name', key: 'entityName', width: 20 },
@@ -922,6 +997,18 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         'Monthly'
       ]);
     } else if (type === 'payments') {
+      addIns('Entity Name', 'Mandatory', 'Master Data', 'Target entity.');
+      addIns('Description', 'Mandatory', 'User Input', 'Purpose of payment.');
+      addIns('Vendor Name', 'Optional', 'User Input', 'Beneficiary name.');
+      addIns('Payment Type', 'Optional', 'Master Data', 'Category of payment.');
+      addIns('Department', 'Optional', 'Master Data', 'Target department.');
+      addIns('Finance Function', 'Optional', 'Master Data', 'Sub-function.');
+      addIns('Frequency', 'Optional', 'Master Data', 'M, Q, Y, W, etc.');
+      addIns('Due Day', 'Optional', 'User Input', '1-31');
+      addIns('Weekly Day', 'Optional', 'User Input', 'Monday, Tuesday, etc.');
+      addIns('Owner', 'Optional', 'User Input', 'Assigned owner.');
+      addIns('Reviewer', 'Optional', 'User Input', 'Assigned reviewer.');
+
       worksheet.columns = [
         { header: 'Entity Name', key: 'entityName', width: 25 },
         { header: 'Description', key: 'paymentDescription', width: 30 },
@@ -943,6 +1030,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '01-04-2026', ''
       ]);
     } else if (type === 'employees') {
+      addIns('Employee ID', 'Mandatory', 'User Input', 'Unique employee identifier.');
+      addIns('Full Name', 'Mandatory', 'User Input', 'Official name.');
+      addIns('Email Address', 'Mandatory', 'User Input', 'Company email.');
+      addIns('Department', 'Optional', 'Master Data', 'Target department.');
+      addIns('Role', 'Optional', 'User Input', 'ADMIN, USER, or VIEWER.');
+
       worksheet.columns = [
         { header: 'Employee ID', key: 'employeeId', width: 15 },
         { header: 'Full Name', key: 'name', width: 25 },
@@ -954,9 +1047,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       worksheet.addRow(['EMP002', 'John Doe', 'john@intellicar.in', 'HR', 'USER']);
     }
 
+    // Set first sheet as active (Instructions)
+    workbook.views = [{ x: 0, y: 0, width: 10000, height: 20000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
+
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), `${type}_import_template.xlsx`);
   };
+
 
   const handleExcelBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const file = e.target.files?.[0];
@@ -965,7 +1062,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const workbook = new ExcelJS.Workbook();
     const arrayBuffer = await file.arrayBuffer();
     await workbook.xlsx.load(arrayBuffer);
-    const worksheet = workbook.getWorksheet(1);
+    
+    // Find the correct data sheet: 
+    // 1. Try index 3 (new templates)
+    // 2. If index 3 is missing or named 'Instructions', fallback to index 1 (old templates)
+    let worksheet = workbook.getWorksheet(3);
+    if (!worksheet || worksheet.name === 'Instructions' || worksheet.name === 'Master Data Reference') {
+      worksheet = workbook.getWorksheet(1);
+    }
+    
+    // Final check: if sheet 1 is still instructions, try sheet 2 or something, 
+    // but the logic above should handle most cases.
     
     const rows: any[] = [];
     const errors: { row: number, msg: string }[] = [];
