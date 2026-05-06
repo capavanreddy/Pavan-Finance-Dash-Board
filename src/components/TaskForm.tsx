@@ -354,21 +354,23 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                     <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Select Entities *</label>
-                    <button 
-                      type="button" 
-                      onClick={() => !(isEditing || initialData?.linkedRequestId) && handleSelectAll()}
-                      style={{ 
-                        fontSize: "0.7rem", 
-                        color: (isEditing || initialData?.linkedRequestId) ? t.textMuted : t.accent, 
-                        background: "none", 
-                        border: "none", 
-                        cursor: (isEditing || initialData?.linkedRequestId) ? "default" : "pointer", 
-                        fontWeight: 700, 
-                        textTransform: "uppercase" 
-                      }}
-                    >
-                      {selectedEntities.length === allowedEntities.length ? "Deselect All" : "Consolidate (Select All)"}
-                    </button>
+                    {!initialData?.linkedRequestId && (
+                      <button 
+                        type="button" 
+                        onClick={() => !isEditing && handleSelectAll()}
+                        style={{ 
+                          fontSize: "0.7rem", 
+                          color: isEditing ? t.textMuted : t.accent, 
+                          background: "none", 
+                          border: "none", 
+                          cursor: isEditing ? "default" : "pointer", 
+                          fontWeight: 700, 
+                          textTransform: "uppercase" 
+                        }}
+                      >
+                        {selectedEntities.length === allowedEntities.length ? "Deselect All" : "Consolidate (Select All)"}
+                      </button>
+                    )}
                   </div>
                   <div style={{ 
                     display: "grid", 
@@ -383,17 +385,25 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
                     pointerEvents: (isEditing || initialData?.linkedRequestId) ? "none" : "auto",
                     opacity: (isEditing || initialData?.linkedRequestId) ? 0.9 : 1
                   }}>
-                    {allowedEntities.map(entity => (
-                      <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: isEditing ? "default" : "pointer", padding: "4px", borderRadius: "4px", color: t.text }}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedEntities.includes(entity)} 
-                          onChange={() => !isEditing && handleEntityToggle(entity)}
-                          style={{ width: "16px", height: "16px", accentColor: t.accent }}
-                        />
-                        {entity}
-                      </label>
-                    ))}
+                    {allowedEntities
+                      .filter(entity => {
+                        // During conversion, only show the pre-filled entity
+                        if (!!initialData?.linkedRequestId) {
+                          return entity === initialData.entityName;
+                        }
+                        return true;
+                      })
+                      .map(entity => (
+                        <label key={entity} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8125rem", cursor: (isEditing || initialData?.linkedRequestId) ? "not-allowed" : "pointer", padding: "4px", borderRadius: "4px", color: t.text }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedEntities.includes(entity)} 
+                            onChange={() => !(isEditing || initialData?.linkedRequestId) && handleEntityToggle(entity)}
+                            style={{ width: "16px", height: "16px", accentColor: t.accent }}
+                          />
+                          {entity}
+                        </label>
+                      ))}
                   </div>
                 </div>
                 <div>
