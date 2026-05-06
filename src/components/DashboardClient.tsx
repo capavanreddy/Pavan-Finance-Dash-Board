@@ -5457,9 +5457,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </thead>
                   <tbody>
                     {extReqLoading ? (
-                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading requests...</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 11 : 10} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading requests...</td></tr>
                     ) : sortedExternalRequests.length === 0 ? (
-                      <tr><td colSpan={canAllocateAnything ? 8 : 7} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No requests found.</td></tr>
+                      <tr><td colSpan={canAllocateAnything ? 11 : 10} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No requests found.</td></tr>
                     ) : (
                       sortedExternalRequests.map((req, idx) => {
                         const matrix = JSON.parse(settings.allocationMatrix || '{}');
@@ -5556,6 +5556,54 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   </div>
                                 )}
                             </td>
+                            <td style={getTdStyle(t)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "0.75rem", color: req.processedMode ? "#0f172a" : "#94a3b8" }}>
+                                  {req.processedMode || "N/A"}
+                                </span>
+                                {req.processedMailLink && (
+                                  <a 
+                                    href={req.processedMailLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    title="View Mail Link"
+                                    style={{ color: "#4f46e5", display: "flex", alignItems: "center" }}
+                                  >
+                                    <ExternalLink size={14} />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                                {(() => {
+                                  let attachments = [];
+                                  try {
+                                    attachments = typeof req.processedAttachments === 'string' 
+                                      ? JSON.parse(req.processedAttachments) 
+                                      : (req.processedAttachments || []);
+                                  } catch (e) {
+                                    attachments = [];
+                                  }
+                                  if (!Array.isArray(attachments)) attachments = [];
+                                  return attachments.length > 0 ? (
+                                    attachments.map((file: any, idx: number) => (
+                                      <a 
+                                        key={idx}
+                                        href={file.data}
+                                        download={file.name}
+                                        title={`Download ${file.name}`}
+                                        style={{ color: "#4f46e5", background: "#f5f3ff", padding: "4px", borderRadius: "4px" }}
+                                      >
+                                        <Download size={14} />
+                                      </a>
+                                    ))
+                                  ) : (
+                                    <span style={{ color: "#cbd5e1" }}>N/A</span>
+                                  );
+                                })()}
+                              </div>
+                            </td>
                             {canAllocateAnything && (
                               <td style={getTdStyle(t)}>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -5591,7 +5639,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     </div>
                                   )}
 
-                                  {isAuthorizedAllocator && (
+                                  {isAdmin && (
                                     <button 
                                       onClick={() => handleDeleteExtRequest(req.id)}
                                       style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
@@ -5604,8 +5652,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </div>
                               </td>
                             )}
-                            <td style={getTdStyle(t)}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                 <span style={{ fontSize: "0.75rem", color: req.processedMode ? "#0f172a" : "#94a3b8" }}>
                                   {req.processedMode || "N/A"}
                                 </span>
