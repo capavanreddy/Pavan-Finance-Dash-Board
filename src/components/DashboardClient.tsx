@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
-import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User } from "lucide-react";
+import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard } from "lucide-react";
 import RecurringActivities from "@/components/RecurringActivities";
 import PaymentsCalendar from "@/components/PaymentsCalendar";
 import ExcelJS from "exceljs";
@@ -14,6 +14,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
 import { COMPLETION_STATUSES } from "@/lib/taskUtils";
+import MultiSelectFilter from "@/components/MultiSelectFilter";
+import PaymentRequestPortal from "@/components/PaymentRequestPortal";
 
 type Task = {
   id: number;
@@ -47,6 +49,14 @@ type Task = {
   frequency: string | null;
   displayId: string | null;
   captureLO?: string;
+  trackingStatus?: string;
+  isApproved?: boolean;
+  completedSubmissionAt?: string | null;
+  reviewedSubmissionAt?: string | null;
+  processedSubmissionAt?: string | null;
+  completedBy?: string | null;
+  reviewedBy?: string | null;
+  processedBy?: string | null;
 };
 
 type ExternalRequest = {
@@ -88,6 +98,7 @@ type LearningOpportunity = {
   deleteRequested?: boolean;
   deleteRequestReason?: string | null;
   createdByEmail?: string | null;
+  taskId?: number | null;
 };
 
 const hours12 = Array.from({ length: 12 }, (_, i) => String(i + 1));
@@ -142,20 +153,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [activeValue, setActiveValue] = useState("");
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_ACTION' | 'PENDING_REVIEW' | 'PENDING_STATUS_UPDATE' | 'COMPLETED'>('ALL');
-  const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS' | 'PAYMENTS'>('HOME');
+  const [activeView, setActiveView] = useState<'HOME' | 'TASKS' | 'RECURRING' | 'LOS' | 'PAYMENTS' | 'PAYMENT_REQUESTS'>('HOME');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showLOForm, setShowLOForm] = useState(false);
   const [los, setLos] = useState<LearningOpportunity[]>([]);
   const [loLoading, setLoLoading] = useState(false);
-  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION'>('ACCOUNT');
-  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | ''>('');
+  const [activeOptionsTab, setActiveOptionsTab] = useState<'USERS' | 'MAILS' | 'SCHEDULE' | 'EDIT_REQUESTS' | 'LO_REPORT' | 'ACCOUNT' | 'DATA' | 'MASTER_DATA' | 'MATRICES' | 'HOME_HUB' | 'MASTER_RESET' | 'AUTOMATION' | 'TASK_APPROVALS'>('ACCOUNT');
+  const [activeMatrixTab, setActiveMatrixTab] = useState<'ACCESS' | 'ALLOCATION' | 'ENTITY' | 'USER_CONTROLS' | 'BULK_IMPORT_MATRIX' | 'DEPT_HEADS' | ''>('');
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
   const [showLearningFlyout, setShowLearningFlyout] = useState(false);
   const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
+  const [showPaymentsFlyout, setShowPaymentsFlyout] = useState(false);
   const [settings, setSettings] = useState({
     reminderFrequency: 'D',
     reminderTimes: '09:00,18:00',
@@ -171,6 +183,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     paymentReportFrequency: 'OFF',
     paymentReportTimes: '10:00',
     paymentReportEmail: '',
+    paymentReportDay: 'Monday',
+    paymentReportDate: 1,
     masterDepartments: 'SW - Engineering,Manufacturing and Supply Chain,Field Operations Technicians,HW - Engineering,Operations,CSM & Sales,Finance,HR and Admin,External People',
     masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
     masterTaskTypes: 'Accounts Receivable,Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assements & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
@@ -185,7 +199,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     masterFrequencies: 'Ad,M,Y,2Y,H,Q,W,BW,D',
     masterPaymentTypes: 'AMC,Rent,Electricity,Subscriptions,Salaries,Vendor Payment',
     masterResourceCategories: 'Goods & Service Tax,Income Tax,Audit,ROC,IND AS,Miscellaneous',
-    userModuleExceptions: '{}'
+    userModuleExceptions: '{}',
+    bulkImportMatrix: '{}',
+    masterBankAccounts: '',
+    departmentHeadMatrix: '{}'
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -205,6 +222,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [editingLO, setEditingLO] = useState<LearningOpportunity | null>(null);
+  const [selectedTaskForView, setSelectedTaskForView] = useState<Task | null>(null);
 
   // Universal Navigation Watcher: Persists view state and handles menu auto-collapse
   useEffect(() => {
@@ -214,6 +232,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (activeView !== 'TASKS' && activeView !== 'RECURRING') {
       setIsTasksMenuOpen(false);
     }
+
+    // Reset flyouts on view change
+    setShowWorkplaceFlyout(false);
+    setShowLearningFlyout(false);
+    setShowPaymentsFlyout(false);
     
     // Persist active view
     localStorage.setItem('finpulse_active_view', activeView);
@@ -289,10 +312,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
   // Sorting and Filtering State
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
-  const [taskEntityFilter, setTaskEntityFilter] = useState("ALL");
-  const [taskOwnerFilter, setTaskOwnerFilter] = useState("ALL");
-  const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
-  const [taskReviewerFilter, setTaskReviewerFilter] = useState("ALL");
+  const [taskEntityFilter, setTaskEntityFilter] = useState<string[]>([]);
+  const [taskOwnerFilter, setTaskOwnerFilter] = useState<string[]>([]);
+  const [taskStatusFilter, setTaskStatusFilter] = useState<string[]>([]);
+  const [taskReviewerFilter, setTaskReviewerFilter] = useState<string[]>([]);
   const [taskSortConfig, setTaskSortConfig] = useState<{ key: keyof Task; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
 
   const [loSearchQuery, setLoSearchQuery] = useState("");
@@ -321,11 +344,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showExtReqForm, setShowExtReqForm] = useState(false);
   const [extReqFilter, setExtReqFilter] = useState<'ALL' | 'ALLOCATION' | 'PROCESS' | 'PROCESSED' | 'REJECTED' | 'CONVERT_PENDING'>('ALL');
   const [extReqSearch, setExtReqSearch] = useState("");
-  const [matrixDeptFilter, setMatrixDeptFilter] = useState("ALL");
-  const [extReqStatusFilter, setExtReqStatusFilter] = useState("ALL");
-  const [loEntityFilter, setLoEntityFilter] = useState("ALL");
-  const [loIdentifiedByFilter, setLoIdentifiedByFilter] = useState("ALL");
-  const [loCommittedByFilter, setLoCommittedByFilter] = useState("ALL");
+  const [matrixDeptFilter, setMatrixDeptFilter] = useState<string[]>([]);
+  const [extReqStatusFilter, setExtReqStatusFilter] = useState<string[]>([]);
+  const [loEntityFilter, setLoEntityFilter] = useState<string[]>([]);
+  const [loIdentifiedByFilter, setLoIdentifiedByFilter] = useState<string[]>([]);
+  const [loCommittedByFilter, setLoCommittedByFilter] = useState<string[]>([]);
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO' | 'PAYMENT' | 'DELETE_PAYMENT'>('TASK_EDIT');
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
@@ -335,7 +358,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [extReqSortConfig, setExtReqSortConfig] = useState<{ key: keyof ExternalRequest; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [extReqDateFrom, setExtReqDateFrom] = useState("");
   const [extReqDateTo, setExtReqDateTo] = useState("");
-  const [extReqFinanceFunctionFilter, setExtReqFinanceFunctionFilter] = useState("ALL");
+  const [extReqFinanceFunctionFilter, setExtReqFinanceFunctionFilter] = useState<string[]>([]);
   const [userSortConfig, setUserSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [showLOCaptureModal, setShowLOCaptureModal] = useState(false);
   const [loCaptureForm, setLOCaptureForm] = useState({
@@ -407,6 +430,22 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   
   const canAllocateAnything = (isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && !isViewer;
 
+  const canImport = isAdmin || (() => {
+    try {
+      const matrix = JSON.parse(settings?.bulkImportMatrix || '{}');
+      return matrix[user.id]?.length > 0 || matrix[user.email]?.length > 0;
+    } catch (e) { return false; }
+  })();
+
+  const canShowControlCenter = isAdmin || canImport;
+
+  const toIsoDate = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const handlePresetChange = (preset: string) => {
     setDateFilterPreset(preset);
     const today = new Date();
@@ -441,26 +480,34 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       end = new Date(lastFyStartYear + 1, 2, 31); // March 31
     }
 
-  const canImport = isAdmin || (() => {
-    try {
-      const matrix = JSON.parse(settings?.bulkImportMatrix || '{}');
-      return matrix[user.id]?.length > 0 || matrix[user.email]?.length > 0;
-    } catch (e) { return false; }
-  })();
-
-  const canShowControlCenter = isAdmin || canImport;
 
     setStartDate(toIsoDate(start));
     setEndDate(toIsoDate(end));
   };
 
 
-  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string; isSuspended?: boolean }>>({});
+  const [pendingUserUpdates, setPendingUserUpdates] = useState<Record<string, { role?: string; department?: string; isSuspended?: boolean; employeeId?: string }>>({});
   const [isSavingUsers, setIsSavingUsers] = useState(false);
   
+  // Add Employee States
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [newEmployeeData, setNewEmployeeData] = useState({
+    employeeId: '',
+    name: '',
+    email: '',
+    department: '',
+    role: 'USER'
+  });
+
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userDeptFilter, setUserDeptFilter] = useState("ALL");
+  const [userRoleFilter, setUserRoleFilter] = useState("ALL");
+
   // New Filters
-  const [taskTypeFilter, setTaskTypeFilter] = useState<'ALL' | 'INTERNAL' | 'EXTERNAL'>('ALL');
-  const [requestTypeFilter, setRequestTypeFilter] = useState<'ALL' | 'ORIGINAL' | 'TRANSFERRED'>('ALL');
+  const [taskTypeFilter, setTaskTypeFilter] = useState<string[]>([]);
+  const [taskDeptFilter, setTaskDeptFilter] = useState<string[]>([]);
+  const [requestTypeFilter, setRequestTypeFilter] = useState<string[]>([]);
 
   const fetchTasks = async () => {
     try {
@@ -811,9 +858,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }
   };
 
-  const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments') => {
+  const downloadBulkTemplate = async (type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const workbook = new ExcelJS.Workbook();
-    const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : 'PaymentsMaster';
+    const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : type === 'employees' ? 'Employees' : 'PaymentsMaster';
     const worksheet = workbook.addWorksheet(sheetName);
     
     if (type === 'tasks') {
@@ -892,13 +939,23 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       worksheet.addRow([
         'Intellicar-BLR', 'Office Rent', 'Landlord Name', 'Rent', 'Finance', 'Payroll', 'M', '5', '', 'vendor@example.com', 'production@intellicar.in', 'Pavan Reddy', '', '01-04-2026', ''
       ]);
+    } else if (type === 'employees') {
+      worksheet.columns = [
+        { header: 'Employee ID', key: 'employeeId', width: 15 },
+        { header: 'Full Name', key: 'name', width: 25 },
+        { header: 'Email Address', key: 'email', width: 30 },
+        { header: 'Department', key: 'department', width: 20 },
+        { header: 'Role (ADMIN/USER/VIEWER)', key: 'role', width: 25 },
+      ];
+      worksheet.addRow(['EMP001', 'Pavan Reddy', 'pavanreddy@intellicar.in', 'Finance', 'ADMIN']);
+      worksheet.addRow(['EMP002', 'John Doe', 'john@intellicar.in', 'HR', 'USER']);
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), `${type}_import_template.xlsx`);
   };
 
-  const handleExcelBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tasks' | 'lo' | 'recurring' | 'payments') => {
+  const handleExcelBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tasks' | 'lo' | 'recurring' | 'payments' | 'employees') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -984,6 +1041,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           startDate: parseExcelDate(values[14]),
           endDate: parseExcelDate(values[15]),
         });
+      } else if (type === 'employees') {
+        checkRequired(1, "Employee ID");
+        checkRequired(2, "Full Name");
+        checkRequired(3, "Email Address");
+        rows.push({
+          employeeId: values[1],
+          name: values[2],
+          email: values[3],
+          department: values[4] || "Finance",
+          role: values[5] || "USER",
+        });
       }
     });
 
@@ -1005,12 +1073,17 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         type === 'tasks' ? '/api/tasks/bulk' : 
         type === 'lo' ? '/api/lo/bulk' : 
         type === 'payments' ? '/api/payments/bulk-import' :
+        type === 'employees' ? '/api/users/bulk-import' :
         '/api/recurring-templates/bulk';
       
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(type === 'payments' ? { items: rows } : rows)
+        body: JSON.stringify(
+          type === 'payments' ? { items: rows } : 
+          type === 'employees' ? { employees: rows } : 
+          rows
+        )
       });
 
       if (res.ok) {
@@ -1018,6 +1091,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setImportPreview(null);
         if (type === 'tasks') fetchTasks(); 
         else if (type === 'lo') fetchLOs();
+        else if (type === 'employees') fetchUsersList();
         else fetchTasks(); // Refresh for recurring/payments
       } else {
         const errorData = await res.json();
@@ -1100,41 +1174,62 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     });
   };
 
-  const handleResetUserPassword = async (userId: number, userName: string) => {
-    showPrompt(`Enter new password for ${userName}:`, async (newPassword: string) => {
-      if (!newPassword || newPassword.trim().length < 6) {
-        showNotification("Password must be at least 6 characters.", "error");
-        return;
-      }
-      setPasswordLoading(true);
+  const handleResetUserPassword = async (userId: string, userName: string) => {
+    showConfirm(`Send a password reset link to ${userName}?`, async () => {
       try {
-        const res = await fetch(`/api/users/${userId}/reset-password`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newPassword: newPassword.trim() })
+        const res = await fetch(`/api/users/${userId}/reset-password-email`, {
+          method: "POST"
         });
         if (res.ok) {
-          showNotification(`Password for ${userName} reset successfully!`);
+          showNotification(`Password reset link sent to ${userName}'s email.`, "success");
         } else {
-          const data = await res.json();
-          showNotification(`Error: ${data.error || "Failed to reset password"}`, "error");
+          showNotification("Failed to send reset link.", "error");
         }
       } catch (error) {
-        console.error("Error resetting password:", error);
-        showNotification("Network error. Failed to reset password.", "error");
-      } finally {
-        setPasswordLoading(false);
+        console.error("Reset failed", error);
+        showNotification("Failed to send reset link.", "error");
       }
-    }, "Intellicar@123");
+    });
+  };
+
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmployeeData.name || !newEmployeeData.email || !newEmployeeData.department) {
+      showNotification("Please fill in all required fields.", "error");
+      return;
+    }
+
+    setIsAddingEmployee(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEmployeeData)
+      });
+
+      if (res.ok) {
+        showNotification("Employee added successfully! Default password is: Intellicar@123", "success");
+        setShowAddEmployeeModal(false);
+        setNewEmployeeData({ employeeId: '', name: '', email: '', department: '', role: 'USER' });
+        fetchUsersList();
+      } else {
+        const data = await res.json();
+        showNotification(`Error: ${data.message || "Failed to add employee"}`, "error");
+      }
+    } catch (error) {
+      console.error("Add employee failed", error);
+      showNotification("Network error. Failed to add employee.", "error");
+    } finally {
+      setIsAddingEmployee(false);
+    }
   };
 
   const handleApproveUser = async (id: string) => {
     showConfirm("Approve this user for access?", async () => {
       try {
-        const res = await fetch("/api/admin/users/approve", {
+        const res = await fetch(`/api/admin/users/${id}/approve`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: id }),
         });
         if (res.ok) {
           showNotification("User approved successfully.");
@@ -1255,6 +1350,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }));
   };
 
+  const handleUpdateUserEmployeeId = (userId: string, employeeId: string) => {
+    setPendingUserUpdates(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], employeeId }
+    }));
+  };
+
   const handleUpdate = async (taskId: number, field: string, value: string) => {
     try {
       const task = tasks.find(t => t.id === taskId);
@@ -1287,6 +1389,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         }
       }
 
+      // Validation: Completion date / Review date cannot be in the future
+      if (field === 'completionDate' || field === 'reviewCompletionDate') {
+        if (value) {
+           const inputDate = new Date(value);
+           const today = new Date();
+           inputDate.setHours(0,0,0,0);
+           today.setHours(0,0,0,0);
+           if (inputDate > today) {
+             showNotification(`Error: ${field === 'completionDate' ? 'Completion' : 'Review'} date cannot be a future date.`, "error");
+             setEditingCell(null);
+             return;
+           }
+        }
+      }
+
       // Review Status Automation
       if (field === 'taskStatus' || field === 'completionDate') {
         if (isTaskFinished && currentTask && rName !== 'Not Applicable' && rName !== 'N/A' && currentTask.reviewStatus === 'Task Pending From Owner') {
@@ -1296,6 +1413,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
       if (field === 'reviewCompletionDate') {
         if (value) {
+          // Validation: Review date must be >= Task Completion Date
+          if (task && task.completionDate) {
+            const tDate = new Date(task.completionDate);
+            const rDate = new Date(value);
+            
+            // Set both to midnight for pure date comparison
+            tDate.setHours(0, 0, 0, 0);
+            rDate.setHours(0, 0, 0, 0);
+
+            if (rDate < tDate) {
+              showNotification(`Error: Review completion date (${value}) cannot be before task completion date (${new Date(task.completionDate).toLocaleDateString()}).`, "error");
+              setEditingCell(null);
+              return;
+            }
+          }
           updates.reviewStatus = 'Completed';
         } else if (task && task.reviewerName !== 'Not Applicable' && task.reviewerName !== 'N/A') {
           updates.reviewStatus = 'Pending';
@@ -1310,10 +1442,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         fetchTasks();
       } else {
-        showNotification("Failed to update. You may not have permission.");
+        const errData = await res.json().catch(() => ({}));
+        showNotification(errData.message || "Failed to update. You may not have permission.", "error");
       }
-    } catch (error) {
-      console.error("Failed to update status", error);
+    } catch (error: any) {
+      showNotification("Network error or server unreachable", "error");
     }
     setEditingCell(null);
   };
@@ -1518,11 +1651,12 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setShowLOCaptureModal(false);
         fetchLOs(); // Refresh LO list
       } else {
-        showNotification("Failed to capture Learning Opportunity.");
+        const errData = await res.json().catch(() => ({}));
+        showNotification(`Failed to capture: ${errData.error || errData.message || res.statusText}`, "error");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to submit LO capture", error);
-      showNotification("An error occurred while saving the LO.");
+      showNotification(`Error: ${error.message || "Unknown error occurred"}`, "error");
     }
   };
 
@@ -1612,6 +1746,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
 
   const filteredTasksToDisplay = tasks.filter(t => {
+    // Basic Approval Filter
+    if (t.isApproved === false) return false;
+
     // 1. Status Filter (Metric Cards)
     let statusMatch = true;
     if (activeFilter === 'PENDING_ACTION') {
@@ -1659,16 +1796,24 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
     // 4. Dropdown Filters
     let dropdownMatch = true;
-    if (taskEntityFilter !== "ALL" && t.entityName !== taskEntityFilter) dropdownMatch = false;
-    if (taskOwnerFilter !== "ALL" && t.ownerName !== taskOwnerFilter) dropdownMatch = false;
-    if (taskStatusFilter !== "ALL" && t.taskStatus !== taskStatusFilter) dropdownMatch = false;
-    if (taskReviewerFilter !== "ALL" && t.reviewerName !== taskReviewerFilter) dropdownMatch = false;
+    if (taskEntityFilter.length > 0 && !taskEntityFilter.includes(t.entityName)) dropdownMatch = false;
+    if (taskDeptFilter.length > 0 && !taskDeptFilter.includes(t.departmentName)) dropdownMatch = false;
+    if (taskOwnerFilter.length > 0 && !taskOwnerFilter.includes(t.ownerName)) dropdownMatch = false;
+    if (taskStatusFilter.length > 0 && !taskStatusFilter.includes(t.taskStatus)) dropdownMatch = false;
+    if (taskReviewerFilter.length > 0 && !taskReviewerFilter.includes(t.reviewerName || "")) dropdownMatch = false;
     
     // 5. Task Type Filter
     const isActuallyExternal = !!t.linkedRequestId && t.departmentName !== "Finance";
     
-    if (taskTypeFilter === "INTERNAL" && isActuallyExternal) dropdownMatch = false;
-    if (taskTypeFilter === "EXTERNAL" && !isActuallyExternal) dropdownMatch = false;
+    if (taskTypeFilter.length > 0) {
+      if (taskTypeFilter.includes("INTERNAL") && taskTypeFilter.includes("EXTERNAL")) {
+        // Both selected = Show All (dropdownMatch remains true)
+      } else if (taskTypeFilter.includes("INTERNAL") && isActuallyExternal) {
+        dropdownMatch = false;
+      } else if (taskTypeFilter.includes("EXTERNAL") && !isActuallyExternal) {
+        dropdownMatch = false;
+      }
+    }
 
     return statusMatch && dateMatch && searchMatch && dropdownMatch;
   });
@@ -1689,8 +1834,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   });
 
   // Unique values for task filters
-  // Unique values for task filters
   const uniqueTaskEntities = Array.from(new Set(tasks.map(t => t.entityName))).sort();
+  const uniqueTaskDepts = Array.from(new Set(tasks.map(t => t.departmentName))).sort();
   const uniqueTaskOwners = Array.from(new Set(tasks.map(t => t.ownerName))).sort();
   const uniqueTaskStatuses = Array.from(new Set(tasks.map(t => t.taskStatus))).sort();
   const uniqueTaskReviewers = Array.from(new Set(tasks.map(t => t.reviewerName).filter((r): r is string => !!r && r !== "Not Applicable"))).sort();
@@ -1725,7 +1870,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
     // 3. Entity Filter
     let entityMatch = true;
-    if (loEntityFilter !== "ALL" && lo.entity !== loEntityFilter) entityMatch = false;
+    if (loEntityFilter.length > 0 && !loEntityFilter.includes(lo.entity)) entityMatch = false;
 
     // 4. Date Filter (Universal & Timezone-Safe)
     let dateMatch = true;
@@ -1740,11 +1885,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
     // 5. Identified By Filter
     let identifiedByMatch = true;
-    if (loIdentifiedByFilter !== "ALL" && lo.identifiedBy !== loIdentifiedByFilter) identifiedByMatch = false;
+    if (loIdentifiedByFilter.length > 0 && !loIdentifiedByFilter.includes(lo.identifiedBy)) identifiedByMatch = false;
 
     // 6. Committed By Filter
     let committedByMatch = true;
-    if (loCommittedByFilter !== "ALL" && lo.committedBy !== loCommittedByFilter) committedByMatch = false;
+    if (loCommittedByFilter.length > 0 && !loCommittedByFilter.includes(lo.committedBy)) committedByMatch = false;
 
     return typeMatch && searchMatch && entityMatch && dateMatch && identifiedByMatch && committedByMatch;
   });
@@ -1824,21 +1969,19 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           learnerComments: ackComments
         })
       });
+
       if (res.ok) {
-        showNotification("Learning acknowledged successfully!");
-        setShowAckModal(false);
-        setAckComments("");
+        showNotification("Learning Opportunity acknowledged successfully!");
         setAcknowledgingLO(null);
         fetchLOs();
       } else {
         const data = await res.json();
-        showNotification(data.message || "Failed to acknowledge", "error");
+        showNotification(data.message || "Acknowledgement failed", "error");
       }
-    } catch (error) {
-      console.error("Failed to acknowledge LO", error);
+    } catch (err) {
+      console.error("Bulk upload error", err);
     }
   };
-
   
   const generateLOReportData = () => {
     const filtered = los.filter(lo => {
@@ -2137,7 +2280,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
   };
 
   const filteredAndSortedUsers = useMemo(() => {
-    let items = [...usersList];
+    let items = usersList.filter(u => {
+      const matchesSearch = !userSearchQuery || 
+        (u.name?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+        (u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())) ||
+        ((u as any).employeeId?.toLowerCase().includes(userSearchQuery.toLowerCase()));
+      
+      const matchesDept = userDeptFilter === "ALL" || u.department === userDeptFilter;
+      const matchesRole = userRoleFilter === "ALL" || u.role === userRoleFilter;
+      
+      return matchesSearch && matchesDept && matchesRole;
+    });
+
     if (userSortConfig) {
       items.sort((a: any, b: any) => {
         let valA = a[userSortConfig.key] || "";
@@ -2152,7 +2306,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       });
     }
     return items;
-  }, [usersList, userSortConfig]);
+  }, [usersList, userSortConfig, userSearchQuery, userDeptFilter, userRoleFilter]);
 
   // Base visibility filter for External Requests
   const visibleExternalRequests = externalRequests.filter(r => {
@@ -2177,7 +2331,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       if (!r.natureOfRequest.toLowerCase().includes(q) && !r.requestFrom.toLowerCase().includes(q)) return false;
     }
     
-    if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter) return false;
+    if (extReqStatusFilter.length > 0 && !extReqStatusFilter.includes(r.status || "")) return false;
 
     if (extReqFilter === 'ALLOCATION') {
       return r.status === 'Pending' || !r.status || r.status === 'New';
@@ -2196,10 +2350,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     }
 
     // New Request Type Filter (Original vs Transferred)
-    if (requestTypeFilter === 'ORIGINAL' && r.transferStatus === 'T') return false;
-    if (requestTypeFilter === 'TRANSFERRED' && r.transferStatus !== 'T') return false;
+    if (requestTypeFilter.length > 0) {
+      if (requestTypeFilter.includes('ORIGINAL') && !requestTypeFilter.includes('TRANSFERRED') && r.transferStatus === 'T') return false;
+      if (requestTypeFilter.includes('TRANSFERRED') && !requestTypeFilter.includes('ORIGINAL') && r.transferStatus !== 'T') return false;
+    }
 
-    if (extReqFinanceFunctionFilter !== 'ALL' && r.requestType !== extReqFinanceFunctionFilter) return false;
+    if (extReqFinanceFunctionFilter.length > 0 && !extReqFinanceFunctionFilter.includes(r.requestType)) return false;
 
     if (extReqDateFrom && new Date(r.createdAt) < new Date(extReqDateFrom)) return false;
     if (extReqDateTo) {
@@ -2274,13 +2430,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       { width: 25 }, // Owner
       { width: 18 }, // Due Date
       { width: 18 }, // Completion Date
+      { width: 25 }, // Completed By
       { width: 18 }, // Status
       { width: 25 }, // Reviewer
       { width: 25 }, // Review Status
       { width: 18 }, // Review Date
+      { width: 25 }, // Reviewed By
       { width: 40 }, // Owner Comments
       { width: 40 }, // Reviewer Comments
-      { width: 30 }  // Mail Link
+      { width: 30 }, // Mail Link
+      { width: 20 }, // Origin
+      { width: 25 }, // Original Category
+      { width: 25 }, // Transferred By
+      { width: 25 }, // Processed By
+      { width: 20 }  // Processed At
     ];
 
     // Row 3: Column Headers (Dark Blue background, White text)
@@ -2288,8 +2451,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     const headers = [
       'SI No', 'Timestamp', 'Task Name', 'Entity', 'Type', 
       'Department', 'Requested By', 'Owner', 'Due Date', 
-      'Completion Date', 'Status', 'Reviewer', 'Review Status', 
-      'Review Date', 'Owner Comments', 'Reviewer Comments', 'Mail Link'
+      'Completion Date', 'Completed By', 'Status', 'Reviewer', 'Review Status', 
+      'Review Date', 'Reviewed By', 'Owner Comments', 'Reviewer Comments', 'Mail Link',
+      'Origin', 'Original Category', 'Transferred By', 'Processed By', 'Processed At'
     ];
     
     headers.forEach((h, i) => {
@@ -2319,13 +2483,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         t.ownerName,
         formatDate(t.dueDate),
         formatDate(t.completionDate),
+        t.completedBy || "N/A",
         t.taskStatus,
         t.reviewerName,
         t.reviewStatus,
         formatDate(t.reviewCompletionDate),
+        t.reviewedBy || "N/A",
         t.ownerComments || "",
         t.reviewerComments || "",
-        t.mailLink || ""
+        t.mailLink || "",
+        t.transferStatus === 'T' ? 'Transferred' : 'Original',
+        t.originalRequestType || "N/A",
+        t.requestFrom !== t.departmentName ? t.requestFrom : "N/A",
+        t.processedBy || "N/A",
+        t.processedSubmissionAt ? formatDateTime(t.processedSubmissionAt) : "N/A"
       ]);
       row.alignment = { vertical: 'middle', wrapText: true };
       row.eachCell((cell) => {
@@ -2447,16 +2618,21 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Task Status", "Reviewer", "Rev. Status"];
+    const tableColumn = ["ID", "Task Name", "Entity", "Owner", "Due Date", "Comp. Date", "Comp. By", "Status", "Reviewer", "Rev. Status", "Rev. Date", "Rev. By", "Processed By"];
     const tableRows = sortedTasks.map(t => [
-      t.id,
+      t.displayId || t.id,
       t.taskName,
       t.entityName,
       t.ownerName,
       formatDate(t.dueDate),
+      formatDate(t.completionDate),
+      t.completedBy || "N/A",
       t.taskStatus,
       t.reviewerName || "N/A",
-      t.reviewStatus
+      t.reviewStatus,
+      formatDate(t.reviewCompletionDate),
+      t.reviewedBy || "N/A",
+      t.processedBy || "N/A"
     ]);
 
     autoTable(doc, {
@@ -2494,17 +2670,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
     worksheet.columns = columns;
 
-    const filteredReqs = externalRequests.filter(r => {
-      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-      const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
-        userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
-      if (!isPrimaryAdmin && !isRelevantToUser) return false;
-      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
-      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
-         if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
-      }
-      return true;
-    });
+    const filteredReqs = sortedExternalRequests;
 
     sortedExternalRequests.forEach((r, idx) => {
       worksheet.addRow({
@@ -2534,20 +2700,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-    const filteredReqs = externalRequests.filter(r => {
-      const isPrimaryAdmin = isAdmin || (user as any).isAllocator;
-      const isRelevantToUser = (r.requesterEmail?.toLowerCase().trim() === user?.email?.toLowerCase().trim()) || 
-        userAllocatedDepts.some(dept => dept.toLowerCase() === r.requestType?.toLowerCase().trim());
-      if (!isPrimaryAdmin && !isRelevantToUser) return false;
-      if (extReqSearch && !r.natureOfRequest.toLowerCase().includes(extReqSearch.toLowerCase()) && !r.requestFrom.toLowerCase().includes(extReqSearch.toLowerCase())) return false;
-      if (extReqStatusFilter !== 'ALL' && r.status !== extReqStatusFilter && (extReqStatusFilter !== 'New' || (r.status !== 'New' && r.status !== ''))) {
-         if (extReqStatusFilter === 'New' && (r.status === 'New' || r.status === '' || !r.status)) {} else return false;
-      }
-      return true;
-    });
+    const filteredReqs = sortedExternalRequests;
 
     const tableColumn = ["Sl No.", "From", "Date", "Type", "Nature", "Status"];
-    if (isAdmin) tableColumn.push("Origin", "Original Function", "Transferred By");
+    if (isAdmin) tableColumn.push("Request Type", "Original Function", "Transferred By");
 
     const tableRows = sortedExternalRequests.map((r, idx) => {
       const row = [
@@ -2651,7 +2807,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const worksheet = workbook.addWorksheet("Requests");
           worksheet.addRow(['Shared Inter-Dept Requests Report']);
           const headers = ['Sl No.', 'Request From', 'Finance Function', 'Nature', 'Status'];
-          if (isAdmin) headers.push('Origin', 'Original Function', 'Transferred By');
+          if (isAdmin) headers.push('Request Type', 'Original Function', 'Transferred By');
           worksheet.addRow(headers);
           externalRequests.forEach((r, i) => {
             const row = [i+1, r.requestFrom, r.requestType, r.natureOfRequest, r.status];
@@ -2702,7 +2858,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           const doc = new jsPDF('landscape');
           doc.text("Shared Inter-Dept Requests Report", 14, 15);
           const headers = [["ID", "From", "Type", "Nature", "Status"]];
-          if (isAdmin) headers[0].push("Origin", "Original Function", "Transferred By");
+          if (isAdmin) headers[0].push("Request Type", "Original Function", "Transferred By");
           autoTable(doc, {
             head: headers,
             body: externalRequests.map(r => {
@@ -3205,20 +3361,81 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         )}
 
                         {canSeePayments && (
-                          <button 
-                            onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
-                            style={{ 
-                              display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
-                              background: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
-                              border: "none", color: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
-                              cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
-                              width: "100%", borderRadius: "16px",
-                              boxShadow: activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                            }}
+                          <div 
+                            style={{ width: "100%", position: "relative" }}
+                            onMouseEnter={() => setShowPaymentsFlyout(true)}
+                            onMouseLeave={() => setShowPaymentsFlyout(false)}
                           >
-                            <Wallet size={24} color={activeView === 'PAYMENTS' && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                            <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
-                          </button>
+                            <button 
+                              onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); }}
+                              style={{ 
+                                display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", 
+                                background: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "rgba(59, 130, 246, 0.15)" : "transparent", 
+                                border: "none", color: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8", 
+                                cursor: "pointer", padding: "16px 0", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", 
+                                width: "100%", borderRadius: "16px",
+                                boxShadow: (activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
+                              }}
+                            >
+                              <Wallet size={24} color={(activeView === 'PAYMENTS' || activeView === 'PAYMENT_REQUESTS') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
+                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Payments</span>
+                            </button>
+
+                            {/* Payments Flyout */}
+                            {showPaymentsFlyout && (
+                              <div style={{
+                                position: "absolute",
+                                left: "100%", 
+                                top: "-10px",
+                                width: "240px",
+                                paddingLeft: "20px", 
+                                zIndex: 1000,
+                                animation: "fadeInSlideRight 0.2s ease-out",
+                              }}>
+                                <div style={{
+                                  background: "rgba(15, 23, 42, 0.95)",
+                                  backdropFilter: "blur(16px)",
+                                  borderRadius: "16px",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  boxShadow: "20px 0 50px rgba(0, 0, 0, 0.4)",
+                                  padding: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                }}>
+                                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
+                                    Treasury Management
+                                  </div>
+                                  <button 
+                                    onClick={() => { setActiveView('PAYMENTS'); setActiveMainView('DASHBOARD'); setShowPaymentsFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'PAYMENTS' ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                                      color: activeView === 'PAYMENTS' ? "#60a5fa" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#60a5fa"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'PAYMENTS' ? "rgba(59, 130, 246, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'PAYMENTS' ? "#60a5fa" : "#e2e8f0"; }}
+                                  >
+                                    <Calendar size={16} /> Payments Calendar
+                                  </button>
+                                  <button 
+                                    onClick={() => { setActiveView('PAYMENT_REQUESTS'); setActiveMainView('DASHBOARD'); setShowPaymentsFlyout(false); }}
+                                    style={{ 
+                                      padding: "12px", borderRadius: "10px", border: "none", textAlign: "left", fontSize: "0.8125rem", fontWeight: 600,
+                                      background: activeView === 'PAYMENT_REQUESTS' ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                                      color: activeView === 'PAYMENT_REQUESTS' ? "#10b981" : "#e2e8f0",
+                                      cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "10px"
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#10b981"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = activeView === 'PAYMENT_REQUESTS' ? "rgba(16, 185, 129, 0.15)" : "transparent"; e.currentTarget.style.color = activeView === 'PAYMENT_REQUESTS' ? "#10b981" : "#e2e8f0"; }}
+                                  >
+                                    <CreditCard size={16} /> Payment Portal
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </>
                     );
@@ -3237,7 +3454,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             <RecurringActivities settings={settings} usersList={usersList} showNotification={showNotification} showConfirm={showConfirm} showPrompt={showPrompt} />
           )}
 
-          {activeView !== 'RECURRING' && (
+          {activeView === 'PAYMENT_REQUESTS' && (
+            <PaymentRequestPortal 
+              user={user} 
+              settings={settings} 
+              showNotification={showNotification} 
+              showConfirm={showConfirm} 
+              theme={theme}
+              t={t}
+            />
+          )}
+
+          {activeView !== 'RECURRING' && activeView !== 'PAYMENT_REQUESTS' && (
             <>
           {/* Active View Title/Context Area */}
           {(activeView as any) !== 'HOME' && !(activeView === 'LOS' && loActiveFilter === 'ANALYTICS') && (
@@ -3268,7 +3496,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
                     {activeView === 'TASKS' ? 
                       (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") :
-                     activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments." :
+                     activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments and Treasury obligations." :
                      "Turning challenges into structured growth opportunities."}
                   </p>
                 </div>
@@ -3377,38 +3605,47 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     zIndex: 1,
                     padding: "48px 32px", 
                     textAlign: "center", 
-                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
+                    background: "rgba(255, 255, 255, 0.8)", 
+                    backdropFilter: "blur(12px)",
                     borderRadius: "32px",
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                    border: "1px solid rgba(16, 185, 129, 0.2)",
+                    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
                     overflow: "hidden"
                   }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')", opacity: 0.05 }}></div>
-                    <Quote size={40} color="#3b82f6" style={{ marginBottom: "20px", opacity: 0.3 }} />
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(16, 185, 129, 0.02)", pointerEvents: "none" }}></div>
+                    <Quote size={40} color="#059669" style={{ marginBottom: "20px", opacity: 0.2 }} />
                     <h3 style={{ 
                       fontSize: "1.75rem", 
                       fontFamily: "'Outfit', serif", 
                       fontStyle: "italic", 
                       maxWidth: "900px", 
                       margin: "0 auto 24px auto", 
-                      color: "#f8fafc",
                       lineHeight: 1.4,
-                      fontWeight: 300,
+                      fontWeight: 600,
                       letterSpacing: "-0.01em"
                     }}>
-                      "{quote.text}"
+                      <span style={{ color: "#2563eb" }}>
+                        "Your work is going to fill a large part of your life,
+                      </span>
+                      <br />
+                      <span style={{ color: "#e11d48" }}>
+                        and the only way to be truly satisfied is to do what you believe is great work."
+                      </span>
                     </h3>
                     <div style={{ 
                       display: "inline-block",
                       padding: "8px 24px",
-                      background: "rgba(59, 130, 246, 0.1)",
+                      background: "rgba(16, 185, 129, 0.08)",
                       borderRadius: "20px",
-                      border: "1px solid rgba(59, 130, 246, 0.2)",
+                      border: "1px solid rgba(16, 185, 129, 0.2)",
                       fontWeight: 800, 
-                      color: "#60a5fa", 
+                      color: "#000000", 
                       textTransform: "uppercase", 
                       letterSpacing: "0.2em",
                       fontSize: "0.875rem"
-                    }}>— {quote.author}</div>
+                    }}>
+                      — {quote.author}
+                    </div>
                   </div>
 
                   {/* 3. Wall of Fame - Premium Floating Cards */}
@@ -3522,7 +3759,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           activeSubView === 'MAIN' ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "32px" }}>
               <MetricCard t={t} title="Total Tasks" value={tasks.length} icon={<LayoutDashboard size={20} color="#ffffff" />} bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" isActive={activeFilter === 'ALL'} onClick={() => setActiveFilter('ALL')} />
-              <MetricCard t={t} title="Pending Tasks" value={pendingActionCount} icon={<Clock size={20} color="#ffffff" />} bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" isActive={activeFilter === 'PENDING_ACTION'} onClick={() => setActiveFilter('PENDING_ACTION')} />
+              <MetricCard t={t} title="Pending Owner Tasks" value={pendingActionCount} icon={<Clock size={20} color="#ffffff" />} bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" isActive={activeFilter === 'PENDING_ACTION'} onClick={() => setActiveFilter('PENDING_ACTION')} />
               <MetricCard t={t} title="Pending Review" value={pendingReviewCount} icon={<AlertCircle size={20} color="#ffffff" />} bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" isActive={activeFilter === 'PENDING_REVIEW'} onClick={() => setActiveFilter('PENDING_REVIEW')} />
               <MetricCard t={t} title="Pending Status Update" value={pendingStatusUpdateCount} icon={<Share2 size={20} color="#ffffff" />} bg="linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)" isActive={activeFilter === 'PENDING_STATUS_UPDATE'} onClick={() => setActiveFilter('PENDING_STATUS_UPDATE')} />
               <MetricCard t={t} title="Fully Completed" value={completedCount} icon={<CheckCircle2 size={20} color="#ffffff" />} bg="linear-gradient(135deg, #10b981 0%, #059669 100%)" isActive={activeFilter === 'COMPLETED'} onClick={() => setActiveFilter('COMPLETED')} />
@@ -3807,665 +4044,710 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
         {activeView === 'TASKS' && activeSubView === 'MAIN' && (
           <div className="main-tasks-view">
-        {/* Action Toolbar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: t.card, padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: t.textMuted }}>Filter by Date:</span>
-            <select
-              value={dateFilterPreset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-              style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text, background: t.bg }}
-            >
-              <option value="ALL_TIME">All Time</option>
-              <option value="CURRENT_MONTH">Current Month</option>
-              <option value="LAST_MONTH">Last Month</option>
-              <option value="LAST_3_MONTHS">Last 3 Months</option>
-              <option value="LAST_6_MONTHS">Last 6 Months</option>
-              <option value="LAST_FY">Last Financial Year</option>
-              <option value="CUSTOM">Custom Range</option>
-            </select>
-
-            {dateFilterPreset === "CUSTOM" && (
-              <>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={e => setStartDate(e.target.value)}
-                  style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
-                />
-                <span style={{ color: t.textMuted }}>to</span>
-                <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={e => setEndDate(e.target.value)}
-                  style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
-                />
-                {(startDate || endDate) && (
-                  <button 
-                    onClick={() => { setStartDate(""); setEndDate(""); setDateFilterPreset("ALL_TIME"); }}
-                    style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}
-                  >
-                    Clear
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-          
-          <div className="download-container" style={{ position: "relative" }}>
-              <button 
-                onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
-                style={{ 
-                  display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
-                  padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
-                  cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
-                }} 
-                onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
-              >
-                <Download size={18} color="#2563eb" /> Download Report
-              </button>
-              
-              {showTaskDownloadDropdown && (
-                <div style={{ 
-                  position: "absolute", top: "100%", right: 0, marginTop: "8px", 
-                  background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
-                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
-                  minWidth: "160px", overflow: "hidden" 
-                }}>
-                  <button 
-                    onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
-                    style={{ 
-                      width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                      padding: "12px 16px", border: "none", background: t.card, 
-                      color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
-                      textAlign: "left", transition: "background 0.2s" 
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-                    onMouseOut={e => e.currentTarget.style.background = "white"}
-                  >
-                    <FileSpreadsheet size={16} color="#166534" /> Excel Format
-                  </button>
-                  <button 
-                    onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
-                    style={{ 
-                      width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                      padding: "12px 16px", border: "none", background: t.card, 
-                      color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
-                      textAlign: "left", transition: "background 0.2s" 
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-                    onMouseOut={e => e.currentTarget.style.background = "white"}
-                  >
-                    <FileText size={16} color="#991b1b" /> PDF Document
-                  </button>
-                  <div style={{ height: "1px", background: t.bg, margin: "4px 0" }}></div>
-                  <button 
-                    onClick={() => { 
-                      setShareData({...shareData, type: 'task', format: 'excel', subject: `Task Report - ${new Date().toISOString().split('T')[0]}`});
-                      setShowShareModal(true); 
-                      setShowTaskDownloadDropdown(false); 
-                    }}
-                    style={{ 
-                      width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                      padding: "12px 16px", border: "none", background: t.card, 
-                      color: "#2563eb", cursor: "pointer", fontSize: "0.875rem", 
-                      textAlign: "left", transition: "background 0.2s", fontWeight: 600
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
-                    onMouseOut={e => e.currentTarget.style.background = "white"}
-                  >
-                    <Share2 size={16} color="#2563eb" /> Share via Email
-                  </button>
-                </div>
-              )}
-          </div>
-        </div>
-          
-          {/* Filter Bar */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "16px", alignItems: "center" }}>
-            <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
-              <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
-              <input 
-                type="text" 
-                placeholder="Search tasks, types, entities, owners..." 
-                value={taskSearchQuery}
-                onChange={e => setTaskSearchQuery(e.target.value)}
-                style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg }} 
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <select 
-                value={taskEntityFilter} 
-                onChange={e => setTaskEntityFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted }}
-              >
-                <option value="ALL">All Entities</option>
-                {uniqueTaskEntities.map(e => <option key={e} value={e}>{e}</option>)}
-              </select>
-
-              <select 
-                value={taskOwnerFilter} 
-                onChange={e => setTaskOwnerFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted }}
-              >
-                <option value="ALL">All Owners</option>
-                {uniqueTaskOwners.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
-
-              <select 
-                value={taskStatusFilter} 
-                onChange={e => setTaskStatusFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted }}
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="Not Yet Due">Not Yet Due</option>
-                <option value="Due on Today">Due on Today</option>
-                <option value="Over Due">Over Due</option>
-                <option value="On-Time">On-Time</option>
-                <option value="Early Closure">Early Closure</option>
-                <option value="Delay in Closure">Delay in Closure</option>
-              </select>
-
-              <select 
-                value={taskReviewerFilter} 
-                onChange={e => setTaskReviewerFilter(e.target.value)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted }}
-              >
-                <option value="ALL">All Reviewers</option>
-                {uniqueTaskReviewers.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-
-              <select 
-                value={taskTypeFilter} 
-                onChange={e => setTaskTypeFilter(e.target.value as any)}
-                style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted, fontWeight: 600 }}
-              >
-                <option value="ALL">All Task Types</option>
-                <option value="INTERNAL">Internal Only</option>
-                <option value="EXTERNAL">External Only</option>
-              </select>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: `1px solid ${t.border}` }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rows:</span>
-                <select 
-                  value={itemsPerPage} 
-                  onChange={e => setItemsPerPage(Number(e.target.value))}
-                  style={{ border: "none", background: "transparent", fontWeight: 700, color: "#2563eb", outline: "none", cursor: "pointer" }}
+            {/* Action Toolbar */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", background: t.card, padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: t.textMuted }}>Filter by Date:</span>
+                <select
+                  value={dateFilterPreset}
+                  onChange={(e) => handlePresetChange(e.target.value)}
+                  style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text, background: t.bg }}
                 >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
+                  <option value="ALL_TIME">All Time</option>
+                  <option value="CURRENT_MONTH">Current Month</option>
+                  <option value="LAST_MONTH">Last Month</option>
+                  <option value="LAST_3_MONTHS">Last 3 Months</option>
+                  <option value="LAST_6_MONTHS">Last 6 Months</option>
+                  <option value="LAST_FY">Last Financial Year</option>
+                  <option value="CUSTOM">Custom Range</option>
                 </select>
+
+                {dateFilterPreset === "CUSTOM" && (
+                  <>
+                    <input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={e => setStartDate(e.target.value)}
+                      style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
+                    />
+                    <span style={{ color: t.textMuted }}>to</span>
+                    <input 
+                      type="date" 
+                      value={endDate} 
+                      onChange={e => setEndDate(e.target.value)}
+                      style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
+                    />
+                    {(startDate || endDate) && (
+                      <button 
+                        onClick={() => { setStartDate(""); setEndDate(""); setDateFilterPreset("ALL_TIME"); }}
+                        style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="download-container" style={{ position: "relative" }}>
+                  <button 
+                    onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
+                    style={{ 
+                      display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
+                      padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
+                      cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
+                    }} 
+                    onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
+                  >
+                    <Download size={18} color="#2563eb" /> Download Report
+                  </button>
+                  
+                  {showTaskDownloadDropdown && (
+                    <div style={{ 
+                      position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                      background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                      minWidth: "160px", overflow: "hidden" 
+                    }}>
+                      <button 
+                        onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
+                        style={{ 
+                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                          padding: "12px 16px", border: "none", background: t.card, 
+                          color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
+                          textAlign: "left", transition: "background 0.2s" 
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                        onMouseOut={e => e.currentTarget.style.background = "white"}
+                      >
+                        <FileSpreadsheet size={16} color="#166534" /> Excel Format
+                      </button>
+                      <button 
+                        onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
+                        style={{ 
+                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                          padding: "12px 16px", border: "none", background: t.card, 
+                          color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
+                          textAlign: "left", transition: "background 0.2s" 
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                        onMouseOut={e => e.currentTarget.style.background = "white"}
+                      >
+                        <FileText size={16} color="#991b1b" /> PDF Document
+                      </button>
+                      <div style={{ height: "1px", background: t.bg, margin: "4px 0" }}></div>
+                      <button 
+                        onClick={() => { 
+                          setShareData({...shareData, type: 'task', format: 'excel', subject: `Task Report - ${new Date().toISOString().split('T')[0]}`});
+                          setShowShareModal(true); 
+                          setShowTaskDownloadDropdown(false); 
+                        }}
+                        style={{ 
+                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                          padding: "12px 16px", border: "none", background: t.card, 
+                          color: "#2563eb", cursor: "pointer", fontSize: "0.875rem", 
+                          textAlign: "left", transition: "background 0.2s", fontWeight: 600
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
+                        onMouseOut={e => e.currentTarget.style.background = "white"}
+                      >
+                        <Share2 size={16} color="#2563eb" /> Share via Email
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
               
-          </div>
+            {/* Filter Bar */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "16px", alignItems: "center" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
+                <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search tasks, types, entities, owners..." 
+                  value={taskSearchQuery}
+                  onChange={e => setTaskSearchQuery(e.target.value)}
+                  style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg }} 
+                />
+              </div>
 
-        {/* Data Table */}
-        <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
-          <div style={{ minWidth: "1600px" }}>
-            <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
-              <thead>
-                <tr>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('displayId')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task ID {taskSortConfig?.key === 'displayId' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('createdAt')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Created At {taskSortConfig?.key === 'createdAt' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('entityName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Entity {taskSortConfig?.key === 'entityName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskType')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task Type {taskSortConfig?.key === 'taskType' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('frequency')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Frequency {taskSortConfig?.key === 'frequency' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestFrom')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Request From {taskSortConfig?.key === 'requestFrom' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Owner {taskSortConfig?.key === 'ownerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('dueDate')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Due Date {taskSortConfig?.key === 'dueDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('completionDate')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Completion Date {taskSortConfig?.key === 'completionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskStatus')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerName')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Reviewer {taskSortConfig?.key === 'reviewerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewCompletionDate')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Review Date {taskSortConfig?.key === 'reviewCompletionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewStatus')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Review Status {taskSortConfig?.key === 'reviewStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  {!isViewer && (
-                    <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('captureLO')}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        Capture LO? {taskSortConfig?.key === 'captureLO' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                      </div>
-                    </th>
-                  )}
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerComments')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Owner Comments {taskSortConfig?.key === 'ownerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerComments')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Reviewer Comments {taskSortConfig?.key === 'reviewerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestStatus')}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Request Status {taskSortConfig?.key === 'requestStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                    </div>
-                  </th>
-                  {!isViewer && (
-                    <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
-                ) : paginatedTasks.length === 0 ? (
-                  <tr><td colSpan={19} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
-                ) : (
-                  paginatedTasks.map((task) => {
-                    const currentUserName = user?.name || user?.email;
-                    const isCurrentUserOwner = task.ownerName === currentUserName;
-                    const isCurrentUserReviewer = task.reviewerName === currentUserName;
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <MultiSelectFilter
+                  options={uniqueTaskEntities}
+                  selected={taskEntityFilter}
+                  onChange={setTaskEntityFilter}
+                  placeholder="All Entities"
+                  theme={theme}
+                  t={t}
+                />
 
-                    const todayDate = new Date();
-                    todayDate.setHours(0, 0, 0, 0);
-                    const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < todayDate;
+                <MultiSelectFilter
+                  options={uniqueTaskDepts}
+                  selected={taskDeptFilter}
+                  onChange={setTaskDeptFilter}
+                  placeholder="All Departments"
+                  theme={theme}
+                  t={t}
+                />
 
-                    const isOwnerLocked = COMPLETION_STATUSES.includes(task.taskStatus) && !isAdmin;
-                    const isReviewerLocked = (task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin;
-                    
-                    const canEditReviewFields = (isAdmin || isCurrentUserReviewer) && !isViewer;
-                    const canEditOwnerFields = (isAdmin || isCurrentUserOwner) && !isViewer;
-                    
-                    return (
-                    <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
-                      <td style={getTdStyle(t)}><span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span></td>
-                      <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
-                      <td style={getTdStyle(t)}>{task.entityName}</td>
-                      <td style={{ ...getTdStyle(t), fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "300px", maxWidth: "600px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
-                      <td style={getTdStyle(t)}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
-                            {task.taskType}
-                          </span>
+                <MultiSelectFilter
+                  options={uniqueTaskOwners}
+                  selected={taskOwnerFilter}
+                  onChange={setTaskOwnerFilter}
+                  placeholder="All Owners"
+                  theme={theme}
+                  t={t}
+                />
+
+                <MultiSelectFilter
+                  options={["Not Yet Due", "Due on Today", "Over Due", "On-Time", "Early Closure", "Delay in Closure"]}
+                  selected={taskStatusFilter}
+                  onChange={setTaskStatusFilter}
+                  placeholder="All Statuses"
+                  theme={theme}
+                  t={t}
+                />
+
+                <MultiSelectFilter
+                  options={uniqueTaskReviewers}
+                  selected={taskReviewerFilter}
+                  onChange={setTaskReviewerFilter}
+                  placeholder="All Reviewers"
+                  theme={theme}
+                  t={t}
+                />
+
+                <MultiSelectFilter
+                  options={["INTERNAL", "EXTERNAL"]}
+                  selected={taskTypeFilter}
+                  onChange={setTaskTypeFilter}
+                  placeholder="All Task Types"
+                  theme={theme}
+                  t={t}
+                  labelMapping={{
+                    'INTERNAL': 'Internal Only',
+                    'EXTERNAL': 'External Only'
+                  }}
+                />
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: `1px solid ${t.border}` }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rows:</span>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={e => setItemsPerPage(Number(e.target.value))}
+                    style={{ border: "none", background: "transparent", fontWeight: 700, color: "#2563eb", outline: "none", cursor: "pointer" }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Table */}
+            <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)", overflowX: "auto", overflowY: "hidden" }} className="custom-scrollbar">
+              <div style={{ minWidth: "1600px" }}>
+                <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "0.875rem", textAlign: "left" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('displayId')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Task ID {taskSortConfig?.key === 'displayId' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
-                      </td>
-                      <td style={getTdStyle(t)}>
-                        <span style={{ 
-                          padding: "2px 6px", background: t.bg, color: t.textMuted, 
-                          borderRadius: "4px", fontSize: "0.7rem", fontWeight: 700, border: `1px solid ${t.border}` 
-                        }}>
-                          {task.frequency || "--"}
-                        </span>
-                      </td>
-                      <td style={getTdStyle(t)}>{task.requestFrom}</td>
-                      <td style={getTdStyle(t)}>{task.ownerName}</td>
-                      <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
-                      
-                      {/* Editable Completion Date */}
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: isOwnerLocked || !canEditOwnerFields ? "not-allowed" : "pointer", minWidth: "140px" }}
-                        onClick={() => { 
-                          if (isOwnerLocked || !canEditOwnerFields) return;
-                          setEditingCell({ id: task.id, field: "completionDate" }); 
-                          setEditValue(task.completionDate ? task.completionDate.split("T")[0] : ""); 
-                        }}
-                      >
-                        {editingCell?.id === task.id && editingCell.field === "completionDate" ? (
-                          <input 
-                            type="date"
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "completionDate", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "completionDate", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: isOverdue ? "inherit" : (task.completionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
-                            {formatDate(task.completionDate)}
-                            {(isOwnerLocked || !canEditOwnerFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditOwnerFields ? "Only Owner can edit" : "Task Completed"}>🔒</span>}
-                          </span>
-                        )}
-                      </td>
-
-                      <td 
-                        style={{ ...getTdStyle(t), fontWeight: 600, cursor: (isOwnerLocked || isViewer) ? "default" : "pointer" }}
-                        onClick={() => {
-                          if (isOwnerLocked || isViewer) return;
-                          if (COMPLETION_STATUSES.includes(task.taskStatus)) return;
-                          showConfirm(`Mark "${task.taskName}" as Completed?`, () => {
-                            handleUpdate(task.id, "taskStatus", "Completed");
-                          });
-                        }}
-                        title={!isOwnerLocked && !COMPLETION_STATUSES.includes(task.taskStatus) ? "Click to mark as completed" : ""}
-                      >
-                        {task.taskStatus}
-                      </td>
-                      <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
-                      
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields ? "not-allowed" : "pointer", minWidth: "140px" }}
-                        onClick={() => { 
-                          if (task.reviewerName === "Not Applicable" || isReviewerLocked || !canEditReviewFields) return;
-                          setEditingCell({ id: task.id, field: "reviewCompletionDate" }); 
-                          setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : ""); 
-                        }}
-                      >
-                        {task.reviewerName === "Not Applicable" ? (
-                          <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                        ) : editingCell?.id === task.id && editingCell.field === "reviewCompletionDate" ? (
-                          <input 
-                            type="date"
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "reviewCompletionDate", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "reviewCompletionDate", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: isOverdue ? "inherit" : (task.reviewCompletionDate ? "#0f172a" : "#cbd5e1"), fontWeight: isOverdue ? 700 : 500 }}>
-                            {formatDate(task.reviewCompletionDate)}
-                            {(isReviewerLocked || !canEditReviewFields) && task.reviewerName !== "Not Applicable" && <span style={{ marginLeft: "4px", fontSize: "10px" }} title={!canEditReviewFields ? "Only Reviewer can edit" : "Review Completed"}>🔒</span>}
-                          </span>
-                        )}
-                      </td>
-
-                      <td style={getTdStyle(t)}>
-                        <StatusPill t={t} 
-                          status={(task.reviewerName === "Not Applicable" || task.reviewerName === "N/A" || !task.reviewerName) ? "Review Not Required" : task.reviewStatus} 
-                          type="review" 
-                          taskId={task.id} 
-                          onUpdate={handleUpdate} 
-                          disabled={isReviewerLocked || !canEditReviewFields}
-                        />
-                      </td>
-
-                      {!isViewer && (
-                        <td style={getTdStyle(t)}>
-                          {task.reviewerName === "Not Applicable" ? (
-                            <span style={{ color: t.textMuted, fontWeight: 500 }}>N/A</span>
-                          ) : (isAdmin || isCurrentUserReviewer) && (task.reviewStatus === 'Completed') ? (
-                            <select 
-                              onChange={(e) => {
-                                if (e.target.value === 'YES') {
-                                  setLOCaptureForm({
-                                    ...loCaptureForm,
-                                    taskId: task.id,
-                                    entity: task.entityName || "",
-                                    dateOfIdentification: task.reviewCompletionDate ? task.reviewCompletionDate.split("T")[0] : new Date().toISOString().split("T")[0],
-                                    identifiedBy: task.reviewerName || "",
-                                    committedBy: task.ownerName || "",
-                                    learningOpportunity: "",
-                                    resolutionProvided: "",
-                                    modeOfCommunication: "Email",
-                                    comments: ""
-                                  });
-                                  setShowLOCaptureModal(true);
-                                }
-                              }}
-                              style={{ 
-                                padding: "4px 8px", borderRadius: "6px", border: `1px solid ${t.border}`, 
-                                fontSize: "0.75rem", fontWeight: 600, background: t.bg, color: t.textMuted, cursor: "pointer" 
-                              }}
-                            >
-                              <option value="NO">No</option>
-                              <option value="YES">Yes</option>
-                            </select>
-                          ) : (
-                            <span style={{ color: "#cbd5e1" }}>--</span>
-                          )}
-                        </td>
-                      )}
-                      
-                      {/* Editable Owner Comments */}
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: isOwnerLocked ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
-                        onClick={() => { 
-                          if (isOwnerLocked) return;
-                          setEditingCell({ id: task.id, field: "ownerComments" }); 
-                          setEditValue(task.ownerComments || ""); 
-                        }}
-                      >
-                        {editingCell?.id === task.id && editingCell.field === "ownerComments" ? (
-                          <input 
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "ownerComments", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "ownerComments", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: task.ownerComments ? "#475569" : "#cbd5e1" }}>{task.ownerComments || "Click to add..."}</span>
-                        )}
-                      </td>
-
-                      <td 
-                        style={{ ...getTdStyle(t), cursor: isReviewerLocked || !canEditReviewFields ? "not-allowed" : "text", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
-                        onClick={() => { 
-                          if (isReviewerLocked || !canEditReviewFields) return;
-                          setEditingCell({ id: task.id, field: "reviewerComments" }); 
-                          setEditValue(task.reviewerComments || ""); 
-                        }}
-                      >
-                        {editingCell?.id === task.id && editingCell.field === "reviewerComments" ? (
-                          <input 
-                            autoFocus
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleUpdate(task.id, "reviewerComments", editValue)}
-                            onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "reviewerComments", editValue)}
-                            style={getInputStyle(t)}
-                          />
-                        ) : (
-                          <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
-                            {task.reviewerComments || "Click to add..."}
-                            {(isReviewerLocked || !canEditReviewFields) && <span style={{ marginLeft: "4px", fontSize: "10px" }}>🔒</span>}
-                          </span>
-                        )}
-                      </td>
-                      <td style={getTdStyle(t)}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ 
-                            padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
-                            background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
-                            color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
-                            textAlign: "center", whiteSpace: "nowrap"
-                          }}>
-                            {task.requestStatus || "Pending"}
-                          </span>
-                          {isFinished(task) && task.requestStatus !== 'Processed' && 
-                           (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
-                           (isCurrentUserOwner || isAdmin) && (
-                            <button 
-                              onClick={async () => {
-                                // Update Task
-                                await handleUpdate(task.id, "requestStatus", "Processed");
-                                // Update External Request
-                                if (task.linkedRequestId) {
-                                  await handleUpdateExtRequestStatus(task.linkedRequestId, "Processed");
-                                }
-                                showNotification("Marked as Processed and Stakeholders notified!");
-                              }}
-                              style={{ 
-                                padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
-                                color: "white", border: "none", borderRadius: "4px", cursor: "pointer" 
-                              }}
-                            >
-                              Mark Processed
-                            </button>
-                          )}
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('createdAt')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Created At {taskSortConfig?.key === 'createdAt' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
-                      </td>
-
-                      {/* Delete / Request Edit / Request De Actions */}
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('entityName')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Entity {taskSortConfig?.key === 'entityName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskName')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Task Name {taskSortConfig?.key === 'taskName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('departmentName')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Dept {taskSortConfig?.key === 'departmentName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskType')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Task Type {taskSortConfig?.key === 'taskType' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('frequency')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Frequency {taskSortConfig?.key === 'frequency' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestFrom')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Requested From {taskSortConfig?.key === 'requestFrom' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('transferStatus')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request Type {taskSortConfig?.key === 'transferStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerName')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Owner {taskSortConfig?.key === 'ownerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('dueDate')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Due Date {taskSortConfig?.key === 'dueDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('completionDate')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Completion Date {taskSortConfig?.key === 'completionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('taskStatus')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Task Status {taskSortConfig?.key === 'taskStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerName')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Reviewer {taskSortConfig?.key === 'reviewerName' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewCompletionDate')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Review Date {taskSortConfig?.key === 'reviewCompletionDate' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewStatus')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Review Status {taskSortConfig?.key === 'reviewStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), textAlign: "center" }}>
+                        CAPTURE LO?
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('ownerComments')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Owner Comments {taskSortConfig?.key === 'ownerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('reviewerComments')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Reviewer Comments {taskSortConfig?.key === 'reviewerComments' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('requestStatus')}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Request Status {taskSortConfig?.key === 'requestStatus' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
                       {!isViewer && (
-                        <td style={{ ...getTdStyle(t), textAlign: "center" }}>
-                                                        <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
-                            {(isAdmin || task.editApproved) && (
-                               <button 
-                                 onClick={() => { setPreFilledTask(task); setShowForm(true); }}
-                                 style={{ 
-                                   background: t.bg, color: t.textMuted, border: `1px solid ${t.border}`, 
-                                   cursor: "pointer", padding: "6px", borderRadius: "8px", 
-                                   display: "flex", alignItems: "center", justifyContent: "center",
-                                   transition: "all 0.2s"
-                                  }}
-                                  title="Edit Task"
-                                  onMouseOver={e => { e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.borderColor = "#bfdbfe"; e.currentTarget.style.background = "#eff6ff"; }}
-                                  onMouseOut={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                             )}
-
-                               {isAdmin ? (
-                                 <button 
-                                   onClick={() => {
-                                     showConfirm(`Are you sure you want to delete "${task.taskName}"?`, async () => {
-                                        const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-                                        if (res.ok) {
-                                          setTasks(tasks.filter(t => t.id !== task.id));
-                                          showNotification("Task deleted successfully.");
-                                        } else {
-                                          showNotification("Failed to delete task.", "error");
-                                        }
-                                     });
-                                   }}
-                                   style={{ 
-                                     background: "#fef2f2", color: "#ef4444", border: "1px solid #fca5a5", 
-                                     cursor: "pointer", padding: "4px 8px", borderRadius: "6px", 
-                                     fontSize: "0.75rem", fontWeight: 500 
-                                   }}
-                                   title="Delete Task Directly"
-                                 >
-                                   Delete
-                                 </button>
-                               ) : (isCurrentUserOwner || isCurrentUserReviewer) ? (
-                                 <button 
-                                   onClick={() => handleRequestDelete(task.id)}
-                                   disabled={task.deleteRequested}
-                                   style={{ 
-                                     background: task.deleteRequested ? "#e2e8f0" : "#fef2f2", 
-                                     color: task.deleteRequested ? "#94a3b8" : "#ef4444", 
-                                     border: task.deleteRequested ? "1px solid #cbd5e1" : "1px solid #fca5a5", 
-                                     cursor: task.deleteRequested ? "not-allowed" : "pointer", 
-                                     padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
-                                   }}
-                                   title={task.deleteRequested ? "Delete Pending" : "Request Delete"}
-                                 >
-                                   {task.deleteRequested ? "Requested" : "Del Req"}
-                                 </button>
-                               ) : null}
-
-                               {(!isAdmin && !task.editApproved && (isCurrentUserOwner || isCurrentUserReviewer)) && (
-                                <button 
-                                  onClick={() => handleRequestEdit(task.id, isCurrentUserReviewer ? "REVIEWER" : "OWNER")}
-                                  disabled={task.editRequested}
-                                  style={{ 
-                                    background: task.editRequested ? "#e2e8f0" : (isCurrentUserReviewer ? "#fdf4ff" : "#eff6ff"), 
-                                    color: task.editRequested ? "#94a3b8" : (isCurrentUserReviewer ? "#d946ef" : "#3b82f6"), 
-                                    border: task.editRequested ? "1px solid #cbd5e1" : (isCurrentUserReviewer ? "1px solid #f5d0fe" : "1px solid #bfdbfe"), 
-                                    cursor: task.editRequested ? "not-allowed" : "pointer", 
-                                    padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
-                                  }}
-                                  title={task.editRequested ? "Edit Pending" : "Request Edit"}
-                                >
-                                  {task.editRequested ? "Requested" : "Edit Req"}
-                                </button>
-                               )}
-                            </div>
-                        </td>
+                        <th style={{ ...getThStyle(t), textAlign: "center" }}>Actions</th>
                       )}
                     </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-          
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: `1px solid ${t.border}`, background: t.bg }}>
-              <div style={{ fontSize: "0.875rem", color: t.textMuted }}>
-                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasksToDisplay.length)} of {filteredTasksToDisplay.length} tasks
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === 1 ? "#94a3b8" : "#0f172a", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
-                >
-                  <ChevronLeft size={16} /> Prev
-                </button>
-                <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px" }}>
-                  Page {currentPage} of {totalPages}
-                </div>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === totalPages ? "#94a3b8" : "#0f172a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
-                >
-                  Next <ChevronRight size={16} />
-                </button>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan={20} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
+                    ) : paginatedTasks.length === 0 ? (
+                      <tr><td colSpan={20} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
+                    ) : (
+                      paginatedTasks.map((task) => {
+                        const currentUserName = user?.name || user?.email;
+                        const isCurrentUserOwner = task.ownerName === currentUserName;
+                        const isCurrentUserReviewer = task.reviewerName === currentUserName;
+
+                        const todayDate = new Date();
+                        todayDate.setHours(0, 0, 0, 0);
+                        const isOverdue = task.taskStatus !== "Completed" && task.dueDate && new Date(task.dueDate) < todayDate;
+
+                        const isOwnerRestricted = (COMPLETION_STATUSES.includes(task.taskStatus) && !isAdmin) || (!isCurrentUserOwner && !isAdmin);
+                        const isReviewerRestricted = ((task.reviewStatus === "Completed" || task.reviewStatus === "Review Not Required") && !isAdmin) || (!isCurrentUserReviewer && !isAdmin);
+                        
+                        return (
+                          <tr key={task.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "all 0.2s", color: isOverdue ? "#ef4444" : "#334155", fontWeight: isOverdue ? 700 : 400 }} className="table-row">
+                            <td style={getTdStyle(t)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <button 
+                                  onClick={() => setSelectedTaskForView(task)}
+                                  style={{ background: "none", border: "none", color: "#6366f1", cursor: "pointer", padding: "4px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  title="View Task Details"
+                                  className="hover-bg-indigo-50"
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                <span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span>
+                              </div>
+                            </td>
+                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
+                            <td style={getTdStyle(t)}>{task.entityName}</td>
+                            <td style={{ ...getTdStyle(t), fontWeight: isOverdue ? 700 : 500, color: isOverdue ? "inherit" : "#0f172a", minWidth: "250px", maxWidth: "500px", whiteSpace: "normal", wordWrap: "break-word" }}>{task.taskName}</td>
+                            <td style={getTdStyle(t)}>
+                              <span style={{ padding: "4px 8px", background: "#f8fafc", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", border: "1px solid #e2e8f0" }}>
+                                {task.departmentName}
+                              </span>
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                <span style={{ padding: "4px 8px", background: t.bg, borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
+                                  {task.taskType}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <span style={{ 
+                                padding: "2px 6px", background: t.bg, color: t.textMuted, 
+                                borderRadius: "4px", fontSize: "0.7rem", fontWeight: 700, border: `1px solid ${t.border}` 
+                              }}>
+                                {task.frequency || "--"}
+                              </span>
+                            </td>
+                            <td style={getTdStyle(t)}>{task.requestFrom}</td>
+                            <td style={getTdStyle(t)}>
+                              <span style={{ 
+                                padding: "2px 6px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 700,
+                                background: task.transferStatus === 'T' ? "#fef3c7" : "#f1f5f9",
+                                color: task.transferStatus === 'T' ? "#b45309" : "#64748b"
+                              }}>
+                                {task.transferStatus === 'T' ? 'Transferred' : 'Original'}
+                              </span>
+                            </td>
+                            <td style={getTdStyle(t)}>{task.ownerName}</td>
+                            <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
+                              title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${new Date(task.completedSubmissionAt).toLocaleString()}\nBy: ${task.completedBy || "Unknown"}` : ""}
+                              onClick={() => {
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
+                                if (!isAdmin && !isCurrentUserOwner) return;
+                                setEditingCell({ id: task.id, field: 'completionDate' });
+                                setEditValue(task.completionDate ? task.completionDate.split('T')[0] : '');
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === 'completionDate' ? (
+                                <input 
+                                  type="date"
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, 'completionDate', editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, 'completionDate', editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                formatDate(task.completionDate)
+                              )}
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <StatusPill 
+                                status={task.taskStatus} 
+                                type="task" 
+                                taskId={task.id} 
+                                onUpdate={handleUpdate} 
+                                disabled={isOwnerRestricted}
+                                t={t}
+                                trackingStatus={task.trackingStatus}
+                              />
+                            </td>
+                            <td style={getTdStyle(t)}>{(task.reviewerName === "Not Applicable" || !task.reviewerName) ? <span style={{ color: t.textMuted }}>N/A</span> : task.reviewerName}</td>
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
+                              title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${new Date(task.reviewedSubmissionAt).toLocaleString()}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
+                              onClick={() => {
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
+                                if (!isAdmin && !isCurrentUserReviewer) return;
+                                setEditingCell({ id: task.id, field: 'reviewCompletionDate' });
+                                setEditValue(task.reviewCompletionDate ? task.reviewCompletionDate.split('T')[0] : '');
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === 'reviewCompletionDate' ? (
+                                <input 
+                                  type="date"
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, 'reviewCompletionDate', editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, 'reviewCompletionDate', editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                formatDate(task.reviewCompletionDate)
+                              )}
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <StatusPill 
+                                status={task.reviewStatus} 
+                                type="review" 
+                                taskId={task.id} 
+                                onUpdate={handleUpdate} 
+                                disabled={isReviewerRestricted}
+                                t={t}
+                              />
+                            </td>
+                            <td style={{ ...getTdStyle(t), textAlign: "center" }}>
+                              {task.reviewStatus === "Review Not Required" ? (
+                                <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
+                              ) : task.reviewStatus === "Completed" ? (
+                                los.some(lo => lo.taskId === task.id) ? (
+                                  <span style={{ 
+                                    padding: "4px 8px", 
+                                    borderRadius: "6px", 
+                                    fontSize: "0.75rem", 
+                                    fontWeight: 700, 
+                                    background: "rgba(16,185,129,0.1)", 
+                                    color: "#10b981",
+                                    display: "inline-block"
+                                  }}>
+                                    Captured
+                                  </span>
+                                ) : task.requestStatus === "Processed" ? (
+                                  <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
+                                ) : (
+                                  <select
+                                    value={task.captureLO || "No"}
+                                    disabled={!isAdmin && !isCurrentUserReviewer}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      const val = e.target.value;
+                                      if (val === "Yes") {
+                                        setLOCaptureForm({
+                                          ...loCaptureForm,
+                                          entity: task.entityName,
+                                          identifiedBy: task.reviewerName && task.reviewerName !== "Not Applicable" ? task.reviewerName : currentUserName || '',
+                                          committedBy: task.ownerName || '',
+                                          taskId: task.id,
+                                          dateOfIdentification: new Date().toISOString().split('T')[0]
+                                        });
+                                        setShowLOCaptureModal(true);
+                                      } else if (val === "No") {
+                                        handleUpdate(task.id, 'captureLO', 'No');
+                                      }
+                                    }}
+                                    style={{
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 600,
+                                      border: `1px solid ${t.border}`,
+                                      background: t.bg,
+                                      color: t.text,
+                                      cursor: (!isAdmin && !isCurrentUserReviewer) ? "not-allowed" : "pointer",
+                                      outline: "none"
+                                    }}
+                                  >
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                  </select>
+                                )
+                              ) : (
+                                <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
+                              )}
+                            </td>
+                            {/* Editable Owner Comments */}
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed")) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                              onClick={() => { 
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
+                                if (!isAdmin && !isCurrentUserOwner) return;
+                                setEditingCell({ id: task.id, field: "ownerComments" }); 
+                                setEditValue(task.ownerComments || ""); 
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === "ownerComments" ? (
+                                <input 
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, "ownerComments", editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "ownerComments", editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                <span style={{ color: task.ownerComments ? "#475569" : "#cbd5e1" }}>{task.ownerComments || "Click to add..."}</span>
+                              )}
+                            </td>
+
+                            <td 
+                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "text" : "not-allowed", minWidth: "200px", maxWidth: "380px", whiteSpace: "normal" }}
+                              onClick={() => { 
+                                if (task.requestStatus === "Processed" && !isAdmin) return;
+                                if (!isAdmin && !isCurrentUserReviewer) return;
+                                setEditingCell({ id: task.id, field: "reviewerComments" }); 
+                                setEditValue(task.reviewerComments || ""); 
+                              }}
+                            >
+                              {editingCell?.id === task.id && editingCell.field === "reviewerComments" ? (
+                                <input 
+                                  autoFocus
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={() => handleUpdate(task.id, "reviewerComments", editValue)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(task.id, "reviewerComments", editValue)}
+                                  style={getInputStyle(t)}
+                                />
+                              ) : (
+                                <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
+                                  {task.reviewerComments || "Click to add..."}
+                                </span>
+                              )}
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <span 
+                                  style={{ 
+                                    padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
+                                    background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
+                                    color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
+                                    textAlign: "center", whiteSpace: "nowrap"
+                                  }}
+                                  title={task.processedSubmissionAt ? `[Audit Log]\nProcessed: ${new Date(task.processedSubmissionAt).toLocaleString()}\nBy: ${task.processedBy || "Unknown"}` : ""}
+                                >
+                                  {task.requestStatus || "Pending"}
+                                </span>
+                                {isFinished(task) && task.requestStatus !== 'Processed' && 
+                                 (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
+                                 (isCurrentUserOwner || isAdmin) && (
+                                  <button 
+                                    onClick={async () => {
+                                      await handleUpdate(task.id, "requestStatus", "Processed");
+                                      showNotification("Marked as Processed and Stakeholders notified!");
+                                    }}
+                                    style={{ 
+                                      padding: "2px 6px", fontSize: "0.65rem", background: "#4f46e5", 
+                                      color: "white", border: "none", borderRadius: "4px", cursor: "pointer" 
+                                    }}
+                                  >
+                                    Mark Processed
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            
+                            {!isViewer && (
+                              <td style={{ ...getTdStyle(t), textAlign: "center" }}>
+                                <div style={{ display: "flex", gap: "8px", justifyContent: "center", alignItems: "center" }}>
+                                  {(isAdmin || task.editApproved) && (
+                                    <button 
+                                      onClick={() => { setPreFilledTask(task); setShowForm(true); }}
+                                      style={{ 
+                                        background: t.bg, color: t.textMuted, border: `1px solid ${t.border}`, 
+                                        cursor: "pointer", padding: "6px", borderRadius: "8px", 
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        transition: "all 0.2s"
+                                      }}
+                                      title="Edit Task"
+                                      onMouseOver={e => { e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.borderColor = "#bfdbfe"; e.currentTarget.style.background = "#eff6ff"; }}
+                                      onMouseOut={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#f8fafc"; }}
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                  )}
+
+                                  {isAdmin ? (
+                                    <button 
+                                      onClick={() => {
+                                        showConfirm(`Are you sure you want to delete "${task.taskName}"?`, async () => {
+                                          const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+                                          if (res.ok) {
+                                            setTasks(tasks.filter(t => t.id !== task.id));
+                                            showNotification("Task deleted successfully.");
+                                          } else {
+                                            showNotification("Failed to delete task.", "error");
+                                          }
+                                        });
+                                      }}
+                                      style={{ 
+                                        background: "#fef2f2", color: "#ef4444", border: "1px solid #fca5a5", 
+                                        cursor: "pointer", padding: "4px 8px", borderRadius: "6px", 
+                                        fontSize: "0.75rem", fontWeight: 500 
+                                      }}
+                                      title="Delete Task Directly"
+                                    >
+                                      Delete
+                                    </button>
+                                  ) : (isCurrentUserOwner || isCurrentUserReviewer) ? (
+                                    <button 
+                                      onClick={() => handleRequestDelete(task.id)}
+                                      disabled={task.deleteRequested}
+                                      style={{ 
+                                        background: task.deleteRequested ? "#e2e8f0" : "#fef2f2", 
+                                        color: task.deleteRequested ? "#94a3b8" : "#ef4444", 
+                                        border: task.deleteRequested ? "1px solid #cbd5e1" : "1px solid #fca5a5", 
+                                        cursor: task.deleteRequested ? "not-allowed" : "pointer", 
+                                        padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
+                                      }}
+                                      title={task.deleteRequested ? "Delete Pending" : "Request Delete"}
+                                    >
+                                      {task.deleteRequested ? "Requested" : "Del Req"}
+                                    </button>
+                                  ) : null}
+
+                                  {(!isAdmin && !task.editApproved && (isCurrentUserOwner || isCurrentUserReviewer)) && (
+                                    <button 
+                                      onClick={() => handleRequestEdit(task.id, isCurrentUserReviewer ? "REVIEWER" : "OWNER")}
+                                      disabled={task.editRequested}
+                                      style={{ 
+                                        background: task.editRequested ? "#e2e8f0" : (isCurrentUserReviewer ? "#fdf4ff" : "#eff6ff"), 
+                                        color: task.editRequested ? "#94a3b8" : (isCurrentUserReviewer ? "#d946ef" : "#3b82f6"), 
+                                        border: task.editRequested ? "1px solid #cbd5e1" : (isCurrentUserReviewer ? "1px solid #f5d0fe" : "1px solid #bfdbfe"), 
+                                        cursor: task.editRequested ? "not-allowed" : "pointer", 
+                                        padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 500 
+                                      }}
+                                      title={task.editRequested ? "Edit Pending" : "Request Edit"}
+                                    >
+                                      {task.editRequested ? "Requested" : "Edit Req"}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-          )}
+              
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: `1px solid ${t.border}`, background: t.bg }}>
+                <div style={{ fontSize: "0.875rem", color: t.textMuted }}>
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasksToDisplay.length)} of {filteredTasksToDisplay.length} tasks
+                </div>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === 1 ? "#94a3b8" : "#0f172a", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                  >
+                    <ChevronLeft size={16} /> Prev
+                  </button>
+                  <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px" }}>
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === totalPages ? "#94a3b8" : "#0f172a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
 
 
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
@@ -4612,20 +4894,23 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 </div>
                 
-                {/* Finance Function Filter */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, padding: "6px 12px", borderRadius: "10px", border: `1px solid ${t.border}` }}>
-                  <Filter size={14} color={t.textMuted} />
-                  <select 
-                    value={extReqFinanceFunctionFilter} 
-                    onChange={e => setExtReqFinanceFunctionFilter(e.target.value)}
-                    style={{ border: "none", background: "none", fontSize: "0.8125rem", color: t.text, outline: "none", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    <option value="ALL">All Functions</option>
-                    {settings.masterRequestTypes.split(',').map(type => (
-                      <option key={type} value={type.trim()}>{type.trim()}</option>
-                    ))}
-                  </select>
-                </div>
+                <MultiSelectFilter
+                  options={settings.masterRequestTypes.split(',').map(type => type.trim()).filter(Boolean)}
+                  selected={extReqFinanceFunctionFilter}
+                  onChange={setExtReqFinanceFunctionFilter}
+                  placeholder="All Functions"
+                  theme={theme}
+                  t={t}
+                />
+
+                <MultiSelectFilter
+                  options={["New", "Pending", "Under Process", "Processed", "Rejected"]}
+                  selected={extReqStatusFilter}
+                  onChange={setExtReqStatusFilter}
+                  placeholder="All Status"
+                  theme={theme}
+                  t={t}
+                />
                 
                 {/* Pending Conversion Button (Renamed) */}
                 <button 
@@ -4659,15 +4944,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </button>
 
                 {(isAdmin || (user as any).isAllocator || userAllocatedDepts.length > 0) && (
-                  <select 
-                    value={requestTypeFilter} 
-                    onChange={e => setRequestTypeFilter(e.target.value as any)}
-                    style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.card, color: t.textMuted, fontWeight: 600 }}
-                  >
-                    <option value="ALL">All Origins</option>
-                    <option value="ORIGINAL">Original Only</option>
-                    <option value="TRANSFERRED">Transferred Only</option>
-                  </select>
+                  <MultiSelectFilter
+                    options={["ORIGINAL", "TRANSFERRED"]}
+                    selected={requestTypeFilter}
+                    onChange={setRequestTypeFilter}
+                    placeholder="All Origins"
+                    theme={theme}
+                    t={t}
+                  />
                 )}
               </div>
 
@@ -4791,7 +5075,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             {canAllocateAnything && (
                               <td style={getTdStyle(t)}>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                  {(req.status === 'Pending' && !req.convertedTaskId && isAuthorizedAllocator) && (
+                                  {((!req.status || req.status === 'Pending' || req.status === 'Under Process' || req.status === 'New') && !req.convertedTaskId && isAuthorizedAllocator) && (
                                     <div style={{ display: "flex", gap: "8px" }}>
                                       <button 
                                         onClick={() => handleConvertToTask(req)}
@@ -4808,7 +5092,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     </div>
                                   )}
                                   
-                                  {(req.status === 'Under Process' || req.status === 'Processed') && req.convertedTaskId && (
+                                  {req.convertedTaskId && (
                                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                       <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
                                         TASK CREATED
@@ -5053,23 +5337,32 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         />
                       </div>
 
-                      <select 
-                        value={loIdentifiedByFilter} 
-                        onChange={e => setLoIdentifiedByFilter(e.target.value)}
-                        style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted, minWidth: "160px" }}
-                      >
-                        <option value="ALL">All Identified By</option>
-                        {uniqueLOIdentifiedBy.map(name => <option key={name} value={name}>{name}</option>)}
-                      </select>
+                       <MultiSelectFilter
+                        options={Array.from(new Set(los.map(l => l.entity))).sort()}
+                        selected={loEntityFilter}
+                        onChange={setLoEntityFilter}
+                        placeholder="All Entities"
+                        theme={theme}
+                        t={t}
+                      />
 
-                      <select 
-                        value={loCommittedByFilter} 
-                        onChange={e => setLoCommittedByFilter(e.target.value)}
-                        style={{ padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg, color: t.textMuted, minWidth: "160px" }}
-                      >
-                        <option value="ALL">All Committed By</option>
-                        {Array.from(new Set(los.map(l => l.committedBy))).sort().map(name => <option key={name} value={name}>{name}</option>)}
-                      </select>
+                      <MultiSelectFilter
+                        options={uniqueLOIdentifiedBy}
+                        selected={loIdentifiedByFilter}
+                        onChange={setLoIdentifiedByFilter}
+                        placeholder="All Identified By"
+                        theme={theme}
+                        t={t}
+                      />
+
+                      <MultiSelectFilter
+                        options={Array.from(new Set(los.map(l => l.committedBy))).sort()}
+                        selected={loCommittedByFilter}
+                        onChange={setLoCommittedByFilter}
+                        placeholder="All Committed By"
+                        theme={theme}
+                        t={t}
+                      />
                     </div>
 
                     <div style={{ overflowX: "auto", overflowY: "hidden", background: t.card, borderRadius: "16px", border: `1px solid ${t.border}` }} className="custom-scrollbar">
@@ -5357,7 +5650,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
               {/* Sidebar Tabs */}
-              <div style={{ width: "200px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "16px" }}>
+              <div style={{ width: "200px", background: t.bg, borderRight: `1px solid ${t.border}`, padding: "16px", overflowY: "auto", maxHeight: "100%" }}>
                 <button 
                   onClick={() => setActiveOptionsTab('ACCOUNT')} 
                   style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'ACCOUNT' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'ACCOUNT' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
@@ -5396,7 +5689,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </button>
                     <button 
                       onClick={() => setActiveOptionsTab('EDIT_REQUESTS')} 
-                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer" }}
+                      style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'EDIT_REQUESTS' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'EDIT_REQUESTS' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginBottom: "8px" }}
                     >
                       Edit Request
                       {(tasks.filter(t => t.editRequested).length + tasks.filter(t => t.deleteRequested).length + los.filter(l => l.editRequested).length + los.filter(l => l.deleteRequested).length) > 0 && (
@@ -5418,8 +5711,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       <Zap size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Task Automation
                     </button>
                         <button 
-                          onClick={() => setActiveOptionsTab('MATRIX')} 
-                          style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRIX' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRIX' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
+                          onClick={() => setActiveOptionsTab('MATRICES')} 
+                          style={{ width: "100%", padding: "12px", textAlign: "left", borderRadius: "8px", border: "none", background: activeOptionsTab === 'MATRICES' ? "#e0f2fe" : "transparent", color: activeOptionsTab === 'MATRICES' ? "#0369a1" : "#64748b", fontWeight: 500, cursor: "pointer", marginTop: "8px" }}
                         >
                           <Shield size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} /> Matrix Module
                         </button>
@@ -6035,21 +6328,69 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <div style={{ marginBottom: "32px", padding: "20px", background: "#fdf4ff", borderRadius: "12px", border: "1px solid #f5d0fe" }}>
                       <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#a21caf", fontWeight: 700 }}>Payment Report Schedule</h4>
                       <div style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
-                        {(['OFF', 'D', 'W', 'M'] as const).map((freq) => (
-                          <label key={freq} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "10px", border: "1px solid", borderColor: settings.paymentReportFrequency === freq ? "#d946ef" : "#e2e8f0", background: settings.paymentReportFrequency === freq ? "#fdf4ff" : "white", cursor: "pointer", transition: "all 0.2s" }}>
-                            <input 
-                              type="radio" 
-                              name="paymentFreq" 
-                              checked={settings.paymentReportFrequency === freq} 
-                              onChange={() => setSettings({...settings, paymentReportFrequency: freq})}
-                              style={{ accentColor: "#d946ef" }}
-                            />
-                            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: settings.paymentReportFrequency === freq ? "#a21caf" : "#64748b" }}>
-                              {freq === 'OFF' ? 'Off' : freq === 'D' ? 'Daily' : freq === 'W' ? 'Weekly' : 'Monthly'}
-                            </span>
-                          </label>
-                        ))}
+                        {(['OFF', 'D', 'W', 'M'] as const).map((freq) => {
+                          const currentFreqs = (settings.paymentReportFrequency || 'OFF').split(',').filter(f => f.trim());
+                          const isSelected = currentFreqs.includes(freq);
+                          
+                          return (
+                            <label key={freq} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "10px", border: "1px solid", borderColor: isSelected ? "#d946ef" : "#e2e8f0", background: isSelected ? "#fdf4ff" : "white", cursor: "pointer", transition: "all 0.2s" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected} 
+                                onChange={() => {
+                                  let newFreqs: string[];
+                                  if (freq === 'OFF') {
+                                    newFreqs = ['OFF'];
+                                  } else {
+                                    if (isSelected) {
+                                      newFreqs = currentFreqs.filter(f => f !== freq);
+                                      if (newFreqs.length === 0) newFreqs = ['OFF'];
+                                    } else {
+                                      newFreqs = [...currentFreqs.filter(f => f !== 'OFF'), freq];
+                                    }
+                                  }
+                                  setSettings({...settings, paymentReportFrequency: newFreqs.join(',')});
+                                }}
+                                style={{ accentColor: "#d946ef" }}
+                              />
+                              <span style={{ fontSize: "0.875rem", fontWeight: 600, color: isSelected ? "#a21caf" : "#64748b" }}>
+                                {freq === 'OFF' ? 'Off' : freq === 'D' ? 'Daily' : freq === 'W' ? 'Weekly' : 'Monthly'}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
+
+                      {(settings.paymentReportFrequency || '').split(',').includes('W') && (
+                        <div style={{ marginBottom: "16px" }}>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DAY (WEEKLY)</label>
+                          <select 
+                            value={settings.paymentReportDay}
+                            onChange={(e) => setSettings({...settings, paymentReportDay: e.target.value})}
+                            style={{ padding: "10px", borderRadius: "10px", border: "1px solid #f5d0fe", width: "100%", background: "white", fontSize: "0.875rem", fontWeight: 600, color: "#a21caf" }}
+                          >
+                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                              <option key={day} value={day}>{day}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {(settings.paymentReportFrequency || '').split(',').includes('M') && (
+                        <div style={{ marginBottom: "16px" }}>
+                          <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: "#a21caf" }}>SELECT DATE (MONTHLY)</label>
+                          <select 
+                            value={settings.paymentReportDate}
+                            onChange={(e) => setSettings({...settings, paymentReportDate: parseInt(e.target.value)})}
+                            style={{ padding: "10px", borderRadius: "10px", border: "1px solid #f5d0fe", width: "100%", background: "white", fontSize: "0.875rem", fontWeight: 600, color: "#a21caf" }}
+                          >
+                            {Array.from({ length: 31 }, (_, i) => i + 1).map(date => (
+                              <option key={date} value={date}>{date}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
 
                       {settings.paymentReportFrequency !== 'OFF' && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -6104,38 +6445,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 )}
 
-                {activeOptionsTab === 'DATA' && (
-                  <div>
-                    <h3 style={{ margin: "0 0 24px 0" }}>Data Management</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                      <div style={{ background: t.bg, padding: "24px", borderRadius: "16px", border: `1px solid ${t.border}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                          <Database size={24} color="#2563eb" />
-                          <h4 style={{ margin: 0, fontSize: "1.125rem" }}>Database Maintenance</h4>
-                        </div>
-                        <p style={{ fontSize: "0.875rem", color: t.textMuted, marginBottom: "20px" }}>
-                          Use this to sync the database schema and ensure all new features (like Payment Reporting) are fully initialized in the system.
-                        </p>
-                        <button 
-                          onClick={async () => {
-                            showConfirm("Are you sure you want to run the database migration/sync?", async () => {
-                              try {
-                                const res = await fetch('/api/admin/migrate');
-                                const data = await res.json();
-                                showNotification(data.message || "Sync completed successfully!");
-                              } catch (err) {
-                                showNotification("Sync failed. Please check the logs.", 'error');
-                              }
-                            });
-                          }}
-                          style={{ background: "#2563eb", color: "white", padding: "12px 24px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}
-                        >
-                          <RefreshCw size={18} /> Sync Database Schema
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {activeOptionsTab === 'MAILS' && (
                   <div>
@@ -6249,14 +6558,54 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
                             <Users size={20} color="#166534" />
                           </div>
                           <h4 style={{ margin: 0, fontSize: "1.125rem", color: t.text }}>Active Employees</h4>
                         </div>
-                        <div style={{ display: "flex", gap: "12px" }}>
+                        
+                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                          <div style={{ position: "relative" }}>
+                            <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
+                            <input 
+                              type="text" 
+                              placeholder="Search employees..." 
+                              value={userSearchQuery}
+                              onChange={(e) => setUserSearchQuery(e.target.value)}
+                              style={{ padding: "8px 12px 8px 36px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", width: "200px", outline: "none" }}
+                            />
+                          </div>
+                          <select 
+                            value={userDeptFilter}
+                            onChange={(e) => setUserDeptFilter(e.target.value)}
+                            style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", outline: "none" }}
+                          >
+                            <option value="ALL">All Departments</option>
+                            {settings.masterDepartments.split(',').map(d => <option key={d.trim()} value={d.trim()}>{d.trim()}</option>)}
+                          </select>
+                          <select 
+                            value={userRoleFilter}
+                            onChange={(e) => setUserRoleFilter(e.target.value)}
+                            style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", outline: "none" }}
+                          >
+                            <option value="ALL">All Roles</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="USER">USER</option>
+                            <option value="VIEWER">VIEWER</option>
+                          </select>
+                          <button 
+                            onClick={() => setShowAddEmployeeModal(true)}
+                            style={{ 
+                              padding: "8px 16px", background: "#f0fdf4", color: "#166534", 
+                              borderRadius: "10px", border: "1px solid #bbf7d0", fontWeight: 600, 
+                              cursor: "pointer", fontSize: "0.8125rem", display: "flex", 
+                              alignItems: "center", gap: "6px", transition: "all 0.2s" 
+                            }}
+                          >
+                            <UserPlus size={16} /> Add Employee
+                          </button>
                           {Object.keys(pendingUserUpdates).length > 0 && (
                             <button 
                               onClick={handleSaveUserUpdates}
@@ -6267,11 +6616,24 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </button>
                           )}
                           <button 
-                            onClick={handleImportPredefined}
+                            onClick={() => downloadBulkTemplate('employees')}
+                            style={{ background: t.bg, color: "#2563eb", padding: "8px 16px", borderRadius: "10px", border: "1px solid #bfdbfe", cursor: "pointer", fontWeight: 600, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <Download size={16} /> Template
+                          </button>
+                          <button 
+                            onClick={() => document.getElementById('employee-bulk-upload')?.click()}
                             style={{ background: t.bg, color: t.textMuted, padding: "8px 16px", borderRadius: "8px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "6px" }}
                           >
                             <Users size={14} /> Import All Employees
                           </button>
+                          <input 
+                            id="employee-bulk-upload"
+                            type="file" 
+                            accept=".xlsx, .xls"
+                            style={{ display: "none" }}
+                            onChange={(e) => handleExcelBulkUpload(e, 'employees')}
+                          />
                         </div>
                     </div>
 
@@ -6282,6 +6644,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
                           <thead>
                             <tr style={{ borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
+                                <th style={{ padding: "12px 8px" }}>Emp ID</th>
                                 <th style={{ padding: "12px 8px", cursor: "pointer" }} onClick={() => handleUserSort('name')}>
                                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                                     Name {userSortConfig?.key === 'name' && (userSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -6312,7 +6675,22 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </thead>
                           <tbody>
                                                          {filteredAndSortedUsers.filter(u => (u as any).isApproved !== false).map(u => (
-                              <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                               <tr key={u.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <td style={{ padding: "12px 8px" }}>
+                                  <span style={{ 
+                                    padding: "6px 12px", 
+                                    background: "#f8fafc",
+                                    borderRadius: "6px", 
+                                    border: "1px solid #e2e8f0",
+                                    display: "inline-block",
+                                    minWidth: "60px",
+                                    fontWeight: 700,
+                                    color: "#1e40af",
+                                    fontSize: "0.8125rem"
+                                  }}>
+                                    {(u as any).employeeId || "--"}
+                                  </span>
+                                </td>
                                 <td style={{ padding: "12px 8px" }}>{u.name || "--"}</td>
                                 <td style={{ padding: "12px 8px" }}>{u.email}</td>
                                  <td style={{ padding: "12px 8px" }}>
@@ -6402,24 +6780,34 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </div>
                     )}
 
-                    {/* Database Maintenance Section */}
-                    <div style={{ marginTop: "40px", padding: "24px", background: "#fff1f2", borderRadius: "16px", border: "1px solid #fecaca" }}>
+                    {/* Database Sync Section */}
+                    <div style={{ marginTop: "40px", padding: "24px", background: "#f0f9ff", borderRadius: "16px", border: "1px solid #bae6fd" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                          <div style={{ padding: "12px", background: "#fee2e2", borderRadius: "12px" }}>
-                            <Trash2 size={24} color="#dc2626" />
+                          <div style={{ padding: "12px", background: "#e0f2fe", borderRadius: "12px" }}>
+                            <RefreshCw size={24} color="#0284c7" />
                           </div>
                           <div>
-                            <h4 style={{ margin: "0 0 4px 0", color: "#991b1b", fontSize: "1rem", fontWeight: 700 }}>Database Maintenance</h4>
-                            <p style={{ color: "#b91c1c", margin: 0, fontSize: "0.8125rem", maxWidth: "400px", lineHeight: 1.5 }}>
-                              Remove the 9 legacy hardcoded user records (Venkat, Sharath, Sami, etc.) that are no longer active in the Finance team. This will clean up your dropdowns instantly.
+                            <h4 style={{ margin: "0 0 4px 0", color: "#0c4a6e", fontSize: "1rem", fontWeight: 700 }}>Database Sync</h4>
+                            <p style={{ color: "#075985", margin: 0, fontSize: "0.8125rem", maxWidth: "400px", lineHeight: 1.5 }}>
+                              Sync the database schema to ensure all newly added fields and tables are correctly initialized. This will not affect existing data.
                             </p>
                           </div>
                         </div>
                         <button 
-                          onClick={handleDeleteHardcoded}
+                          onClick={() => {
+                            showConfirm("Are you sure you want to sync database schema?", async () => {
+                              try {
+                                const res = await fetch("/api/users/sync-schema", { method: "POST" });
+                                const data = await res.json();
+                                showNotification(data.message || "Sync completed successfully!");
+                              } catch (err) {
+                                showNotification("Sync failed. Please check the logs.", 'error');
+                              }
+                            });
+                          }}
                           style={{ 
-                            background: "#ef4444", 
+                            background: "#0284c7", 
                             color: "white", 
                             padding: "12px 24px", 
                             borderRadius: "10px", 
@@ -6427,13 +6815,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             cursor: "pointer", 
                             fontWeight: 700, 
                             fontSize: "0.875rem",
-                            boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.3)",
-                            transition: "all 0.2s ease"
+                            boxShadow: "0 4px 6px -1px rgba(2, 132, 199, 0.3)",
+                            transition: "all 0.2s ease",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px"
                           }}
-                          onMouseOver={e => e.currentTarget.style.background = "#dc2626"}
-                          onMouseOut={e => e.currentTarget.style.background = "#ef4444"}
                         >
-                          Cleanup Database
+                          <RefreshCw size={18} /> Sync Database
                         </button>
                       </div>
                     </div>
@@ -7216,6 +7605,53 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       </div>
 
+                      {/* Bank Accounts */}
+                      <div style={{ padding: "20px", background: t.bg, borderRadius: "16px", border: `1px solid ${t.border}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: t.text }}>
+                          <CreditCard size={18} color="#ef4444" />
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 600 }}>Bank Accounts</h4>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {(settings.masterBankAccounts || "").split(',').filter(t => t.trim()).map((bank, idx) => (
+                              <div key={idx} style={{ background: t.card, border: `1px solid ${t.border}`, padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                                {bank.trim()}
+                                <button 
+                                  onClick={() => {
+                                    const items = settings.masterBankAccounts.split(',').filter((_, i) => i !== idx);
+                                    setSettings({...settings, masterBankAccounts: items.join(',')});
+                                  }}
+                                  style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px", opacity: 0.7 }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input 
+                              type="text" 
+                              placeholder="Add bank account..." 
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = e.currentTarget.value.trim();
+                                  if (val) {
+                                    const currentItems = (settings.masterBankAccounts || "").split(',').map(i => i.trim().toLowerCase());
+                                    if (currentItems.includes(val.toLowerCase())) {
+                                      showNotification(`"${val}" already exists in Bank Accounts.`);
+                                      return;
+                                    }
+                                    setSettings({...settings, masterBankAccounts: (settings.masterBankAccounts || "") + (settings.masterBankAccounts?.trim() ? "," : "") + val});
+                                    e.currentTarget.value = "";
+                                  }
+                                }
+                              }}
+                              style={{ ...getInputStyle(t), padding: "8px 12px", fontSize: "0.8125rem" }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 )}
@@ -7420,9 +7856,52 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 )}
 
+                {activeOptionsTab === 'TASK_APPROVALS' && (
+                  <div>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Pending Task Approvals</h3>
+                    {tasks.filter(t => t.isApproved === false).length === 0 ? (
+                      <p>No pending approvals.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {tasks.filter(t => t.isApproved === false).map(task => (
+                          <div key={task.id} style={{ padding: "15px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "10px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <div>
+                                <strong>{task.taskName}</strong> - {task.entityName}
+                                <div style={{ fontSize: "0.8rem", color: t.textMuted }}>Owner: {task.ownerName}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <button 
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isApproved: true }) });
+                                    if (res.ok) fetchTasks();
+                                  }}
+                                  style={{ background: "#22c55e", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                                >
+                                  Approve
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+                                    if (res.ok) fetchTasks();
+                                  }}
+                                  style={{ background: "#ef4444", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {activeOptionsTab === 'DATA' && (
                   <div>
-                    <h3 style={{ margin: "0 0 24px 0" }}>Bulk Data Import</h3>
+                    <h3 style={{ margin: "0 0 24px 0" }}>Data Management</h3>
+                    
+                    <h4 style={{ margin: "0 0 16px 0", fontSize: "1rem", color: t.text }}>Bulk Data Import</h4>
                     <p style={{ color: t.textMuted, marginBottom: "32px" }}>Download the template, fill it with your data, and upload it back. All imports follow a strictly defined schema.</p>
                     
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
@@ -8047,7 +8526,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {usersList
                                   .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
-                                  .filter(u => matrixDeptFilter === 'ALL' || u.department === matrixDeptFilter)
+                                  .filter(u => matrixDeptFilter.length === 0 || matrixDeptFilter.includes(u.department))
                                   .filter(u => (u as any).isApproved !== false)
                                   .map((u) => {
                                     const matrix = JSON.parse(settings.bulkImportMatrix || '{}');
@@ -8089,6 +8568,65 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Matrix E: Department Head Assignments */}
+                    <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "16px" }}>
+                      <div 
+                        onClick={() => setActiveMatrixTab(activeMatrixTab === 'DEPT_HEADS' ? '' : 'DEPT_HEADS')}
+                        style={{ padding: "20px 24px", background: activeMatrixTab === 'DEPT_HEADS' ? "#f8fafc" : "white", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: activeMatrixTab === 'DEPT_HEADS' ? "1px solid #e2e8f0" : "none", transition: "all 0.2s" }}
+                      >
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: "12px", color: activeMatrixTab === 'DEPT_HEADS' ? "#2563eb" : "#0f172a" }}>
+                          <UserCheck size={20} /> Matrix E : Department Head Assignments
+                        </h4>
+                        <ChevronDown size={20} style={{ transform: activeMatrixTab === 'DEPT_HEADS' ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s", color: t.textMuted }} />
+                      </div>
+                      
+                      {activeMatrixTab === 'DEPT_HEADS' && (
+                        <div style={{ padding: "24px", animation: "slideDown 0.3s ease-out" }}>
+                          <p style={{ margin: "0 0 20px 0", fontSize: "0.875rem", color: t.textMuted }}>Select users who act as Department Heads for Team Approval workflows.</p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#1e293b" }}>
+                                  <th style={{ padding: "14px 20px", textAlign: "left", color: "#ffffff", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "2px solid #3b82f6" }}>Department</th>
+                                  <th style={{ padding: "14px 20px", textAlign: "left", color: "#ffffff", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "2px solid #3b82f6" }}>Assigned Department Heads</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {settings.masterDepartments.split(',').map(dept => dept.trim()).filter(Boolean).map(dept => {
+                                  const matrix = JSON.parse(settings.departmentHeadMatrix || '{}');
+                                  const assignedHeads = matrix[dept] || [];
+                                  
+                                  return (
+                                    <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                      <td style={{ padding: "16px", fontWeight: 700, fontSize: "0.875rem", color: t.text }}>{dept}</td>
+                                      <td style={{ padding: "16px" }}>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                          <MultiSelectFilter
+                                            options={usersList.filter(u => u.isApproved !== false).map(u => u.email).sort()}
+                                            selected={assignedHeads}
+                                            onChange={(selected) => {
+                                              setSettings({
+                                                ...settings,
+                                                departmentHeadMatrix: JSON.stringify({ ...matrix, [dept]: selected })
+                                              });
+                                            }}
+                                            placeholder="Assign Dept Heads"
+                                            theme={theme}
+                                            t={t}
+                                          />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
 
                     {/* User Module Controls (Matrix D) */}
                     <div style={{ background: t.card, borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
@@ -8111,16 +8649,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </div>
                             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                               {/* Department Filter */}
-                              <select 
-                                value={matrixDeptFilter}
-                                onChange={(e) => setMatrixDeptFilter(e.target.value)}
-                                style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.875rem", background: t.card, color: t.text, cursor: "pointer" }}
-                              >
-                                <option value="ALL">All Departments</option>
-                                {settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort().map(dept => (
-                                  <option key={dept} value={dept}>{dept}</option>
-                                ))}
-                              </select>
+                              <MultiSelectFilter
+                                options={settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort() || []}
+                                selected={matrixDeptFilter}
+                                onChange={setMatrixDeptFilter}
+                                placeholder="All Departments"
+                                theme={theme}
+                                t={t}
+                              />
 
                               <div style={{ position: "relative" }}>
                                 <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} />
@@ -8148,7 +8684,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {usersList
                                   .filter(u => !extReqSearch || (u.name || u.email).toLowerCase().includes(extReqSearch.toLowerCase()))
-                                  .filter(u => matrixDeptFilter === 'ALL' || u.department === matrixDeptFilter)
+                                  .filter(u => matrixDeptFilter.length === 0 || matrixDeptFilter.includes(u.department))
                                   .filter(u => (u as any).isApproved !== false)
                                   .map((u) => {
                                     const accessMatrix = JSON.parse(settings.moduleAccessMatrix || '{}');
@@ -8697,16 +9233,54 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                </button>
              </div>
           </div>
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes modal-pop {
-              from { opacity: 0; transform: scale(0.9); }
-              to { opacity: 1; transform: scale(1); }
-            }
-            @keyframes fade-in {
-              from { opacity: 0; transform: translateY(-5px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          `}} />
+        </div>
+      )}
+
+      {promptState.isOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 11000
+        }}>
+          <div style={{
+            background: theme === 'DARK' ? "rgba(30, 41, 59, 0.95)" : "white",
+            padding: "32px", borderRadius: "24px", width: "450px", maxWidth: "90%",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: `1px solid ${t.border}`,
+            animation: "modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+          }}>
+             <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: t.text, marginBottom: "12px" }}>Action Required</h3>
+             <p style={{ color: t.textMuted, fontSize: "0.95rem", lineHeight: 1.5, marginBottom: "20px" }}>{promptState.message}</p>
+             
+             <textarea 
+               value={promptValue}
+               onChange={(e) => setPromptValue(e.target.value)}
+               placeholder="Provide reason here..."
+               autoFocus
+               style={{
+                 width: "100%", height: "100px", padding: "12px", borderRadius: "12px",
+                 border: `1px solid ${t.border}`, background: t.bg, color: t.text,
+                 marginBottom: "24px", resize: "none", outline: "none",
+                 fontSize: "0.95rem"
+               }}
+             />
+
+             <div style={{ display: "flex", gap: "12px" }}>
+               <button 
+                 onClick={() => setPromptState({ ...promptState, isOpen: false })}
+                 style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontWeight: 600, cursor: "pointer" }}
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={() => { promptState.onConfirm(promptValue); setPromptState({ ...promptState, isOpen: false }); }}
+                 disabled={!promptValue.trim()}
+                 style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: !promptValue.trim() ? "not-allowed" : "pointer", opacity: !promptValue.trim() ? 0.6 : 1 }}
+               >
+                 Submit Request
+               </button>
+             </div>
+          </div>
         </div>
       )}
 
@@ -8841,6 +9415,181 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           </div>
         </div>
       )}
+
+      {/* Add Employee Modal */}
+      {showAddEmployeeModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+          <div style={{ background: t.card, borderRadius: "16px", width: "100%", maxWidth: "450px", border: `1px solid ${t.border}`, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }} className="animate-fade-in-up">
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "10px" }}>
+                  <UserPlus size={20} color="#166534" />
+                </div>
+                <h3 style={{ margin: 0, fontSize: "1.125rem", color: t.text }}>Add New Employee</h3>
+              </div>
+              <button onClick={() => setShowAddEmployeeModal(false)} style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer" }}><X size={20} /></button>
+            </div>
+            
+            <form onSubmit={handleAddEmployee} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>EMPLOYEE ID</label>
+                <input 
+                  type="text" required
+                  value={newEmployeeData.employeeId}
+                  onChange={e => setNewEmployeeData({...newEmployeeData, employeeId: e.target.value})}
+                  style={getInputStyle(t)} 
+                  placeholder="e.g. EMP001"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>FULL NAME</label>
+                <input 
+                  type="text" required
+                  value={newEmployeeData.name}
+                  onChange={e => setNewEmployeeData({...newEmployeeData, name: e.target.value})}
+                  style={getInputStyle(t)} 
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>EMAIL ADDRESS</label>
+                <input 
+                  type="email" required
+                  value={newEmployeeData.email}
+                  onChange={e => setNewEmployeeData({...newEmployeeData, email: e.target.value})}
+                  style={getInputStyle(t)} 
+                  placeholder="e.g. john@intellicar.in"
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>DEPARTMENT</label>
+                  <select 
+                    required
+                    value={newEmployeeData.department}
+                    onChange={e => setNewEmployeeData({...newEmployeeData, department: e.target.value})}
+                    style={getInputStyle(t)}
+                  >
+                    <option value="">Select Dept</option>
+                    {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
+                      <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>ROLE</label>
+                  <select 
+                    required
+                    value={newEmployeeData.role}
+                    onChange={e => setNewEmployeeData({...newEmployeeData, role: e.target.value})}
+                    style={getInputStyle(t)}
+                  >
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ background: "#fef9c3", padding: "12px", borderRadius: "10px", border: "1px solid #fde047", marginTop: "4px" }}>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#854d0e", fontWeight: 500 }}>
+                  <Key size={12} style={{ marginRight: "4px" }} /> Default password will be <strong>Intellicar@123</strong>
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                <button type="button" onClick={() => setShowAddEmployeeModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontWeight: 600 }}>Cancel</button>
+                <button type="submit" disabled={isAddingEmployee} style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#10b981", color: "white", fontWeight: 600, cursor: isAddingEmployee ? "not-allowed" : "pointer" }}>
+                  {isAddingEmployee ? "Creating..." : "Add Employee"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {selectedTaskForView && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", padding: "24px" }}>
+          <div style={{ background: "white", width: "100%", maxWidth: "800px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(to right, #f8fafc, #ffffff)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ background: "#eff6ff", padding: "10px", borderRadius: "12px", color: "#2563eb" }}>
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#1e293b" }}>Task Details</h3>
+                  <span style={{ fontSize: "0.8125rem", color: "#64748b", fontWeight: 600 }}>{selectedTaskForView.displayId || `#${selectedTaskForView.id}`}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedTaskForView(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "8px", borderRadius: "10px" }} className="hover-bg-slate-100">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ padding: "32px", maxHeight: "70vh", overflowY: "auto" }} className="custom-scrollbar">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.05em" }}>Task Name</label>
+                  <div style={{ fontSize: "1.0625rem", fontWeight: 700, color: "#1e293b", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", lineHeight: 1.5 }}>
+                    {selectedTaskForView.taskName}
+                  </div>
+                </div>
+                
+                <DetailItemView label="Entity" value={selectedTaskForView.entityName} />
+                <DetailItemView label="Department" value={selectedTaskForView.departmentName} />
+                <DetailItemView label="Task Type" value={selectedTaskForView.taskType} />
+                <DetailItemView label="Frequency" value={selectedTaskForView.frequency || "Ad-hoc"} />
+                <DetailItemView label="Owner" value={selectedTaskForView.ownerName} />
+                <DetailItemView label="Reviewer" value={selectedTaskForView.reviewerName || "N/A"} />
+                <DetailItemView label="Due Date" value={selectedTaskForView.dueDate ? new Date(selectedTaskForView.dueDate).toLocaleDateString() : "N/A"} />
+                <DetailItemView label="Created At" value={new Date(selectedTaskForView.createdAt).toLocaleString()} />
+                
+                <div style={{ gridColumn: "span 1" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Task Status</label>
+                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontWeight: 700, fontSize: "0.875rem" }}>
+                    {selectedTaskForView.taskStatus}
+                  </div>
+                </div>
+                
+                <div style={{ gridColumn: "span 1" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Review Status</label>
+                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "8px", background: "#f5f3ff", color: "#7c3aed", fontWeight: 700, fontSize: "0.875rem" }}>
+                    {selectedTaskForView.reviewStatus}
+                  </div>
+                </div>
+
+                <DetailItemView label="Completion Date" value={selectedTaskForView.completionDate ? new Date(selectedTaskForView.completionDate).toLocaleDateString() : "Pending"} />
+                <DetailItemView label="Review Completion" value={selectedTaskForView.reviewCompletionDate ? new Date(selectedTaskForView.reviewCompletionDate).toLocaleDateString() : "Pending"} />
+                
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Owner Comments</label>
+                  <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", minHeight: "60px" }}>
+                    {selectedTaskForView.ownerComments || "No comments added."}
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Reviewer Comments</label>
+                  <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f8fafc", padding: "16px", borderRadius: "16px", border: "1px solid #f1f5f9", minHeight: "60px" }}>
+                    {selectedTaskForView.reviewerComments || "No comments added."}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ padding: "24px 32px", borderTop: "1px solid #f1f5f9", textAlign: "right", background: "#f8fafc" }}>
+              <button 
+                onClick={() => setSelectedTaskForView(null)}
+                style={{ padding: "10px 24px", background: "#2563eb", border: "none", color: "white", borderRadius: "12px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
   </div>
 </div>
   );
@@ -8876,11 +9625,22 @@ function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: s
   );
 }
 
-function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any }) {
+const DetailItemView = ({ label, value }: { label: string; value: string }) => (
+  <div style={{ gridColumn: "span 1" }}>
+    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.05em" }}>{label}</label>
+    <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#1e293b" }}>
+      {value}
+    </div>
+  </div>
+);
+
+function StatusPill({ status, type, taskId, onUpdate, disabled, t, trackingStatus }: { status: string, type: "task" | "review", taskId: number, onUpdate: any, disabled?: boolean, t: any, trackingStatus?: string }) {
   let bg = "#f1f5f9";
   let color = "#475569";
 
-  if (status === "Completed") {
+  const isCompleted = status === "Completed" || COMPLETION_STATUSES.includes(status) || (type === "task" && !!trackingStatus && COMPLETION_STATUSES.includes(trackingStatus));
+
+  if (isCompleted) {
     bg = "#dcfce7";
     color = "#166534";
   } else if (status === "Pending" || status.includes("Pending")) {
@@ -8907,12 +9667,18 @@ function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: s
   };
 
   if (type === "task") {
+    const selectValue = isCompleted ? "Completed" : (status === "In Progress" ? "In Progress" : "Pending");
+    const displayLabel = (isCompleted && trackingStatus) ? trackingStatus : status;
+
+    if (disabled) {
+      return <span style={pillStyle}>{displayLabel}</span>;
+    }
+
     return (
       <select 
-        value={status} 
+        value={selectValue} 
         onChange={(e) => onUpdate(taskId, "taskStatus", e.target.value)}
         style={pillStyle}
-        disabled={disabled}
       >
         <option value="Pending">Pending</option>
         <option value="In Progress">In Progress</option>
