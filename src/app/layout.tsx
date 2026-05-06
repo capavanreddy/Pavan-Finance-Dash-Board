@@ -6,8 +6,8 @@ import Providers from "@/components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Intellicar Telematics",
-  description: "Finance Task Management System",
+  title: "FinPulse",
+  description: "Finance Intelligence Hub",
 };
 
 export default function RootLayout({
