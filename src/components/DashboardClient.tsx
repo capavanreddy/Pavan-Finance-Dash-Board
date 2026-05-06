@@ -252,7 +252,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [processingTask, setProcessingTask] = useState<Task | null>(null);
   const [processingMode, setProcessingMode] = useState("");
   const [processingMailLink, setProcessingMailLink] = useState("");
-  const [processingAttachments, setProcessingAttachments] = useState<Array<{ name: string; type: string; data: string }>>([]);
+  const [processingAttachments, setProcessingAttachments] = useState<Array<{ id?: string; name: string; type: string; data: string; progress?: number; isLoaded?: boolean }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,19 +261,52 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       showNotification("Maximum 5 files allowed", "error");
       return;
     }
+
     files.forEach(file => {
       if (file.size > 50 * 1024 * 1024) {
         showNotification(`${file.name} exceeds 50MB limit`, "error");
         return;
       }
+
+      const tempId = Math.random().toString(36).substring(7);
+      
+      // Add placeholder
+      setProcessingAttachments(prev => [...prev, {
+        id: tempId,
+        name: file.name,
+        type: file.type,
+        data: "",
+        progress: 0,
+        isLoaded: false
+      }]);
+
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setProcessingAttachments(prev => [...prev, {
-          name: file.name,
-          type: file.type,
-          data: event.target?.result as string
-        }]);
+      
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setProcessingAttachments(prev => prev.map(att => 
+            att.id === tempId ? { ...att, progress } : att
+          ));
+        }
       };
+
+      reader.onload = (event) => {
+        setProcessingAttachments(prev => prev.map(att => 
+          att.id === tempId ? { 
+            ...att, 
+            data: event.target?.result as string, 
+            progress: 100, 
+            isLoaded: true 
+          } : att
+        ));
+      };
+
+      reader.onerror = () => {
+        showNotification(`Failed to load ${file.name}`, "error");
+        setProcessingAttachments(prev => prev.filter(att => att.id !== tempId));
+      };
+
       reader.readAsDataURL(file);
     });
   };
@@ -10438,14 +10471,24 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600 }}>Attachments (Max 5, 50MB each)</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
                   {processingAttachments.map((file, idx) => (
-                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.75rem" }}>
-                      <FileText size={14} color="#64748b" />
-                      <span style={{ maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-                      <button onClick={() => setProcessingAttachments(prev => prev.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "2px" }}>
-                        <Trash2 size={12} />
-                      </button>
+                    <div key={file.id || idx} style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.75rem" }}>
+                          <FileText size={14} color="#64748b" />
+                          <span style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{file.name}</span>
+                          {!file.isLoaded && <span style={{ color: "#2563eb", fontWeight: 700 }}>{file.progress}%</span>}
+                        </div>
+                        <button onClick={() => setProcessingAttachments(prev => prev.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "2px" }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      {!file.isLoaded && (
+                        <div style={{ width: "100%", height: "4px", background: "#e2e8f0", borderRadius: "2px", overflow: "hidden" }}>
+                          <div style={{ width: `${file.progress}%`, height: "100%", background: "#2563eb", transition: "width 0.2s" }} />
+                        </div>
+                      )}
                     </div>
                   ))}
                   {processingAttachments.length < 5 && (
@@ -10462,11 +10505,22 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               <button onClick={() => setShowProcessingModal(false)} style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
               <button 
                 onClick={handleFinalizeProcessing}
-                disabled={isProcessing}
-                style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "#10b981", color: "white", fontWeight: 700, cursor: isProcessing ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                disabled={isProcessing || processingAttachments.some(att => !att.isLoaded)}
+                style={{ 
+                  padding: "10px 20px", 
+                  borderRadius: "8px", 
+                  border: "none", 
+                  background: (isProcessing || processingAttachments.some(att => !att.isLoaded)) ? "#94a3b8" : "#10b981", 
+                  color: "white", 
+                  fontWeight: 700, 
+                  cursor: (isProcessing || processingAttachments.some(att => !att.isLoaded)) ? "not-allowed" : "pointer", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "8px" 
+                }}
               >
                 {isProcessing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {isProcessing ? "Processing..." : "Submit Delivery"}
+                {isProcessing ? "Processing..." : processingAttachments.some(att => !att.isLoaded) ? "Loading Files..." : "Submit Delivery"}
               </button>
             </div>
           </div>
