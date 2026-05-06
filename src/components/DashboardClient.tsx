@@ -1118,6 +1118,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     addMasterDataList('Finance Users', financeUsers);
     addMasterDataList('Reviewers', reviewerUsers);
     addMasterDataList('Roles', ['ADMIN', 'USER', 'VIEWER']);
+    
+    // Protect Reference Sheets
+    insSheet.protect('Intellicar@123', { selectLockedCells: true, selectUnlockedCells: true });
+    masterSheet.protect('Intellicar@123', { selectLockedCells: true, selectUnlockedCells: true });
 
     // 4. Add Main Data Sheet
     const sheetName = type === 'tasks' ? 'Tasks' : type === 'lo' ? 'LOs' : type === 'recurring' ? 'RecurringTemplates' : type === 'employees' ? 'Employees' : 'PaymentsMaster';
