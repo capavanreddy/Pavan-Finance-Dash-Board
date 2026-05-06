@@ -113,6 +113,7 @@ export async function POST(req: NextRequest) {
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "isApproved" BOOLEAN DEFAULT TRUE`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "createdByEmail" TEXT`;
       await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "displayId" TEXT`;
+      await sql`ALTER TABLE "Task" ADD COLUMN IF NOT EXISTS "source" TEXT DEFAULT 'TDB'`;
     } catch (e) {
       console.error("Task migration check skipped/failed", e);
     }
@@ -171,12 +172,12 @@ export async function POST(req: NextRequest) {
           INSERT INTO "Task" (
             "taskName", "entityName", "taskType", "departmentName", "requestFrom",
             "ownerName", "reviewerName", "dueDate", "mailLink", "taskStatus",
-            "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "isApproved", "createdByEmail", "createdAt", "updatedAt"
+            "reviewStatus", "linkedRequestId", "requestStatus", "transferStatus", "originalRequestType", "frequency", "displayId", "source", "isApproved", "createdByEmail", "createdAt", "updatedAt"
           )
           VALUES (
             ${taskName}, ${entityName}, ${taskType}, ${departmentName}, ${requestFrom},
             ${ownerName}, ${resolvedReviewer}, ${parseDate(dueDate)}, ${mailLink || null}, 'Pending',
-            ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId}, TRUE, ${session.user.email}, NOW(), NOW()
+            ${reviewStatus}, ${linkedRequestId || null}, ${requestStatus}, ${data.transferStatus || 'O'}, ${data.originalRequestType || null}, ${data.frequency || null}, ${displayId}, ${linkedRequestId ? 'IDR' : 'TDB'}, TRUE, ${session.user.email}, NOW(), NOW()
           )
           RETURNING *
         `;

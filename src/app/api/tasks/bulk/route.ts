@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO "Task" (
           "taskName", "entityName", "taskType", "departmentName", "frequency", "requestFrom",
           "ownerName", "reviewerName", "dueDate", "mailLink", "taskStatus",
-          "reviewStatus", "displayId", "isApproved", "createdByEmail", "createdAt", "updatedAt"
+          "reviewStatus", "displayId", "source", "isApproved", "createdByEmail", "createdAt", "updatedAt"
         )
         VALUES (
           ${task.taskName}, ${task.entityName}, ${task.taskType || "General"}, 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
           ${task.ownerName}, ${reviewerName}, 
           ${task.dueDate ? new Date(task.dueDate).toISOString() : null}, 
           ${task.mailLink || null}, ${task.taskStatus || "Pending"},
-          ${reviewStatus}, ${displayId}, TRUE, ${userEmail},
+          ${reviewStatus}, ${displayId}, 'BULK', TRUE, ${userEmail},
           NOW(), NOW()
         )
       `;

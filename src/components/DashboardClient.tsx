@@ -319,6 +319,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [taskOwnerFilter, setTaskOwnerFilter] = useState<string[]>([]);
   const [taskStatusFilter, setTaskStatusFilter] = useState<string[]>([]);
   const [taskReviewerFilter, setTaskReviewerFilter] = useState<string[]>([]);
+  const [taskSourceFilter, setTaskSourceFilter] = useState<string[]>([]);
   const [taskSortConfig, setTaskSortConfig] = useState<{ key: keyof Task; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
 
   const [loSearchQuery, setLoSearchQuery] = useState("");
@@ -2030,6 +2031,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (taskOwnerFilter.length > 0 && !taskOwnerFilter.includes(t.ownerName)) dropdownMatch = false;
     if (taskStatusFilter.length > 0 && !taskStatusFilter.includes(t.taskStatus)) dropdownMatch = false;
     if (taskReviewerFilter.length > 0 && !taskReviewerFilter.includes(t.reviewerName || "")) dropdownMatch = false;
+    if (taskSourceFilter.length > 0 && !taskSourceFilter.includes((t as any).source || 'TDB')) dropdownMatch = false;
     
     // 5. Task Type Filter
     const isActuallyExternal = !!t.linkedRequestId && t.departmentName !== "Finance";
@@ -2068,6 +2070,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const uniqueTaskOwners = Array.from(new Set(tasks.map(t => t.ownerName))).sort();
   const uniqueTaskStatuses = Array.from(new Set(tasks.map(t => t.taskStatus))).sort();
   const uniqueTaskReviewers = Array.from(new Set(tasks.map(t => t.reviewerName).filter((r): r is string => !!r && r !== "Not Applicable"))).sort();
+  const uniqueTaskSources = ['TDB', 'IDR', 'RA', 'BULK'];
 
   // Unique values for LO filters and analytics
   const uniqueLOEntities = Array.from(new Set(los.map(l => l.entity))).sort();
@@ -4454,6 +4457,21 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   }}
                 />
 
+                <MultiSelectFilter
+                  options={uniqueTaskSources}
+                  selected={taskSourceFilter}
+                  onChange={setTaskSourceFilter}
+                  placeholder="All Sources"
+                  theme={theme}
+                  t={t}
+                  labelMapping={{
+                    'TDB': 'TDB – Dashboard',
+                    'IDR': 'IDR – Inter-Dept',
+                    'RA': 'RA – Recurring',
+                    'BULK': 'BULK – Import'
+                  }}
+                />
+
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 8px", borderLeft: `1px solid ${t.border}` }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textMuted, textTransform: "uppercase" }}>Rows:</span>
                   <select 
@@ -4478,6 +4496,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('displayId')}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                           Task ID {taskSortConfig?.key === 'displayId' && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                        </div>
+                      </th>
+                      <th style={{ ...getThStyle(t), cursor: "pointer", whiteSpace: "nowrap" }} onClick={() => handleTaskSort('source' as any)}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Source {taskSortConfig?.key === ('source' as any) && (taskSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                         </div>
                       </th>
                       <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleTaskSort('createdAt')}>
@@ -4610,6 +4633,32 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </button>
                                 <span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span>
                               </div>
+                            </td>
+                            <td style={getTdStyle(t)}>
+                              {(() => {
+                                const src = (task as any).source || 'TDB';
+                                const cfg: Record<string, { bg: string; color: string; label: string }> = {
+                                  'TDB':  { bg: '#eff6ff', color: '#2563eb', label: 'TDB' },
+                                  'IDR':  { bg: '#f0fdf4', color: '#16a34a', label: 'IDR' },
+                                  'RA':   { bg: '#fdf4ff', color: '#9333ea', label: 'RA'  },
+                                  'BULK': { bg: '#fff7ed', color: '#ea580c', label: 'BULK' },
+                                };
+                                const { bg, color, label } = cfg[src] || cfg['TDB'];
+                                return (
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.06em',
+                                    background: bg,
+                                    color,
+                                    border: `1px solid ${color}30`,
+                                    whiteSpace: 'nowrap'
+                                  }}>{label}</span>
+                                );
+                              })()}
                             </td>
                             <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}><span style={{ color: isOverdue ? "inherit" : "#64748b", fontWeight: isOverdue ? "inherit" : "normal" }}>{formatDateTime(task.createdAt)}</span></td>
                             <td style={getTdStyle(t)}>{task.entityName}</td>
