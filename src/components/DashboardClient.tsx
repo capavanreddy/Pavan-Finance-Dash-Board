@@ -312,6 +312,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [newManagerEmailInput, setNewManagerEmailInput] = useState("");
   const [newLOEmailInput, setNewLOEmailInput] = useState("");
   const [newPaymentEmailInput, setNewPaymentEmailInput] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Sorting and Filtering State
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
@@ -3313,19 +3314,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           </button>
           
           <button 
-            onClick={async () => {
-              if (!window.confirm("Are you sure you want to sign out?")) return;
-              // Clear navigation persistence on logout
-              sessionStorage.removeItem('finpulse_session_active');
-              localStorage.removeItem('finpulse_active_view');
-              localStorage.removeItem('finpulse_active_subview');
-              localStorage.removeItem('finpulse_active_mainview');
-              
-              await fetch("/api/logout", { method: "POST", credentials: "include" });
-              document.cookie = "session-token=; path=/; max-age=0";
-              window.location.href = "/login";
-            }} 
+            onClick={() => setShowLogoutConfirm(true)} 
             style={{ color: t.textMuted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
+            title="Sign Out"
           >
             <LogOut size={18} />
           </button>
@@ -9647,6 +9638,91 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       )}
 
 
+
+      {showLogoutConfirm && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          background: isDarkMode ? "rgba(15, 23, 42, 0.7)" : "rgba(241, 245, 249, 0.7)",
+          backdropFilter: "blur(12px) saturate(180%)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000,
+          animation: "modal-fade-in 0.3s ease-out"
+        }}>
+          <div style={{
+            background: isDarkMode ? "rgba(30, 41, 59, 0.8)" : "rgba(255, 255, 255, 0.8)",
+            padding: "40px", borderRadius: "28px", width: "420px", maxWidth: "90%",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255,255,255,0.1)",
+            border: `1px solid ${isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"}`,
+            textAlign: "center",
+            animation: "modal-pop-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            backdropFilter: "blur(20px)"
+          }}>
+            <div style={{ marginBottom: "28px", display: "flex", justifyContent: "center" }}>
+              <div style={{ 
+                background: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)", 
+                padding: "20px", borderRadius: "22px",
+                boxShadow: "0 10px 20px -5px rgba(239, 68, 68, 0.4)"
+              }}>
+                <LogOut size={40} color="white" />
+              </div>
+            </div>
+            
+            <h3 style={{ 
+              fontSize: "1.75rem", fontWeight: 800, color: t.text, 
+              marginBottom: "12px", letterSpacing: "-0.02em" 
+            }}>Ready to sign out?</h3>
+            
+            <p style={{ 
+              color: t.textMuted, fontSize: "1.05rem", lineHeight: 1.6, 
+              marginBottom: "36px", fontWeight: 500
+            }}>You will need to enter your credentials again to access the Finance Intelligence Hub.</p>
+            
+            <div style={{ display: "flex", gap: "16px" }}>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{ 
+                  flex: 1, padding: "14px", borderRadius: "16px", 
+                  border: `1px solid ${t.border}`, background: isDarkMode ? "rgba(255,255,255,0.05)" : "white", 
+                  color: t.text, fontWeight: 700, cursor: "pointer", fontSize: "1rem",
+                  transition: "all 0.2s"
+                }}
+              >
+                Stay here
+              </button>
+              <button 
+                onClick={async () => {
+                  // Clear navigation persistence on logout
+                  sessionStorage.removeItem('finpulse_session_active');
+                  localStorage.removeItem('finpulse_active_view');
+                  localStorage.removeItem('finpulse_active_subview');
+                  localStorage.removeItem('finpulse_active_mainview');
+                  
+                  await fetch("/api/logout", { method: "POST", credentials: "include" });
+                  document.cookie = "session-token=; path=/; max-age=0";
+                  window.location.href = "/login";
+                }}
+                style={{ 
+                  flex: 1, padding: "14px", borderRadius: "16px", border: "none", 
+                  background: "#ef4444", color: "white", fontWeight: 700, 
+                  cursor: "pointer", fontSize: "1rem",
+                  boxShadow: "0 10px 20px -5px rgba(239, 68, 68, 0.3)"
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes modal-fade-in {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes modal-pop-up {
+              from { opacity: 0; transform: scale(0.9) translateY(20px); }
+              to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+          `}} />
+        </div>
+      )}
 
       {/* Acknowledgment Modal */}
       {showAckModal && acknowledgingLO && (
