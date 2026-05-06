@@ -224,7 +224,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [editingLO, setEditingLO] = useState<LearningOpportunity | null>(null);
   const [selectedTaskForView, setSelectedTaskForView] = useState<Task | null>(null);
   const [selectedExternalReqForView, setSelectedExternalReqForView] = useState<any | null>(null);
-  const [selectedLOForView, setSelectedLOForView] = useState<LearningOpportunity | null>(null);
+  const [selectedLOForView, setSelectedLOForView] = useState<any | null>(null);
   const [selectedPaymentForView, setSelectedPaymentForView] = useState<any | null>(null);
 
   // Universal Navigation Watcher: Persists view state and handles menu auto-collapse
