@@ -65,6 +65,7 @@ type ExternalRequest = {
   requesterEmail: string;
   requestDate: string;
   natureOfRequest: string;
+  reasonForRequest: string | null;
   departmentName: string;
   requestType: string;
   status: string;
