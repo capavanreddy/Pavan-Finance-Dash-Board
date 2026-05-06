@@ -21,15 +21,19 @@ export async function GET(request: Request) {
     if (role === 'ADMIN' || department === 'Finance') {
       // Admin and Finance team sees everything
       requests = await sql`
-        SELECT * FROM "ExternalRequest"
-        ORDER BY "createdAt" DESC
+        SELECT er.*, t."displayId" as "taskDisplayId"
+        FROM "ExternalRequest" er
+        LEFT JOIN "Task" t ON er."convertedTaskId" = t.id
+        ORDER BY er."createdAt" DESC
       `;
     } else if (email) {
       // External users only see their own requests
       requests = await sql`
-        SELECT * FROM "ExternalRequest"
-        WHERE "requesterEmail" = ${email}
-        ORDER BY "createdAt" DESC
+        SELECT er.*, t."displayId" as "taskDisplayId"
+        FROM "ExternalRequest" er
+        LEFT JOIN "Task" t ON er."convertedTaskId" = t.id
+        WHERE er."requesterEmail" = ${email}
+        ORDER BY er."createdAt" DESC
       `;
     } else {
       requests = [];

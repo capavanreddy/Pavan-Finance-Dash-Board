@@ -5663,11 +5663,26 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   )}
                                   
                                   {req.convertedTaskId && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
-                                        TASK CREATED
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ padding: "4px 10px", borderRadius: "6px", background: "#f0f9ff", fontSize: "0.7rem", fontWeight: 700, color: "#0369a1", border: "1px solid #bae6fd" }}>
+                                          TASK CREATED
+                                        </span>
+                                        {isAdmin && (
+                                          <button 
+                                            onClick={() => handleDeleteExtRequest(req.id)}
+                                            style={{ background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", padding: "2px", borderRadius: "4px" }}
+                                            onMouseOver={(e) => e.currentTarget.style.color = "#ef4444"}
+                                            onMouseOut={(e) => e.currentTarget.style.color = "#94a3b8"}
+                                            title="Delete Request"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <span style={{ fontSize: "0.75rem", color: t.text, fontWeight: 700, marginLeft: "4px" }}>
+                                        ID: { (req as any).taskDisplayId || req.convertedTaskId }
                                       </span>
-                                      <span style={{ fontSize: "0.7rem", color: t.textMuted, fontWeight: 500 }}>ID: {req.convertedTaskId}</span>
                                     </div>
                                   )}
 
@@ -5677,7 +5692,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     </div>
                                   )}
 
-                                  {isAdmin && (
+                                  {!req.convertedTaskId && isAdmin && (
                                     <button 
                                       onClick={() => handleDeleteExtRequest(req.id)}
                                       style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
