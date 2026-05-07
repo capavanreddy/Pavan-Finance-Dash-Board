@@ -3733,7 +3733,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               }}
                             >
                               <Briefcase size={24} color={(activeView === 'TASKS' || activeView === 'RECURRING') && activeMainView === 'DASHBOARD' ? "#60a5fa" : "#94a3b8"} />
-                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Workplace</span>
+                              <span style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.02em" }}>Task Mgt</span>
                             </button>
 
                             {/* Premium Hover Flyout */}
@@ -3759,7 +3759,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   gap: "4px",
                                 }}>
                                   <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 12px 8px" }}>
-                                    Workplace Summary
+                                    Task Mgt Summary
                                   </div>
                                   <button 
                                     onClick={() => { setActiveView('TASKS'); setActiveSubView('MAIN'); setActiveMainView('DASHBOARD'); setShowWorkplaceFlyout(false); }}
@@ -4045,7 +4045,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
                     <span style={{ color: "#cbd5e1" }}>/</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
-                      {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Workplace" : "Collaboration") : 
+                      {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Mgt" : "Collaboration") : 
                        activeView === 'PAYMENTS' ? "Treasury" : "Development"}
                     </span>
                   </div>
