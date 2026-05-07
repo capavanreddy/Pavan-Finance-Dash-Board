@@ -534,7 +534,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     learningOpportunity: "",
     resolutionProvided: "",
     modeOfCommunication: "Official Internal Mail",
-    comments: ""
+    comments: "",
+    classification: ""
   });
   
   // Rejection Logic State
