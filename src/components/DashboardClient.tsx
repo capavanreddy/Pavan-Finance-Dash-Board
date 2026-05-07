@@ -5877,9 +5877,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       <tr><td colSpan={canAllocateAnything ? 16 : 14} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No requests found.</td></tr>
                     ) : (
                       paginatedExternalRequests.map((req, idx) => {
-                        const matrix = JSON.parse(settings.allocationMatrix || '{}');
-                        const allocators = Array.isArray(matrix[req.requestType]) ? matrix[req.requestType] : (matrix[req.requestType] ? [matrix[req.requestType]] : []);
-                        const isAuthorizedAllocator = allocators.includes(user?.email) || isAdmin || (user as any).isAllocator;
+                        const isAuthorizedAllocator = isAdmin || (user as any).isAllocator || userAllocatedDepts.some(d => d.toLowerCase().trim() === req.requestType?.toLowerCase().trim());
                         
                         return (
                           <tr key={req.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
