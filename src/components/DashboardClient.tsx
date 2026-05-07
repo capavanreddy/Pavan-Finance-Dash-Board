@@ -6508,7 +6508,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </th>
                             <th style={getThStyle(t)}>Ack Remarks</th>
                             {!isViewer && <th style={getThStyle(t)}>Actions</th>}
-)}>Actions</th>}
                           </tr>
                         </thead>
                         <tbody>
