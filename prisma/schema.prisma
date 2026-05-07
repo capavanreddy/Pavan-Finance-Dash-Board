@@ -102,6 +102,7 @@ model LearningOpportunity {
   modeOfCommunication  String
   emailSub             String?
   comments             String?
+  submittedBy          String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   editRequested        Boolean   @default(false)

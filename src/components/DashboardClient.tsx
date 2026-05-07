@@ -2987,7 +2987,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
   useEffect(() => {
     setExtReqCurrentPage(1);
-  }, [extReqItemsPerPage, extReqStatusFilter, extReqSearchQuery, extReqDeptFilter, extReqTypeFilter]);
+  }, [extReqItemsPerPage, extReqFilter, extReqSearch, extReqStatusFilter, requestTypeFilter, extReqFinanceFunctionFilter, extReqDateFrom, extReqDateTo]);
 
   // Export Handlers
   const exportToExcel = async () => {
@@ -3158,11 +3158,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     worksheet.columns = [
       { width: 8 },  // SI No
       { width: 20 }, // Timestamp
-      { width: 20 }, // Entity
-      { width: 20 }, // Date of Identification
-      { width: 45 }, // Learning Opportunity
+      { width: 25 }, // Submitted By
       { width: 20 }, // Identified By
       { width: 20 }, // Committed By
+      { width: 20 }, // Date of Identification
+      { width: 20 }, // Entity
+      { width: 20 }, // Classification
+      { width: 45 }, // Learning Opportunity
       { width: 45 }, // Resolution Provided
       { width: 20 }, // Status
       { width: 30 }, // Ack Remarks
@@ -3174,8 +3176,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     // Row 3: Column Headers (Dark Blue background, White text)
     const headerRow = worksheet.getRow(3);
     const headers = [
-      'SI No', 'Timestamp', 'Entity', 'Date of Identification', 'Learning Opportunity', 
-      'Identified by', 'Commited By', 'Resolution Provided', 'Status', 'Ack Remarks', 'Mode Of Communication', 
+      'SI No', 'Timestamp', 'Submitted By', 'Identified by', 'Commited By', 'Date of Identification', 'Entity', 'Classification', 'Learning Opportunity', 
+      'Resolution Provided', 'Status', 'Ack Remarks', 'Mode Of Communication', 
       'Email Sub', 'Comments'
     ];
     
@@ -3198,11 +3200,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
       const row = worksheet.addRow([
         index + 1,
         formatDateTime(lo.createdAt),
-        lo.entity,
-        formatDate(lo.dateOfIdentification),
-        lo.learningOpportunity,
+        lo.submittedBy || "Auto",
         lo.identifiedBy,
         lo.committedBy,
+        formatDate(lo.dateOfIdentification),
+        lo.entity,
+        lo.classification || "N/A",
+        lo.learningOpportunity,
         lo.resolutionProvided,
         lo.isAcknowledged ? "Acknowledged" : "Pending",
         lo.learnerComments || "--",
@@ -3419,14 +3423,18 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-    const tableColumn = ["ID", "Entity", "Date", "Mistake / LO", "Identified By", "Committed By", "Mode"];
+    const tableColumn = ["ID", "Submitted At", "Submitted By", "Identified By", "Committed By", "Date", "Entity", "Classification", "Opportunity", "Resolution", "Mode"];
     const tableRows = sortedLOs.map(l => [
       l.id,
-      l.entity,
-      formatDate(l.dateOfIdentification),
-      l.learningOpportunity,
+      formatDateTime(l.createdAt),
+      l.submittedBy || "Auto",
       l.identifiedBy,
       l.committedBy,
+      formatDate(l.dateOfIdentification),
+      l.entity,
+      l.classification || "N/A",
+      l.learningOpportunity,
+      l.resolutionProvided || "--",
       l.modeOfCommunication
     ]);
 
@@ -6440,61 +6448,67 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           <tr style={{ borderBottom: `1px solid ${t.border}`, background: theme === 'DARK' ? "#1e293b" : "#f8fafc" }}>
                             <th style={{ ...getThStyle(t), padding: "20px", cursor: "pointer" }} onClick={() => handleLOSort('id')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                SI No {loSortConfig?.key === 'id' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                SI No {loSortConfig?.key === 'id' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('createdAt')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Submitted At {loSortConfig?.key === 'createdAt' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Submitted At {loSortConfig?.key === 'createdAt' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
-                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('submittedBy' as any)}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                              </div>
-                            </th>
-                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('entity')}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Entity {loSortConfig?.key === 'entity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Submitted By {loSortConfig?.key === 'submittedBy' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('identifiedBy')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                              </div>
-                            </th>
-                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('classification' as any)}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Classification {loSortConfig?.key === 'classification' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                              </div>
-                            </th>
-                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('learningOpportunity')}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Opportunity {loSortConfig?.key === 'learningOpportunity' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-                              </div>
-                            </th>
-                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('resolutionProvided')}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Resolution {loSortConfig?.key === 'resolutionProvided' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Identified By {loSortConfig?.key === 'identifiedBy' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                               </div>
                             </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('committedBy')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Committed By {loSortConfig?.key === 'committedBy' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('dateOfIdentification')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Date {loSortConfig?.key === 'dateOfIdentification' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('entity')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Entity {loSortConfig?.key === 'entity' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('classification' as any)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Classification {loSortConfig?.key === 'classification' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('learningOpportunity')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Opportunity {loSortConfig?.key === 'learningOpportunity' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size {14} />)}
+                              </div>
+                            </th>
+                            <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('resolutionProvided')}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                Resolution {loSortConfig?.key === 'resolutionProvided' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size {14} />)}
                               </div>
                             </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('isAcknowledged' as any)}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Status {loSortConfig?.key === 'isAcknowledged' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Status {loSortConfig?.key === 'isAcknowledged' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size {14} />)}
                               </div>
                             </th>
                             <th style={{ ...getThStyle(t), cursor: "pointer" }} onClick={() => handleLOSort('acknowledgedAt')}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                Ack At {loSortConfig?.key === 'acknowledgedAt' && (loSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                Ack At {loSortConfig?.key === 'acknowledgedAt' && (loSortConfig?.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size {14} />)}
                               </div>
                             </th>
                             <th style={getThStyle(t)}>Ack Remarks</th>
                             {!isViewer && <th style={getThStyle(t)}>Actions</th>}
+)}>Actions</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -6533,13 +6547,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </div>
                               </td>
                               <td style={{ ...getTdStyle(t), fontSize: "0.8125rem", whiteSpace: "nowrap" }}>{lo.createdAt ? formatDateTime(lo.createdAt) : "--"}</td>
+                              <td style={getTdStyle(t)}>{lo.submittedBy || <span style={{color: t.textMuted, fontStyle: 'italic'}}>Auto</span>}</td>
+                              <td style={getTdStyle(t)}>{lo.identifiedBy}</td>
+                              <td style={getTdStyle(t)}>{lo.committedBy}</td>
                               <td style={getTdStyle(t)}>{formatDate(lo.dateOfIdentification)}</td>
                               <td style={getTdStyle(t)}>{lo.entity}</td>
-                              <td style={getTdStyle(t)}>{lo.identifiedBy}</td>
                               <td style={getTdStyle(t)}>{lo.classification || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
                               <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{lo.learningOpportunity}</td>
                               <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{lo.resolutionProvided || "--"}</td>
-                              <td style={getTdStyle(t)}>{lo.committedBy}</td>
                               <td style={getTdStyle(t)}>
                                 <span 
                                   title={lo.isAcknowledged ? `Acknowledged by ${lo.acknowledgedBy || lo.committedBy || 'Owner'} on ${formatDateTime(lo.acknowledgedAt!)}` : 'Pending acknowledgment'}
