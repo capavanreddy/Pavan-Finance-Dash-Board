@@ -108,6 +108,7 @@ type ExternalRequest = {
   processedAttachments?: any | null;
   processedBy?: string | null;
   processedAt?: string | null;
+  mailSubject?: string | null;
   transferredAt?: string | null;
   taskDisplayId?: string | null;
 };
