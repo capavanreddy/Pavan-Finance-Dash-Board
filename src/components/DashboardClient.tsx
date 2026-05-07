@@ -5991,7 +5991,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.8125rem" }}>
                                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                         <User size={12} color="#6366f1" />
-                                        <span>{pName} - <span style={{ fontWeight: 600, color: "#6366f1" }}>Allocator</span></span>
+                                        <span>{pName} - <span style={{ fontWeight: 600, color: "#6366f1" }}>Request Allocator</span></span>
                                       </div>
                                       {linkedTask && (
                                         <>
