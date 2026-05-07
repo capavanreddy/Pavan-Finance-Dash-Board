@@ -8244,13 +8244,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('Department', dept);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${dept.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${dept.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${dept.trim()}"?`, () => {
                                         const items = settings.masterDepartments.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterDepartments: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterDepartments.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterDepartments: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", fontWeight: "bold", fontSize: "14px", opacity: 0.7 }}
@@ -8299,13 +8298,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('Entity', ent);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${ent.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${ent.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${ent.trim()}"?`, () => {
                                         const items = settings.masterEntities.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterEntities: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterEntities.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterEntities: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
@@ -8354,13 +8352,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('TaskType', type);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${type.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${type.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${type.trim()}"?`, () => {
                                         const items = settings.masterTaskTypes.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterTaskTypes: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterTaskTypes.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterTaskTypes: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
@@ -8408,13 +8405,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('CommMode', mode);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${mode.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${mode.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${mode.trim()}"?`, () => {
                                         const items = settings.masterCommunicationModes.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterCommunicationModes: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterCommunicationModes.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterCommunicationModes: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
@@ -8463,13 +8459,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('Frequency', freq);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${freq.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${freq.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${freq.trim()}"?`, () => {
                                         const items = settings.masterFrequencies.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterFrequencies: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterFrequencies.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterFrequencies: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
@@ -8566,13 +8561,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   onClick={() => {
                                     const usage = checkValueUsage('FinanceFunction', type);
                                     if (usage.count > 0) {
-                                      showConfirm(`Warning: "${type.trim()}" is used in ${usage.count} ${usage.usedBy}. Removing it may cause issues in filtering or reports. Do you still want to delete it?`, () => {
+                                      showNotification(`Cannot delete "${type.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
+                                    } else {
+                                      showConfirm(`Are you sure you want to remove "${type.trim()}"?`, () => {
                                         const items = settings.masterRequestTypes.split(',').filter((_, i) => i !== idx);
                                         setSettings({...settings, masterRequestTypes: items.join(',')});
                                       });
-                                    } else {
-                                      const items = settings.masterRequestTypes.split(',').filter((_, i) => i !== idx);
-                                      setSettings({...settings, masterRequestTypes: items.join(',')});
                                     }
                                   }}
                                   style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}
