@@ -5952,15 +5952,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     <div style={{ display: "flex", gap: "8px" }}>
                                       <button 
                                         onClick={() => handleConvertToTask(req)}
-                                        style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                                        style={{ background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}
+                                        title="Convert to Task"
                                       >
-                                        <Plus size={12} /> Convert to Task
+                                        <Plus size={16} />
                                       </button>
                                       <button 
                                         onClick={() => { setRejectingReq(req); setShowRejectModal(true); }}
-                                        style={{ background: t.card, color: "#ef4444", border: "1px solid #fee2e2", borderRadius: "8px", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+                                        style={{ background: t.card, color: "#ef4444", border: "1px solid #fee2e2", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}
+                                        title="Reject"
                                       >
-                                        Reject
+                                        <X size={16} />
                                       </button>
                                     </div>
                                   )}
@@ -5998,11 +6000,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   {!req.convertedTaskId && isAdmin && (
                                     <button 
                                       onClick={() => handleDeleteExtRequest(req.id)}
-                                      style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}
+                                      style={{ alignSelf: "flex-start", marginTop: "4px", background: "transparent", border: "none", color: t.textMuted, cursor: "pointer", padding: "6px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
                                       onMouseOver={(e) => e.currentTarget.style.color = "#ef4444"}
                                       onMouseOut={(e) => e.currentTarget.style.color = "#94a3b8"}
+                                      title="Delete Request"
                                     >
-                                      <Trash2 size={12} /> <span style={{ fontSize: "0.65rem" }}>Delete Request</span>
+                                      <Trash2 size={16} />
                                     </button>
                                   )}
                                 </div>
