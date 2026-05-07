@@ -583,9 +583,21 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   // Smart Permission Helpers
   const matrixAllocators = JSON.parse(settings.allocationMatrix || '{}');
   const userAllocatedDepts = Object.entries(matrixAllocators)
-    .filter(([_, allocators]) => {
+    .filter(([_, allocators]: [string, any]) => {
+      if (!allocators) return false;
+      const userEmail = user?.email?.toLowerCase().trim();
+      
+      // Handle new structure: { primary: "email", secondary: ["email1", ...] }
+      if (typeof allocators === 'object' && !Array.isArray(allocators)) {
+        const isPrimary = allocators.primary?.toLowerCase().trim() === userEmail;
+        const isSecondary = Array.isArray(allocators.secondary) && 
+                           allocators.secondary.some((e: string) => e?.toLowerCase().trim() === userEmail);
+        return isPrimary || isSecondary;
+      }
+      
+      // Handle old structure (backward compatibility)
       const emailList = Array.isArray(allocators) ? allocators : [allocators];
-      return emailList.some(email => typeof email === 'string' && email.toLowerCase().trim() === user?.email?.toLowerCase().trim());
+      return emailList.some(email => typeof email === 'string' && email.toLowerCase().trim() === userEmail);
     })
     .map(([dept, _]) => dept.trim());
   
@@ -9241,57 +9253,133 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <tbody>
                                 {settings.masterRequestTypes.split(',').filter(t => t.trim()).map((type) => {
                                   const matrix = JSON.parse(settings.allocationMatrix || '{}');
+                                  const rawData = matrix[type];
+                                  
+                                  // Normalize data structure
+                                  let primary = "";
+                                  let secondary: string[] = [];
+                                  
+                                  if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+                                    primary = rawData.primary || "";
+                                    secondary = Array.isArray(rawData.secondary) ? rawData.secondary : [];
+                                  } else if (Array.isArray(rawData)) {
+                                    // Migration on the fly
+                                    primary = rawData[0] || "";
+                                    secondary = rawData.slice(1);
+                                  } else if (typeof rawData === 'string' && rawData) {
+                                    primary = rawData;
+                                  }
+
                                   return (
                                     <tr key={type} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                                      <td style={{ padding: "12px", fontWeight: 600, color: t.text, fontSize: "0.875rem" }}>{type}</td>
-                                      <td style={{ padding: "12px" }}>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                                            {(() => {
-                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
-                                              if (allocators.length === 0) return <span style={{ fontSize: "0.75rem", color: t.textMuted, fontStyle: "italic" }}>No Allocators Assigned</span>;
-                                              return allocators.map((email: string) => (
-                                                <div key={email} style={{ 
-                                                  background: "#f0f9ff", border: "1px solid #bae6fd", 
-                                                  padding: "2px 8px", borderRadius: "6px", 
-                                                  fontSize: "0.75rem", color: "#0369a1", 
-                                                  display: "flex", alignItems: "center", gap: "6px" 
-                                                }}>
-                                                  {usersList.find(u => u.email === email)?.name || email}
-                                                  <button 
-                                                    onClick={() => {
-                                                      const updated = allocators.filter((e: string) => e !== email);
-                                                      setSettings({ ...settings, allocationMatrix: JSON.stringify({ ...matrix, [type]: updated }) });
-                                                    }}
-                                                    style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: 0, display: "flex" }}
-                                                  >
-                                                    <X size={12} />
-                                                  </button>
-                                                </div>
-                                              ));
-                                            })()}
+                                      <td style={{ padding: "16px 12px", fontWeight: 600, color: t.text, fontSize: "0.875rem", verticalAlign: "top", width: "200px" }}>{type}</td>
+                                      <td style={{ padding: "16px 12px" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                          
+                                          {/* Primary Allocator Section */}
+                                          <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                                            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Primary Allocator (Max 1)</label>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                              <select 
+                                                value={primary}
+                                                onChange={(e) => {
+                                                  const newPrimary = e.target.value;
+                                                  setSettings({
+                                                    ...settings,
+                                                    allocationMatrix: JSON.stringify({ 
+                                                      ...matrix, 
+                                                      [type]: { primary: newPrimary, secondary } 
+                                                    })
+                                                  });
+                                                }}
+                                                style={{ flex: 1, padding: "8px", borderRadius: "8px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", background: "white" }}
+                                              >
+                                                <option value="">Select Primary Allocator</option>
+                                                {usersList
+                                                  .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
+                                                  .map(u => (
+                                                    <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
+                                                  ))
+                                                }
+                                              </select>
+                                              {primary && (
+                                                <button 
+                                                  onClick={() => {
+                                                    setSettings({
+                                                      ...settings,
+                                                      allocationMatrix: JSON.stringify({ 
+                                                        ...matrix, 
+                                                        [type]: { primary: "", secondary } 
+                                                      })
+                                                    });
+                                                  }}
+                                                  style={{ background: "#fee2e2", border: "none", color: "#ef4444", padding: "8px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                                                  title="Clear Primary"
+                                                >
+                                                  <X size={14} />
+                                                </button>
+                                              )}
+                                            </div>
                                           </div>
-                                          <select 
-                                            value=""
-                                            onChange={(e) => {
-                                              if (!e.target.value) return;
-                                              const allocators = Array.isArray(matrix[type]) ? matrix[type] : (matrix[type] ? [matrix[type]] : []);
-                                              if (allocators.includes(e.target.value)) return;
-                                              setSettings({
-                                                ...settings,
-                                                allocationMatrix: JSON.stringify({ ...matrix, [type]: [...allocators, e.target.value] })
-                                              });
-                                            }}
-                                            style={{ width: "100%", padding: "6px", borderRadius: "6px", border: `1px solid ${t.border}`, fontSize: "0.8125rem" }}
-                                          >
-                                            <option value="">+ Add Allocator</option>
-                                            {usersList
-                                              .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
-                                              .map(u => (
-                                                <option key={u.email} value={u.email}>{u.name || u.email} ({u.email})</option>
-                                              ))
-                                            }
-                                          </select>
+
+                                          {/* Secondary Allocators Section */}
+                                          <div style={{ background: "white", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                                            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Secondary Allocators (Backup)</label>
+                                            
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                                              {secondary.length === 0 ? (
+                                                <span style={{ fontSize: "0.75rem", color: t.textMuted, fontStyle: "italic" }}>No secondary allocators assigned</span>
+                                              ) : (
+                                                secondary.map((email: string) => (
+                                                  <div key={email} style={{ 
+                                                    background: "#f1f5f9", border: "1px solid #e2e8f0", 
+                                                    padding: "4px 10px", borderRadius: "8px", 
+                                                    fontSize: "0.75rem", color: "#475569", 
+                                                    display: "flex", alignItems: "center", gap: "8px" 
+                                                  }}>
+                                                    {usersList.find(u => u.email === email)?.name || email}
+                                                    <button 
+                                                      onClick={() => {
+                                                        const updatedSec = secondary.filter((e: string) => e !== email);
+                                                        setSettings({ ...settings, allocationMatrix: JSON.stringify({ ...matrix, [type]: { primary, secondary: updatedSec } }) });
+                                                      }}
+                                                      style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: 0, display: "flex" }}
+                                                    >
+                                                      <X size={14} />
+                                                    </button>
+                                                  </div>
+                                                ))
+                                              )}
+                                            </div>
+
+                                            <select 
+                                              value=""
+                                              onChange={(e) => {
+                                                if (!e.target.value) return;
+                                                if (e.target.value === primary) return; // Already primary
+                                                if (secondary.includes(e.target.value)) return;
+                                                setSettings({
+                                                  ...settings,
+                                                  allocationMatrix: JSON.stringify({ 
+                                                    ...matrix, 
+                                                    [type]: { primary, secondary: [...secondary, e.target.value] } 
+                                                  })
+                                                });
+                                              }}
+                                              style={{ width: "100%", padding: "8px", borderRadius: "8px", border: `1px solid ${t.border}`, fontSize: "0.8125rem" }}
+                                            >
+                                              <option value="">+ Add Secondary Allocator</option>
+                                              {usersList
+                                                .filter(u => u.department === 'Finance' && (u as any).isApproved !== false)
+                                                .map(u => (
+                                                  <option key={u.email} value={u.email} disabled={u.email === primary}>
+                                                    {u.name || u.email} {u.email === primary ? "(Primary)" : ""}
+                                                  </option>
+                                                ))
+                                              }
+                                            </select>
+                                          </div>
+
                                         </div>
                                       </td>
                                     </tr>
