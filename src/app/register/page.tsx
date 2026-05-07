@@ -141,8 +141,8 @@ export default function Register() {
                 <input 
                   type="text" 
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder="EMP001"
+                  onChange={(e) => setEmployeeId(e.target.value.replace(/\D/g, ''))}
+                  placeholder="10245"
                   required
                   style={inputStyle}
                   onFocus={handleFocus}
