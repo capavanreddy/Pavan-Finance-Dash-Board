@@ -71,11 +71,11 @@ model Task {
   createdByEmail        String?
   captureLO             String?
   source                String?   @default("TDB")
-  processedMode         String?
-  processedMailLink     String?
   processedAttachments  Json?
-  transferredBy         String?
+  processedMailLink     String?
+  processedMode         String?
   transferredAt         DateTime?
+  transferredBy         String?
 
   @@unique([templateId, periodKey], map: "task_template_period_idx")
 }
@@ -102,7 +102,6 @@ model LearningOpportunity {
   modeOfCommunication  String
   emailSub             String?
   comments             String?
-  submittedBy          String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   editRequested        Boolean   @default(false)
@@ -116,6 +115,8 @@ model LearningOpportunity {
   acknowledgedAt       DateTime? @db.Timestamp(6)
   taskId               Int?
   acknowledgedBy       String?
+  classification       String?
+  submittedBy          String?
 }
 
 model LearningResource {
@@ -152,34 +153,46 @@ model RecurringTemplate {
   weeklyDay           String?
   excludedDates       Json?
   freqLabel           String?
+  assignmentHistory   AssignmentHistory[]
+}
+
+model AssignmentHistory {
+  id              Int               @id @default(autoincrement())
+  templateId      Int
+  ownerName       String
+  reviewerName    String
+  effectiveFrom   DateTime          @db.Date
+  createdAt       DateTime          @default(now())
+  template        RecurringTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }
 
 model ExternalRequest {
-  id                     Int      @id @default(autoincrement())
+  id                     Int       @id @default(autoincrement())
   requestFrom            String
   requesterEmail         String
-  requestDate            DateTime @default(now())
+  requestDate            DateTime  @default(now())
   natureOfRequest        String
-  reasonForRequest       String?
   departmentName         String
   requestType            String
-  status                 String   @default("Under Process")
+  status                 String    @default("Under Process")
   assignedAllocatorEmail String?
   convertedTaskId        Int?
   rejectReason           String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
   entityName             String?
   originalRequestType    String?
-  transferStatus         String?  @default("O")
+  transferStatus         String?   @default("O")
   transferredBy          String?
-  transferredAt          DateTime?
   frequency              String?
-  processedMode          String?
-  processedMailLink      String?
+  reasonForRequest       String?
+  processedAt            DateTime?
   processedAttachments   Json?
   processedBy            String?
-  processedAt            DateTime?
+  processedMailLink      String?
+  processedMode          String?
+  transferredAt          DateTime?
+  mailSubject            String?
 }
 
 model SystemSettings {
@@ -224,6 +237,7 @@ model SystemSettings {
   paymentReportDay         String?   @default("Monday")
   paymentReportDate        Int?      @default(1)
   departmentHeadMatrix     String?   @default("{}")
+  masterLOClassifications  String?   @default("Process Error,Calculation Error,Communication Gap,Documentation Miss,System Issue,Miscellaneous")
 }
 
 model PaymentTemplate {

@@ -113,6 +113,20 @@ export default function RecurringActivities({   settings, usersList = [] , showN
   const [dailySortConfig, setDailySortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'targetDate', direction: 'desc' });
   const [masterSortConfig, setMasterSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [stopModal, setStopModal] = useState<{ isOpen: boolean; templateId: number | null; templateName: string }>({ isOpen: false, templateId: null, templateName: '' });
+  
+  // Assignment History State
+  const [showAssignmentHistory, setShowAssignmentHistory] = useState(false);
+  const [assignmentHistory, setAssignmentHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedTemplateForHistory, setSelectedTemplateForHistory] = useState<RecurringTemplate | null>(null);
+  const [showAssignmentUpdate, setShowAssignmentUpdate] = useState(false);
+  const [assignmentForm, setAssignmentForm] = useState({
+    ownerName: "",
+    reviewerName: "",
+    effectiveFrom: new Date().toISOString().split('T')[0]
+  });
+  const [isUpdatingAssignment, setIsUpdatingAssignment] = useState(false);
+
   const [stopDate, setStopDate] = useState(new Date().toISOString().split('T')[0]);
   const [stopLoading, setStopLoading] = useState(false);
   const [resumeModal, setResumeModal] = useState<{ isOpen: boolean; templateId: number | null; templateName: string }>({ isOpen: false, templateId: null, templateName: '' });
@@ -424,6 +438,76 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     } finally {
       setResumeLoading(false);
     }
+  };
+
+  const fetchAssignmentHistory = async (templateId: number) => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/recurring-templates/${templateId}/assignments`);
+      if (res.ok) {
+        setAssignmentHistory(await res.json());
+      }
+    } catch (err) {
+      console.error("Fetch history error:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleSaveAndPostAssignment = async () => {
+    if (!selectedTemplateForHistory || !assignmentForm.ownerName || !assignmentForm.reviewerName || !assignmentForm.effectiveFrom) {
+      showNotification("Please fill all required fields");
+      return;
+    }
+    setIsUpdatingAssignment(true);
+    try {
+      const res = await fetch(`/api/recurring-templates/${selectedTemplateForHistory.id}/assignments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assignmentForm)
+      });
+      if (res.ok) {
+        showNotification("Assignment updated and posted to pending tasks!");
+        setShowAssignmentUpdate(false);
+        fetchTemplates();
+      } else {
+        showNotification("Failed to update assignment.");
+      }
+    } catch (err) {
+      console.error("Update assignment error:", err);
+      showNotification("An error occurred.");
+    } finally {
+      setIsUpdatingAssignment(false);
+    }
+  };
+
+  const downloadAssignmentHistory = async (template: RecurringTemplate, history: any[]) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Assignment History');
+    
+    worksheet.columns = [
+      { header: 'Rule Name', key: 'ruleName', width: 30 },
+      { header: 'Entity', key: 'entity', width: 20 },
+      { header: 'Owner Name', key: 'ownerName', width: 25 },
+      { header: 'Reviewer Name', key: 'reviewerName', width: 25 },
+      { header: 'Effective From', key: 'effectiveFrom', width: 15 },
+      { header: 'Updated At', key: 'updatedAt', width: 20 }
+    ];
+
+    history.forEach(h => {
+      worksheet.addRow({
+        ruleName: template.taskNamePattern,
+        entity: template.entityName,
+        ownerName: h.ownerName,
+        reviewerName: h.reviewerName,
+        effectiveFrom: new Date(h.effectiveFrom).toLocaleDateString('en-GB'),
+        updatedAt: new Date(h.createdAt).toLocaleString('en-GB')
+      });
+    });
+
+    worksheet.getRow(1).font = { bold: true };
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Assignment_History_${template.id}.xlsx`);
   };
 
   const handleDeleteTemplate = async (id: number) => {
@@ -1686,7 +1770,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                   </th>
                   <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleMasterSort('defaultOwner')}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      Default Assignments {masterSortConfig?.key === 'defaultOwner' && (masterSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                      Default Assignors {masterSortConfig?.key === 'defaultOwner' && (masterSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                     </div>
                   </th>
                   <th style={{...thStyle, cursor: "pointer"}} onClick={() => handleMasterSort('isActive')}>
@@ -1725,8 +1809,40 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? new Date(t.endDate).toLocaleDateString('en-GB') : "Forever"}</div>
                     </td>
                     <td style={tdStyle}>
-                        <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Users size={14} color="#64748b" /> {t.defaultOwner}</div>
-                        <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Briefcase size={14} color="#64748b" /> {t.defaultReviewer}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                            <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Users size={14} color="#64748b" /> {t.defaultOwner}</div>
+                            <div style={{ fontSize: "0.8125rem", display: "flex", alignItems: "center", gap: "4px" }}><Briefcase size={14} color="#64748b" /> {t.defaultReviewer}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: "4px" }}>
+                             <button 
+                                onClick={() => {
+                                  setSelectedTemplateForHistory(t);
+                                  fetchAssignmentHistory(t.id);
+                                  setShowAssignmentHistory(true);
+                                }}
+                                style={{ background: "#f1f5f9", border: "none", color: "#475569", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                title="View History"
+                             >
+                               <Eye size={14} />
+                             </button>
+                             <button 
+                                onClick={() => {
+                                  setSelectedTemplateForHistory(t);
+                                  setAssignmentForm({
+                                    ownerName: t.defaultOwner || "",
+                                    reviewerName: t.defaultReviewer || "",
+                                    effectiveFrom: new Date().toISOString().split('T')[0]
+                                  });
+                                  setShowAssignmentUpdate(true);
+                                }}
+                                style={{ background: "#eff6ff", border: "none", color: "#2563eb", cursor: "pointer", padding: "4px", borderRadius: "6px" }}
+                                title="Update Assignment"
+                             >
+                               <Edit2 size={14} />
+                             </button>
+                          </div>
+                        </div>
                     </td>
                     <td style={tdStyle}>
                         <span style={{ 
@@ -2249,6 +2365,138 @@ export default function RecurringActivities({   settings, usersList = [] , showN
       )}
 
     </div>
+    </div>
+
+      {/* Assignment History Modal */}
+      {showAssignmentHistory && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 6000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", padding: "24px" }}>
+          <div style={{ background: "white", width: "100%", maxWidth: "800px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e293b", color: "white" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <Eye size={20} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>Assignment History Log</h3>
+                  <span style={{ fontSize: "0.8125rem", opacity: 0.8 }}>Rule: {selectedTemplateForHistory?.taskNamePattern}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button 
+                  onClick={() => selectedTemplateForHistory && downloadAssignmentHistory(selectedTemplateForHistory, assignmentHistory)}
+                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", cursor: "pointer", padding: "6px 16px", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <FileSpreadsheet size={16} /> Download Log
+                </button>
+                <button onClick={() => setShowAssignmentHistory(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
+              </div>
+            </div>
+            
+            <div style={{ padding: "0", maxHeight: "60vh", overflowY: "auto" }}>
+              {historyLoading ? (
+                <div style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>Loading history...</div>
+              ) : assignmentHistory.length === 0 ? (
+                <div style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>No history found for this rule.</div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
+                    <tr>
+                      <th style={{ ...thStyle, background: "#f8fafc", color: "#475569" }}>Effective From</th>
+                      <th style={{ ...thStyle, background: "#f8fafc", color: "#475569" }}>Owner</th>
+                      <th style={{ ...thStyle, background: "#f8fafc", color: "#475569" }}>Reviewer</th>
+                      <th style={{ ...thStyle, background: "#f8fafc", color: "#475569" }}>Updated At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assignmentHistory.map((h, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={tdStyle}>{new Date(h.effectiveFrom).toLocaleDateString('en-GB')}</td>
+                        <td style={tdStyle}>{h.ownerName}</td>
+                        <td style={tdStyle}>{h.reviewerName}</td>
+                        <td style={tdStyle}>{new Date(h.createdAt).toLocaleString('en-GB')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div style={{ padding: "24px 32px", borderTop: "1px solid #f1f5f9", textAlign: "right", background: "#f8fafc" }}>
+              <button onClick={() => setShowAssignmentHistory(false)} style={doneButtonStyle}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assignment Update Modal (Save & Post) */}
+      {showAssignmentUpdate && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 6000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", padding: "24px" }}>
+          <div style={{ background: "white", width: "100%", maxWidth: "500px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "24px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)", color: "white" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ background: "rgba(255,255,255,0.2)", padding: "10px", borderRadius: "12px" }}><Edit2 size={20} /></div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>Update Default Assignors</h3>
+              </div>
+              <button onClick={() => setShowAssignmentUpdate(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
+            </div>
+            
+            <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", padding: "16px", borderRadius: "12px", marginBottom: "8px" }}>
+                <p style={{ margin: 0, fontSize: "0.875rem", color: "#0369a1", fontWeight: 600 }}>Rule: {selectedTemplateForHistory?.taskNamePattern}</p>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#0ea5e9" }}>This will update all pending tasks on or after the effective date.</p>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Effective From Date</label>
+                <input 
+                  type="date" 
+                  value={assignmentForm.effectiveFrom} 
+                  onChange={e => setAssignmentForm({...assignmentForm, effectiveFrom: e.target.value})} 
+                  style={inputStyle} 
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>New Default Owner</label>
+                <select 
+                  value={assignmentForm.ownerName} 
+                  onChange={e => setAssignmentForm({...assignmentForm, ownerName: e.target.value})} 
+                  style={inputStyle}
+                >
+                  <option value="">Select Owner...</option>
+                  {financeUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>New Default Reviewer</label>
+                <select 
+                  value={assignmentForm.reviewerName} 
+                  onChange={e => setAssignmentForm({...assignmentForm, reviewerName: e.target.value})} 
+                  style={inputStyle}
+                >
+                  <option value="Not Applicable">Not Applicable</option>
+                  {financeUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                <button 
+                  onClick={() => setShowAssignmentUpdate(false)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#64748b", fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveAndPostAssignment}
+                  disabled={isUpdatingAssignment}
+                  style={{ flex: 2, padding: "12px", borderRadius: "10px", border: "none", background: "#2563eb", color: "white", fontWeight: 700, cursor: isUpdatingAssignment ? "not-allowed" : "pointer", boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)" }}
+                >
+                  {isUpdatingAssignment ? "Processing..." : "Save and Post"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
   );
 }
 
