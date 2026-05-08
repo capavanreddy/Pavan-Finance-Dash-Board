@@ -4229,8 +4229,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           {/* Active View Title/Context Area */}
           {(activeView as any) !== 'HOME' && !(activeView === 'LOS' && loActiveFilter === 'ANALYTICS') && (
           <div style={{ 
-            padding: (activeView === 'LOS' && loActiveFilter === 'RESOURCES') ? "0" : "24px 32px 32px 32px",
-            marginBottom: ((activeView as any) === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "0" : "32px", 
+            padding: (activeView === 'LOS' && loActiveFilter === 'RESOURCES') ? "0" : "16px 32px 16px 32px",
+            marginBottom: ((activeView as any) === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "0" : "16px", 
             borderBottom: ((activeView as any) === 'HOME' || (activeView === 'LOS' && loActiveFilter === 'RESOURCES')) ? "none" : `1px solid ${t.border}`,
             display: "flex",
             justifyContent: "space-between",
@@ -4473,7 +4473,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           </div>
         ) : activeView === 'TASKS' ? (
           activeSubView === 'MAIN' ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "16px" }}>
               <MetricCard t={t} title="Total Tasks" value={baseFilteredTasks.length} icon={<LayoutDashboard size={20} color="#ffffff" />} bg="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" isActive={activeFilter === 'ALL'} onClick={() => setActiveFilter('ALL')} />
               <MetricCard t={t} title="Pending Owner Tasks" value={pendingActionCount} icon={<Clock size={20} color="#ffffff" />} bg="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" isActive={activeFilter === 'PENDING_ACTION'} onClick={() => setActiveFilter('PENDING_ACTION')} />
               <MetricCard t={t} title="Pending Review" value={pendingReviewCount} icon={<AlertCircle size={20} color="#ffffff" />} bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" isActive={activeFilter === 'PENDING_REVIEW'} onClick={() => setActiveFilter('PENDING_REVIEW')} />
@@ -4875,7 +4875,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
               
             {/* Filter Bar */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "16px", alignItems: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "12px", alignItems: "center" }}>
               <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
                 <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
                 <input 
@@ -5657,7 +5657,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
           <div className="other-dept-view">
             <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-              <div style={{ padding: "28px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
+              <div style={{ padding: "16px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: t.text }}>Inter Dept Request</h3>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 12px", borderRight: `1px solid ${t.border}` }}>
@@ -5723,7 +5723,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
               
               {/* Metric Cards for Inter-Dept */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", padding: "24px 32px", background: t.card }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", padding: "16px 24px", background: t.card }}>
                 <MetricCard t={t} 
                   title="All Requests" 
                   value={baseFilteredExternalRequests.length} 
@@ -5767,7 +5767,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
 
               {/* Enhanced Filter Bar */}
-              <div style={{ padding: "16px 32px", background: t.bg, borderBottom: `1px solid ${t.border}`, display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ padding: "12px 24px", background: t.bg, borderBottom: `1px solid ${t.border}`, display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
                   <Search style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={16} />
                   <input 
@@ -6514,8 +6514,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </div>
                   </div>
 
-                  <div style={{ padding: "32px" }}>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", marginBottom: "24px", background: t.card, padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)" }}>
+                  <div style={{ padding: "16px 24px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", marginBottom: "16px", background: t.card, padding: "14px 20px", borderRadius: "16px", border: `1px solid ${t.border}`, boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)" }}>
                       <div style={{ position: "relative", minWidth: "280px", flex: 1 }}>
                         <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
                         <input 
