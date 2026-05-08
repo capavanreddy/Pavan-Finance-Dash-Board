@@ -47,7 +47,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const vendorName = template[0]?.vendorName || "Vendor";
     const paymentDate = occ.actualDate || occ.dueDate;
 
-    const subject = `Payment Advice_${vendorName}_${new Date(paymentDate).toLocaleDateString('en-GB')}`;
+    const formatDate = (date: any) => {
+      const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = MONTHS[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    const subject = `Payment Advice_${vendorName}_${formatDate(paymentDate)}`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
@@ -70,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             </tr>
             <tr>
               <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b;">Payment Date</td>
-              <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${new Date(paymentDate).toLocaleDateString('en-GB')}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${formatDate(paymentDate)}</td>
             </tr>
             <tr>
               <td style="padding: 12px; font-weight: 600; color: #64748b;">UTR / Reference No.</td>

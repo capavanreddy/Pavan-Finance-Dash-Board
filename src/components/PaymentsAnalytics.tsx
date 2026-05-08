@@ -67,11 +67,16 @@ export default function PaymentsAnalytics({
   });
   const [isSharing, setIsSharing] = useState(false);
 
-  // Helper for DD-MM-YYYY display
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+  // Helper for DD-MMM-YYYY display
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return "";
-    const [y, m, d] = dateStr.split('-');
-    return `${d}-${m}-${y}`;
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   useEffect(() => {
@@ -288,11 +293,13 @@ export default function PaymentsAnalytics({
     paidRecords.forEach(d => { entityMap[d.entity_name] = (entityMap[d.entity_name] || 0) + Number(d.amount); });
     const barData = Object.entries(entityMap).map(([name, amount]) => ({ name, amount })).sort((a,b) => b.amount - a.amount).slice(0, 8);
 
-    const trendMap: Record<string, number> = {};
     paidRecords.forEach(d => { const key = d.payment_date.substring(0, 7); trendMap[key] = (trendMap[key] || 0) + Number(d.amount); });
-    const trendData = Object.entries(trendMap).map(([date, amount]) => ({ 
-      date: new Date(date + '-01').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }), amount 
-    })).sort((a,b) => a.date.localeCompare(b.date));
+    const trendData = Object.entries(trendMap).map(([date, amount]) => {
+      const [y, m] = date.split('-');
+      return { 
+        date: `${MONTHS[parseInt(m) - 1]}-${y.substring(2)}`, amount 
+      };
+    }).sort((a,b) => a.date.localeCompare(b.date));
     
     // Bank wise Outflow
     const bankMap: Record<string, number> = {};
@@ -316,8 +323,9 @@ export default function PaymentsAnalytics({
     filteredChartData.forEach(d => {
       const monthKey = d.payment_date.substring(0, 7);
       if (!months[monthKey]) {
+        const [y, m] = monthKey.split('-');
         months[monthKey] = { 
-          month: new Date(monthKey + '-01').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }), 
+          month: `${MONTHS[parseInt(m) - 1]}-${y.substring(2)}`, 
           budget: 0, 
           actual: 0 
         };
@@ -433,7 +441,7 @@ export default function PaymentsAnalytics({
     doc.text(periodStr, 14, 35);
     
     doc.setFontSize(10); doc.setTextColor(100, 116, 139);
-    doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 45);
+    doc.text(`Generated on: ${formatDateDisplay(new Date().toISOString().split('T')[0])}`, 14, 45);
     
     doc.setDrawColor(226, 232, 240); doc.line(14, 50, 196, 50);
 

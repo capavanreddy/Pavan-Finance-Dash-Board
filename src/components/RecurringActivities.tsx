@@ -525,8 +525,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
         entity: template.entityName,
         ownerName: h.ownerName,
         reviewerName: h.reviewerName,
-        effectiveFrom: new Date(h.effectiveFrom).toLocaleDateString('en-GB'),
-        updatedAt: new Date(h.createdAt).toLocaleString('en-GB')
+        effectiveFrom: formatDateDisplay(h.effectiveFrom),
+        updatedAt: formatDateTime(h.createdAt)
       });
     });
 
@@ -573,10 +573,12 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     return user ? user.name : email;
   };
 
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
   const formatDateTime = (dateStr: string) => {
     const d = new Date(dateStr);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, '0');
     const mins = String(d.getMinutes()).padStart(2, '0');
@@ -587,7 +589,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     if (!dateStr) return "--";
     const d = new Date(dateStr);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -757,8 +759,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
         taskName: t.taskNamePattern,
         frequency: t.frequency,
         defaultOwner: t.defaultOwner,
-        startDate: t.startDate ? new Date(t.startDate).toLocaleDateString('en-GB') : "--",
-        stopDate: t.stopDate ? new Date(t.stopDate).toLocaleDateString('en-GB') : "--"
+        startDate: t.startDate ? formatDateDisplay(t.startDate) : "--",
+        stopDate: t.stopDate ? formatDateDisplay(t.stopDate) : "--"
       });
     });
     worksheet.getRow(1).font = { bold: true };
@@ -777,7 +779,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
         t.frequency, 
         t.defaultOwner || "--", 
         t.defaultReviewer || "--",
-        `${t.startDate ? new Date(t.startDate).toLocaleDateString() : "--"} - ${t.endDate ? new Date(t.endDate).toLocaleDateString() : "Ongoing"}`
+        `${t.startDate ? formatDateDisplay(t.startDate) : "--"} - ${t.endDate ? formatDateDisplay(t.endDate) : "Ongoing"}`
       ]),
       startY: 20,
       styles: { fontSize: 8 },
@@ -812,7 +814,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             taskName: t.taskNamePattern,
             frequency: t.frequency,
             defaultOwner: t.defaultOwner,
-            startDate: t.startDate ? new Date(t.startDate).toLocaleDateString('en-GB') : "--"
+            startDate: t.startDate ? formatDateDisplay(t.startDate) : "--"
           });
         });
         const buffer = await workbook.xlsx.writeBuffer();
@@ -837,7 +839,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
             t.taskNamePattern, 
             t.frequency, 
             t.defaultOwner || "--", 
-            t.startDate ? new Date(t.startDate).toLocaleDateString('en-GB') : "--"
+            t.startDate ? formatDateDisplay(t.startDate) : "--"
           ]),
           startY: 20
         });
@@ -1830,8 +1832,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Day {t.dayOffset}</div>
                     </td>
                     <td style={tdStyle}>
-                        <div style={{ fontSize: "0.8125rem" }}>{t.startDate ? new Date(t.startDate).toLocaleDateString('en-GB') : "--"} to</div>
-                        <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? new Date(t.endDate).toLocaleDateString('en-GB') : "Forever"}</div>
+                        <div style={{ fontSize: "0.8125rem" }}>{t.startDate ? formatDateDisplay(t.startDate) : "--"} to</div>
+                        <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? formatDateDisplay(t.endDate) : "Forever"}</div>
                     </td>
                     <td style={tdStyle}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -2361,8 +2363,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 <DetailViewItem label="Month Offset" value={selectedTemplateForView.monthOffset.toString()} />
                 <DetailViewItem label="Default Owner" value={selectedTemplateForView.defaultOwner || "None"} />
                 <DetailViewItem label="Default Reviewer" value={selectedTemplateForView.defaultReviewer || "None"} />
-                <DetailViewItem label="Validity Start" value={selectedTemplateForView.startDate ? new Date(selectedTemplateForView.startDate).toLocaleDateString('en-GB') : "Not Set"} />
-                <DetailViewItem label="Validity End" value={selectedTemplateForView.endDate ? new Date(selectedTemplateForView.endDate).toLocaleDateString('en-GB') : "Forever"} />
+                <DetailViewItem label="Validity Start" value={selectedTemplateForView.startDate ? formatDateDisplay(selectedTemplateForView.startDate) : "Not Set"} />
+                <DetailViewItem label="Validity End" value={selectedTemplateForView.endDate ? formatDateDisplay(selectedTemplateForView.endDate) : "Forever"} />
                 
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={viewLabelStyle}>Excluded / Dismissed Periods</label>
@@ -2438,7 +2440,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
 
                       return (
                         <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={tdStyle}>{new Date(h.effectiveFrom).toLocaleDateString('en-GB')}</td>
+                          <td style={tdStyle}>{formatDateDisplay(h.effectiveFrom)}</td>
                           <td style={tdStyle}>
                             <span style={{ color: ownerChanged ? "#1e293b" : "#94a3b8", fontWeight: ownerChanged ? 700 : 400 }}>
                               {h.ownerName} {!ownerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
@@ -2449,7 +2451,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                               {h.reviewerName} {!reviewerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
                             </span>
                           </td>
-                          <td style={tdStyle}>{new Date(h.createdAt).toLocaleString('en-GB')}</td>
+                          <td style={tdStyle}>{formatDateTime(h.createdAt)}</td>
                         </tr>
                       );
                     })}

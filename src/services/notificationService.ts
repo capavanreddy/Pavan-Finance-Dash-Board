@@ -44,6 +44,16 @@ export async function triggerNotification(type: NotificationType, payload: any) 
   }
 }
 
+function formatDate(date: any) {
+  if (!date) return 'No deadline';
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 function buildEmailData(type: NotificationType, payload: any) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app';
 
@@ -59,7 +69,7 @@ function buildEmailData(type: NotificationType, payload: any) {
           { label: 'Task Name', value: payload.taskName },
           { label: 'Entity', value: payload.entityName },
           { label: 'Requested By', value: payload.reviewerName || payload.requestFrom },
-          { label: 'Due Date', value: payload.dueDate ? new Date(payload.dueDate).toLocaleDateString() : 'No deadline' }
+          { label: 'Due Date', value: formatDate(payload.dueDate) }
         ],
         ctaLink: `${baseUrl}`
       };

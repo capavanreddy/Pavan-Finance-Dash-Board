@@ -110,6 +110,30 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     return d.toISOString().split('T')[0];
   });
   const [paidToDate, setPaidToDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+  // Format date as DD-MMM-YYYY
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return "Not Set";
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Format date and time as DD-MMM-YYYY HH:mm
+  const formatDateTime = (dateStr: string) => {
+    if (!dateStr) return "--";
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${mins}`;
+  };
   
   // Date range defaults: 1st of current month to last of current month
   const getInitialDates = () => {
@@ -807,8 +831,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         desc: occ.paymentDescription,
         type: occ.paymentType,
         freq: occ.frequency,
-        due: new Date(occ.dueDate).toLocaleDateString('en-GB'),
-        actual: occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+        due: formatDate(occ.dueDate),
+        actual: occ.actualDate ? formatDate(occ.actualDate) : "--",
         amount: occ.amountPaid || 0,
         release: occ.amountToRelease || 0,
         bank: occ.paidFromAccount || "--",
@@ -837,9 +861,9 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
     head[0].push('Status');
 
     const body = filteredOccurrences.map(occ => {
-      const row = [occ.entityName, occ.vendorName, occ.paymentDescription, occ.paymentType, occ.frequency, new Date(occ.dueDate).toLocaleDateString('en-GB')];
+      const row = [occ.entityName, occ.vendorName, occ.paymentDescription, occ.paymentType, occ.frequency, formatDate(occ.dueDate)];
       if (activeTab === 'PAID' || activeTab === 'TRACKER') {
-        row.push(occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--");
+        row.push(occ.actualDate ? formatDate(occ.actualDate) : "--");
         row.push(occ.amountPaid ? formatCurrency(occ.amountPaid) : "--");
       }
       if (activeTab === 'LIST' || activeTab === 'TRACKER') {
@@ -886,8 +910,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
         vendor: t.vendorName,
         type: t.paymentType,
         freq: t.frequency,
-        start: new Date(t.startDate).toLocaleDateString('en-GB'),
-        end: new Date(t.endDate).toLocaleDateString('en-GB'),
+        start: formatDate(t.startDate),
+        end: t.endDate ? formatDate(t.endDate) : "Forever",
         status: t.isStopped ? "STOPPED" : "ACTIVE"
       });
     });
@@ -908,8 +932,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
       head: [['Entity', 'Description', 'Vendor', 'Type', 'Freq', 'Start Date', 'End Date', 'Status']],
       body: templates.map(t => [
         t.entityName, t.paymentDescription, t.vendorName, t.paymentType, t.frequency,
-        new Date(t.startDate).toLocaleDateString('en-GB'),
-        new Date(t.endDate).toLocaleDateString('en-GB'),
+        formatDate(t.startDate),
+        t.endDate ? formatDate(t.endDate) : "Forever",
         t.isStopped ? "STOPPED" : "ACTIVE"
       ]),
       startY: 20,
@@ -973,8 +997,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           filteredOccurrences.forEach(occ => {
             worksheet.addRow({
               entity: occ.entityName, vendor: occ.vendorName, desc: occ.paymentDescription, type: occ.paymentType, freq: occ.frequency,
-              due: new Date(occ.dueDate).toLocaleDateString('en-GB'),
-              actual: occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--",
+              due: formatDate(occ.dueDate),
+              actual: occ.actualDate ? formatDate(occ.actualDate) : "--",
               amount: occ.amountPaid || 0,
               status: getStatus(occ)
             });
@@ -1012,9 +1036,9 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
           head = [h];
           
           body = filteredOccurrences.map(occ => {
-            const row = [occ.entityName, occ.vendorName, occ.paymentDescription, occ.paymentType, occ.frequency, new Date(occ.dueDate).toLocaleDateString('en-GB')];
+            const row = [occ.entityName, occ.vendorName, occ.paymentDescription, occ.paymentType, occ.frequency, formatDate(occ.dueDate)];
             if (activeTab === 'PAID' || activeTab === 'TRACKER') {
-              row.push(occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--");
+              row.push(occ.actualDate ? formatDate(occ.actualDate) : "--");
               row.push(occ.amountPaid ? formatCurrency(occ.amountPaid) : "--");
             }
             if (activeTab === 'LIST' || activeTab === 'TRACKER') {
@@ -1369,8 +1393,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}>
                           <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#2563eb" }}>{occ.frequency}</span>
                         </td>
-                        <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
-                        <td style={tdStyle}>{occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--"}</td>
+                        <td style={tdStyle}>{formatDate(occ.dueDate)}</td>
+                        <td style={tdStyle}>{occ.actualDate ? formatDate(occ.actualDate) : "--"}</td>
                         <td style={tdStyle}>{formatCurrency(occ.amountToRelease || 0)}</td>
                         <td style={tdStyle}>
                           <span style={{ 
@@ -1563,7 +1587,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}><div style={{ fontWeight: 600 }}>{occ.vendorName}</div></td>
                         <td style={tdStyle}>{occ.paymentDescription}</td>
                         <td style={tdStyle}><span style={{ fontSize: "0.75rem", padding: "2px 8px", borderRadius: "12px", background: "#f1f5f9", color: "#475569", fontWeight: 600 }}>{occ.paymentType}</span></td>
-                        <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
+                        <td style={tdStyle}>{formatDate(occ.dueDate)}</td>
                         <td style={tdStyle}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <span style={{ fontWeight: 700, color: "#1e293b" }}>{formatCurrency(occ.amountToRelease || 0)}</span>
@@ -1731,8 +1755,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}><div style={{ fontWeight: 600 }}>{occ.vendorName}</div></td>
                         <td style={tdStyle}>{occ.paymentDescription}</td>
                         <td style={tdStyle}><span style={{ fontSize: "0.75rem", padding: "2px 8px", borderRadius: "12px", background: "#f1f5f9", color: "#475569", fontWeight: 600 }}>{occ.paymentType}</span></td>
-                        <td style={tdStyle}>{new Date(occ.dueDate).toLocaleDateString('en-GB')}</td>
-                        <td style={tdStyle}><div style={{ color: "#16a34a", fontWeight: 600 }}>{occ.actualDate ? new Date(occ.actualDate).toLocaleDateString('en-GB') : "--"}</div></td>
+                        <td style={tdStyle}>{formatDate(occ.dueDate)}</td>
+                        <td style={tdStyle}><div style={{ color: "#16a34a", fontWeight: 600 }}>{occ.actualDate ? formatDate(occ.actualDate) : "--"}</div></td>
                         <td style={tdStyle}>{formatCurrency(occ.amountPaid || 0)}</td>
                         <td style={tdStyle}><div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#475569" }}>{occ.paidFromAccount || "--"}</div></td>
                         <td style={tdStyle}><span style={{ padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700, background: style.bg, color: style.text, border: `1px solid ${style.border}` }}>{status}</span></td>
@@ -2759,7 +2783,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#1e293b" }}>Payment Transaction Detail</h3>
-                  <span style={{ fontSize: "0.8125rem", color: "#64748b", fontWeight: 600 }}>Due Date: {new Date(selectedOccForView.dueDate).toLocaleDateString('en-GB')}</span>
+                  <span style={{ fontSize: "0.8125rem", color: "#64748b", fontWeight: 600 }}>Due Date: {formatDate(selectedOccForView.dueDate)}</span>
                 </div>
               </div>
               <button onClick={() => setSelectedOccForView(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "8px", borderRadius: "10px" }}>
@@ -2790,7 +2814,7 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
 
                 {selectedOccForView.isPaid && (
                   <>
-                    <DetailViewItem label="Paid Date" value={selectedOccForView.actualDate ? new Date(selectedOccForView.actualDate).toLocaleDateString('en-GB') : "--"} />
+                    <DetailViewItem label="Paid Date" value={selectedOccForView.actualDate ? formatDate(selectedOccForView.actualDate) : "--"} />
                     <DetailViewItem label="Amount Paid" value={selectedOccForView.amountPaid ? `₹${Number(selectedOccForView.amountPaid).toLocaleString()}` : "--"} />
                     <DetailViewItem label="Paid From Bank" value={selectedOccForView.paidFromAccount || "--"} />
                     <DetailViewItem label="UTR Number" value={selectedOccForView.utrNumber || "--"} />
@@ -2840,8 +2864,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                 <DetailViewItem label="Amount To Release" value={selectedTemplateForView.amountToRelease ? `₹${Number(selectedTemplateForView.amountToRelease).toLocaleString()}` : "--"} />
                 <DetailViewItem label="Due Day/Week" value={selectedTemplateForView.dueDay ? `Day ${selectedTemplateForView.dueDay}` : (selectedTemplateForView.weeklyDay || "--")} />
                 <DetailViewItem label="Vendor Email" value={selectedTemplateForView.vendorEmail || "--"} />
-                <DetailViewItem label="Start Date" value={new Date(selectedTemplateForView.startDate).toLocaleDateString('en-GB')} />
-                <DetailViewItem label="End Date" value={selectedTemplateForView.endDate ? new Date(selectedTemplateForView.endDate).toLocaleDateString('en-GB') : "Forever"} />
+                <DetailViewItem label="Start Date" value={formatDate(selectedTemplateForView.startDate)} />
+                <DetailViewItem label="End Date" value={selectedTemplateForView.endDate ? formatDate(selectedTemplateForView.endDate) : "Forever"} />
                 
                 <div style={{ gridColumn: "span 2" }}>
                    <label style={viewLabelStyle}>Master Status</label>

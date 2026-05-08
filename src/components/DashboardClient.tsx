@@ -1255,7 +1255,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       addIns('Requester', 'User Input (Name)', 'Person requesting the task.');
       addIns('Owner', 'Dropdown (Finance Users)', 'Assigned Finance team member.');
       addIns('Reviewer', 'Dropdown (Finance Users)', 'Assigned reviewer.');
-      addIns('Due Date', 'User Input (Date)', 'Format: DD-MM-YYYY (e.g. 25-12-2026)');
+      addIns('Due Date', 'User Input (Date)', 'Format: DD-MMM-YYYY (e.g. 25-DEC-2026)');
 
       worksheet.columns = [
         { header: 'Task Name', key: 'taskName', width: 25 },
@@ -1266,7 +1266,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Requester', key: 'requestFrom', width: 20 },
         { header: 'Owner', key: 'ownerName', width: 20 },
         { header: 'Reviewer', key: 'reviewerName', width: 20 },
-        { header: 'Due Date (DD-MM-YYYY)', key: 'dueDate', width: 20 },
+        { header: 'Due Date (DD-MMM-YYYY)', key: 'dueDate', width: 20 },
       ];
 
       // Apply Data Validation (Dropdowns)
@@ -1280,7 +1280,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       }
     } else if (type === 'lo') {
       addIns('Entity', 'Dropdown (Master Data)', 'Pick from the available entities.');
-      addIns('Date', 'User Input (Date)', 'Format: DD-MM-YYYY (e.g. 21-04-2026)');
+      addIns('Date', 'User Input (Date)', 'Format: DD-MMM-YYYY (e.g. 21-APR-2026)');
       addIns('LO Description', 'User Input (Text)', 'Details of the finding or mistake.');
       addIns('Identified By', 'Dropdown (Finance Users)', 'Finance member who spotted the error.');
       addIns('Committed By', 'Dropdown (Finance Users)', 'Finance member who committed the error.');
@@ -1288,7 +1288,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
       worksheet.columns = [
         { header: 'Entity', key: 'entity', width: 20 },
-        { header: 'Date (DD-MM-YYYY)', key: 'dateOfIdentification', width: 25 },
+        { header: 'Date (DD-MMM-YYYY)', key: 'dateOfIdentification', width: 25 },
         { header: 'LO Description', key: 'learningOpportunity', width: 40 },
         { header: 'Identified By', key: 'identifiedBy', width: 20 },
         { header: 'Committed By', key: 'committedBy', width: 20 },
@@ -1321,7 +1321,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Day Offset', key: 'dayOffset', width: 15 },
         { header: 'Default Owner', key: 'defaultOwner', width: 20 },
         { header: 'Default Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 20 },
+        { header: 'Start Date (DD-MMM-YYYY)', key: 'startDate', width: 20 },
         { header: 'Is Active (TRUE/FALSE)', key: 'isActive', width: 15 },
       ];
 
@@ -1355,7 +1355,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         { header: 'Vendor Email', key: 'vendorEmail', width: 25 },
         { header: 'Owner', key: 'defaultOwner', width: 20 },
         { header: 'Reviewer', key: 'defaultReviewer', width: 20 },
-        { header: 'Start Date (DD-MM-YYYY)', key: 'startDate', width: 20 },
+        { header: 'Start Date (DD-MMM-YYYY)', key: 'startDate', width: 20 },
       ];
 
       for (let i = 2; i <= 500; i++) {
@@ -1967,7 +1967,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
             rDate.setHours(0, 0, 0, 0);
 
             if (rDate < tDate) {
-              showNotification(`Error: Review completion date (${value}) cannot be before task completion date (${new Date(task.completionDate).toLocaleDateString()}).`, "error");
+              showNotification(`Error: Review completion date (${value}) cannot be before task completion date (${formatDate(task.completionDate)}).`, "error");
               setEditingCell(null);
               return;
             }
@@ -2304,12 +2304,14 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     t.requestStatus === "Processed"
   ).length;
 
-  // Format date as DD-MM-YYYY
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+  // Format date as DD-MMM-YYYY
   const formatDate = (date: string | Date | null) => {
     if (!date) return "Not Set";
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -2318,7 +2320,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const formatDateTime = (dateStr: string) => {
     const d = new Date(dateStr);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, '0');
     const mins = String(d.getMinutes()).padStart(2, '0');
@@ -2332,11 +2334,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     if (s.includes('-')) {
       const parts = s.split('-');
       if (parts[0].length === 4) return s; // YYYY-MM-DD
-      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MMM-YYYY (e.g. 21-04-2026)
     }
     if (s.includes('/')) {
       const parts = s.split('/');
-      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD/MM/YYYY
+      if (parts[2].length === 4) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MMM-YYYY (e.g. 21/04/2026)
     }
     try { return new Date(val).toISOString().split('T')[0]; } catch { return s; }
   };
@@ -2644,7 +2646,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       { header: 'Status', key: 'status', width: 15 }
     ];
     filtered.forEach(lo => logSheet.addRow({
-      date: new Date(lo.dateOfIdentification).toLocaleDateString(),
+      date: formatDate(lo.dateOfIdentification),
       entity: lo.entity,
       finding: lo.learningOpportunity,
       by: lo.identifiedBy,
@@ -2652,7 +2654,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }));
 
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `LO_Report_${new Date().toLocaleDateString()}.xlsx`);
+    saveAs(new Blob([buffer]), `LO_Report_${formatDate(new Date())}.xlsx`);
   };
 
   const handleAnaExportPDF = async () => {
@@ -2666,7 +2668,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Generated on: ${formatDateTime(new Date().toISOString())}`, 14, 30);
     doc.text(`Filters: Entity: ${anaEntityFilter} | User: ${anaUserFilter}`, 14, 35);
 
     // KPI Cards
@@ -2693,7 +2695,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       headStyles: { fillColor: [16, 185, 129] }
     });
 
-    doc.save(`LO_Report_${new Date().toLocaleDateString()}.pdf`);
+    doc.save(`LO_Report_${formatDate(new Date())}.pdf`);
     return doc.output('blob');
   };
 
@@ -2723,7 +2725,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           { header: 'Status', key: 'status', width: 15 }
         ];
         filtered.forEach((lo: any) => logSheet.addRow({
-          date: new Date(lo.dateOfIdentification).toLocaleDateString(),
+          date: formatDate(lo.dateOfIdentification),
           entity: lo.entity,
           finding: lo.learningOpportunity,
           by: lo.identifiedBy,
@@ -2740,7 +2742,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         doc.text('LO Analytics & Reporting', 14, 20);
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text('Generated: ' + new Date().toLocaleString(), 14, 28);
+        doc.text('Generated: ' + formatDateTime(new Date().toISOString()), 14, 28);
         autoTable(doc, {
           startY: 36,
           head: [['Metric', 'Count']],
@@ -2767,7 +2769,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
 
       const emailHtml = '<div style="font-family:Arial,sans-serif;background:#0f172a;padding:32px;border-radius:16px;color:#fff">' +
         '<h2 style="color:#6366f1;margin:0 0 8px 0">LO Analytics & Reporting</h2>' +
-        '<p style="color:#94a3b8;margin:0 0 28px 0;font-size:14px">Report generated on ' + new Date().toLocaleString() + ' | Filters: Entity: ' + anaEntityFilter + ' | User: ' + anaUserFilter + '</p>' +
+        '<p style="color:#94a3b8;margin:0 0 28px 0;font-size:14px">Report generated on ' + formatDateTime(new Date().toISOString()) + ' | Filters: Entity: ' + anaEntityFilter + ' | User: ' + anaUserFilter + '</p>' +
         '<table style="width:100%;border-collapse:separate;border-spacing:12px;margin-bottom:24px"><tr>' +
         '<td style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;text-align:center"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px">Total Findings</div><div style="font-size:28px;font-weight:800;color:#fff">' + stats.total + '</div></td>' +
         '<td style="background:#1e293b;padding:20px;border-radius:12px;border:1px solid #334155;text-align:center"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px">Acknowledged</div><div style="font-size:28px;font-weight:800;color:#10b981">' + stats.ack + '</div></td>' +
@@ -3260,7 +3262,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(16);
     doc.text("Intellicar Finance Task Management - Report", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Generated on: ${formatDateTime(new Date().toISOString())}`, 14, 22);
 
     const tableColumn = ["ID", "Created At", "Created By", "Task Name", "Entity", "Owner", "Due Date", "Comp. Date", "Comp. By", "Status", "Reviewer", "Rev. Status", "Rev. Date", "Rev. By", "Processed By", "Comm. Mode"];
     const tableRows = sortedTasks.map(t => [
@@ -3372,7 +3374,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         taskId: r.taskDisplayId || (r.convertedTaskId ? `#${r.convertedTaskId}` : "N/A"),
         requestFrom: r.requestFrom,
         email: r.requesterEmail,
-        date: new Date(r.createdAt).toLocaleDateString(),
+        date: formatDate(r.createdAt),
         type: r.requestType,
         nature: r.natureOfRequest,
         reason: r.reasonForRequest || "N/A",
@@ -3380,12 +3382,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         processedMode: r.processedMode || "N/A",
         processedMailLink: r.processedMailLink || "N/A",
         processedBy: r.processedBy || "N/A",
-        processedAt: r.processedAt ? new Date(r.processedAt).toLocaleDateString() : "N/A",
+        processedAt: r.processedAt ? formatDate(r.processedAt) : "N/A",
         ...(canAllocateAnything ? {
           origin: r.transferStatus === 'T' ? 'Transferred' : 'Original',
           originalType: r.originalRequestType || 'N/A',
           transferredBy: r.transferredBy || 'N/A',
-          transferredAt: r.transferredAt ? new Date(r.transferredAt).toLocaleString() : 'N/A'
+          transferredAt: r.transferredAt ? formatDateTime(r.transferredAt) : 'N/A'
         } : {})
       });
     });
@@ -3399,7 +3401,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(16);
     doc.text("Intellicar Finance - Inter-Departmental Requests", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Generated on: ${formatDateTime(new Date().toISOString())}`, 14, 22);
 
     const filteredReqs = sortedExternalRequests;
 
@@ -3411,7 +3413,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         idx + 1,
         r.taskDisplayId || (r.convertedTaskId ? `#${r.convertedTaskId}` : "N/A"),
         r.requestFrom,
-        new Date(r.createdAt).toLocaleDateString(),
+        formatDate(r.createdAt),
         r.requestType,
         r.natureOfRequest,
         r.reasonForRequest || "N/A",
@@ -3422,7 +3424,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           r.transferStatus === 'T' ? 'Transferred' : 'Original',
           r.originalRequestType || 'N/A',
           r.transferredBy || 'N/A',
-          r.transferredAt ? new Date(r.transferredAt).toLocaleString() : 'N/A'
+          r.transferredAt ? formatDateTime(r.transferredAt) : 'N/A'
         );
       }
       return row;
@@ -3445,7 +3447,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     doc.setFontSize(16);
     doc.text("Intellicar Finance - Learning Opportunity Report", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Generated on: ${formatDateTime(new Date().toISOString())}`, 14, 22);
 
     const tableColumn = ["ID", "Submitted At", "Submitted By", "Identified By", "Committed By", "Date", "Entity", "Classification", "Opportunity", "Resolution", "Mode"];
     const tableRows = sortedLOs.map(l => [
@@ -3608,7 +3610,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
               <div style="padding: 32px;">
                 <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Hello,</p>
-                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the consolidated Task report as of <strong>${new Date().toLocaleDateString()}</strong>.</p>
+                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the consolidated Task report as of <strong>${formatDate(new Date())}</strong>.</p>
                 <div style="text-align: center; margin-top: 32px;">
                   <a href="https://v0-finpulse.vercel.app" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">View Dashboard</a>
                 </div>

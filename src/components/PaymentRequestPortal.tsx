@@ -140,6 +140,30 @@ export default function PaymentRequestPortal({
 }) {
   const isAdmin = user?.role === 'ADMIN';
   const isFinance = user?.department === 'Finance' || isAdmin;
+
+  const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+  // Format date as DD-MMM-YYYY
+  const formatDate = (date: string | Date | null) => {
+    if (!date) return "Not Set";
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Format date and time as DD-MMM-YYYY HH:mm
+  const formatDateTime = (dateStr: string) => {
+    if (!dateStr) return "--";
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = MONTHS[d.getMonth()];
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${mins}`;
+  };
   
   const deptHeadMatrix = JSON.parse(settings.departmentHeadMatrix || '{}');
   const userIsDeptHead = Object.values(deptHeadMatrix).some((heads: any) => 
@@ -402,7 +426,7 @@ export default function PaymentRequestPortal({
                   <td style={{ ...tdStyle, color: t.textMuted, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.description}</td>
                   <td style={{ ...tdStyle, fontWeight: 800, color: t.text }}>₹{Number(req.amount).toLocaleString()}</td>
                   <td style={tdStyle}>
-                    <div style={{ fontWeight: 600 }}>{new Date(req.dueDate).toLocaleDateString('en-GB')}</div>
+                    <div style={{ fontWeight: 600 }}>{formatDate(req.dueDate)}</div>
                     {req.dateStatus && (
                       <div style={{ fontSize: '0.65rem', fontWeight: 800, color: dateStyle.color, background: dateStyle.bg, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px' }}>
                         {req.dateStatus}
@@ -723,7 +747,7 @@ export default function PaymentRequestPortal({
                 <DetailBox label="Entity" value={viewRequest.entityName} />
                 <DetailBox label="Vendor" value={viewRequest.vendorName} />
                 <DetailBox label="Amount" value={`₹${Number(viewRequest.amount).toLocaleString()}`} />
-                <DetailBox label="Due Date" value={new Date(viewRequest.dueDate).toLocaleDateString('en-GB')} />
+                <DetailBox label="Due Date" value={formatDate(viewRequest.dueDate)} />
                 <DetailBox label="Requested By" value={viewRequest.requesterName} />
                 <DetailBox label="Department" value={viewRequest.department} />
                 <div style={{ gridColumn: 'span 3' }}><DetailBox label="Purpose / Description" value={viewRequest.description} /></div>
@@ -831,7 +855,7 @@ export default function PaymentRequestPortal({
                 <DetailBox label="Entity" value={selectedPaymentForView.entityName} />
                 <DetailBox label="Vendor" value={selectedPaymentForView.vendorName} />
                 <DetailBox label="Amount" value={`₹${Number(selectedPaymentForView.amount).toLocaleString()}`} />
-                <DetailBox label="Due Date" value={new Date(selectedPaymentForView.dueDate).toLocaleDateString('en-GB')} />
+                <DetailBox label="Due Date" value={formatDate(selectedPaymentForView.dueDate)} />
                 <DetailBox label="Requested By" value={selectedPaymentForView.requesterName} />
                 <DetailBox label="Department" value={selectedPaymentForView.department} />
                 <DetailBox label="Status" value={getStatusStyle(selectedPaymentForView.status).label} />

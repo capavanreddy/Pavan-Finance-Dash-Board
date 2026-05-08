@@ -93,7 +93,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0;">
                   <p><strong>Vendor:</strong> ${updated.vendorName}</p>
                   <p><strong>Description:</strong> ${updated.paymentDescription}</p>
-                  <p><strong>Due Date:</strong> ${new Date(updated.dueDate).toLocaleDateString('en-GB')}</p>
+                  <p><strong>Due Date:</strong> ${(() => {
+                    const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                    const d = new Date(updated.dueDate);
+                    return `${String(d.getDate()).padStart(2, '0')}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`;
+                  })()}</p>
                   <p>${body}</p>
                   <p><strong>Updated By:</strong> ${session.user.name || session.user.email}</p>
                 </div>

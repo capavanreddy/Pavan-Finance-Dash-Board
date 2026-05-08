@@ -41,7 +41,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0;">
               <p><strong>Vendor:</strong> ${result[0].vendorName}</p>
               <p><strong>Description:</strong> ${result[0].paymentDescription}</p>
-              <p><strong>Due Date:</strong> ${new Date(result[0].dueDate).toLocaleDateString('en-GB')}</p>
+              <p><strong>Due Date:</strong> ${(() => {
+                const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const d = new Date(result[0].dueDate);
+                return `${String(d.getDate()).padStart(2, '0')}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`;
+              })()}</p>
               <p><strong>Requested By:</strong> ${session.user.name || session.user.email}</p>
               <p><strong>Reason:</strong> ${reason}</p>
             </div>
