@@ -3629,7 +3629,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
               <div style="padding: 32px;">
                 <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Hello,</p>
-                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the Learning Opportunities tracker report as of <strong>${new Date().toLocaleDateString()}</strong>.</p>
+                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the Learning Opportunities tracker report as of <strong>${formatDate(new Date())}</strong>.</p>
                 <div style="text-align: center; margin-top: 32px;">
                   <a href="https://v0-finpulse.vercel.app" style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">View Dashboard</a>
                 </div>
@@ -3650,7 +3650,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
               <div style="padding: 32px;">
                 <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Hello Team,</p>
-                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the consolidated report of Inter-Departmental requests as of <strong>${new Date().toLocaleDateString()}</strong>.</p>
+                <p style="margin: 0 0 24px 0; color: #475569; font-size: 16px; line-height: 1.6;">Please find the consolidated report of Inter-Departmental requests as of <strong>${formatDate(new Date())}</strong>.</p>
                 
                 <table style="width: 100%; border-spacing: 12px; margin-bottom: 32px; border-collapse: separate;">
                   <tr>
@@ -5692,7 +5692,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             setShareData({
                               ...shareData,
                               type: 'request',
-                              subject: `Inter-Departmental Requests Report - ${new Date().toLocaleDateString()}`
+                              subject: `Inter-Departmental Requests Report - ${formatDate(new Date())}`
                             });
                             setShowShareModal(true);
                             setShowExtReqDownloadDropdown(false);
@@ -5967,7 +5967,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       toDepartment: req.requestType,
                                       raisedBy: req.requestFrom,
                                       currentOwner: req.assignedAllocatorEmail,
-                                      timeline: new Date(req.requestDate).toLocaleDateString(),
+                                      timeline: formatDate(req.requestDate),
                                       status: req.status
                                    })}
                                   style={{ background: "none", border: "none", color: "#6366f1", cursor: "pointer", padding: "4px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -6052,7 +6052,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                  {renderOriginBadge(req)}
                                </td>
                              )}
-                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{new Date(req.createdAt).toLocaleDateString()}</td>
+                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{formatDate(req.createdAt)}</td>
                             <td style={getTdStyle(t)}>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ padding: "4px 10px", borderRadius: "6px", background: t.bg, fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
@@ -6421,7 +6421,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                      <div>
                                        <h5 style={{ margin: "0 0 6px 0", fontSize: "1.0625rem", fontWeight: 700, color: t.text, lineHeight: 1.4 }}>{res.name}</h5>
                                        <p style={{ margin: 0, fontSize: "0.75rem", color: t.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
-                                         <Clock size={12} /> {new Date(res.createdAt).toLocaleDateString()} • {res.uploadedBy}
+                                         <Clock size={12} /> {formatDate(res.createdAt)} • {res.uploadedBy}
                                        </p>
                                      </div>
 
@@ -6498,7 +6498,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <div style={{ borderTop: "1px solid #f1f5f9" }}></div>
                             <button 
                               onClick={() => {
-                                setShareData({ ...shareData, type: 'lo', subject: `Learning Opportunities Report - ${new Date().toLocaleDateString()}` });
+                                setShareData({ ...shareData, type: 'lo', subject: `Learning Opportunities Report - ${formatDate(new Date())}` });
                                 setShowShareModal(true);
                                 setShowLODownloadDropdown(false);
                               }}
@@ -8379,7 +8379,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                         <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
                                         <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
                                         <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#3b82f6", fontWeight: 600 }}>
-                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
+                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${formatDate(req.dueDate)}`}
                                         </p>
                                       </div>
                                       <div style={{ display: "flex", gap: "8px" }}>
@@ -8423,7 +8423,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                         <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", color: t.text }}>{req.templateVendor}</h4>
                                         <p style={{ margin: 0, fontSize: "0.875rem", color: t.textMuted }}>{req.templateDesc}</p>
                                         <p style={{ margin: "4px 0 0 0", fontSize: "0.75rem", color: "#ef4444", fontWeight: 600 }}>
-                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${new Date(req.dueDate).toLocaleDateString('en-GB')}`}
+                                          {req.type === 'MASTER' ? "MASTER TEMPLATE" : `Due Date: ${formatDate(req.dueDate)}`}
                                         </p>
                                       </div>
                                       <div style={{ display: "flex", gap: "8px" }}>
@@ -11157,8 +11157,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </div>
                 </div>
 
-                <DetailItemView label="Completion Date" value={selectedTaskForView.completionDate ? new Date(selectedTaskForView.completionDate).toLocaleDateString() : "Pending"} />
-                <DetailItemView label="Review Completion" value={selectedTaskForView.reviewCompletionDate ? new Date(selectedTaskForView.reviewCompletionDate).toLocaleDateString() : "Pending"} />
+                <DetailItemView label="Completion Date" value={selectedTaskForView.completionDate ? formatDate(selectedTaskForView.completionDate) : "Pending"} />
+                <DetailItemView label="Review Completion" value={selectedTaskForView.reviewCompletionDate ? formatDate(selectedTaskForView.reviewCompletionDate) : "Pending"} />
                 
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Owner Comments</label>
@@ -11277,12 +11277,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <DetailItemView label="Source Task" value={selectedLOForView.sourceTaskName} />
                 <DetailItemView label="Owner" value={selectedLOForView.ownerName} />
                 <DetailItemView label="Status" value={selectedLOForView.status} />
-                <DetailItemView label="Raised Date" value={new Date(selectedLOForView.createdAt).toLocaleDateString()} />
+                <DetailItemView label="Raised Date" value={formatDate(selectedLOForView.createdAt)} />
                 
                 {selectedLOForView.ackBy && (
                   <>
                     <DetailItemView label="Acknowledged By" value={selectedLOForView.ackBy} />
-                    <DetailItemView label="Ack Date" value={new Date(selectedLOForView.ackAt!).toLocaleDateString()} />
+                    <DetailItemView label="Ack Date" value={formatDate(selectedLOForView.ackAt!)} />
                     <div style={{ gridColumn: "span 2" }}>
                       <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Ack Comments</label>
                       <div style={{ fontSize: "0.9375rem", color: "#475569", background: "#f0f9ff", padding: "16px", borderRadius: "16px", border: "1px solid #e0f2fe" }}>
