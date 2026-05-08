@@ -4831,7 +4831,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       }} 
                       onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
                     >
-                      <Download size={18} color="#2563eb" /> Report
+                      <Download size={18} color="#2563eb" /> Download Report
                     </button>
                     
                     {showTaskDownloadDropdown && (
