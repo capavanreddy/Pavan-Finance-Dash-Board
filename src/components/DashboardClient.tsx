@@ -960,6 +960,29 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     fetchResources();
   }, [isAdmin]);
 
+  // LIVE SYNC: 10-Second Auto-Refresh & Window Focus Revalidation
+  useEffect(() => {
+    const refreshAll = () => {
+      fetchTasks();
+      fetchExternalRequests();
+      fetchPaymentRequests();
+    };
+
+    // 1. Auto-refresh every 10 seconds
+    const interval = setInterval(refreshAll, 10000);
+
+    // 2. Refresh on window focus
+    const handleFocus = () => {
+      refreshAll();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
   const isModuleAllowed = (moduleName: string) => {
     if (isAdmin) return true;
     if (!user?.department || !user?.email) return false;
@@ -3707,8 +3730,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "all 0.3s ease"
       }}>
         {/* Brand Area */}
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-          <img src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", cursor: "default" }} className="brand-container">
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            style={{ height: "40px", width: "auto", objectFit: "contain", transition: "transform 0.3s ease" }} 
+            onMouseOver={e => e.currentTarget.style.transform = "scale(1.05) rotate(-2deg)"}
+            onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
+          />
           <div style={{ height: "24px", width: "1px", background: t.border, opacity: 0.5 }}></div>
           <div style={{ animation: "fade-in 0.5s ease-out" }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#3b82f6", margin: 0, letterSpacing: "-0.01em" }}>
@@ -3726,26 +3755,55 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
         {/* Global Actions Area */}
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          {/* Live Sync Status */}
+          <div 
+            title="Real-time data synchronization is active (10s cycle)"
+            style={{ 
+              display: "flex", alignItems: "center", gap: "8px", 
+              background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "#f0fdf4", 
+              padding: "6px 14px", borderRadius: "20px", 
+              border: `1px solid ${isDarkMode ? "rgba(16, 185, 129, 0.2)" : "#dcfce7"}`,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+            }}
+          >
+            <div style={{ 
+              width: "8px", height: "8px", borderRadius: "50%", background: "#10b981",
+              boxShadow: "0 0 10px #10b981",
+              animation: "sync-pulse 2s infinite"
+            }} />
+            <span style={{ fontSize: "0.6875rem", fontWeight: 800, color: "#10b981", letterSpacing: "0.05em", textTransform: "uppercase" }}>Live Sync</span>
+          </div>
+
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes sync-pulse {
+              0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+              70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+              100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            }
+          `}} />
+
           {/* Theme Toggle */}
           <button 
             onClick={() => setTheme(theme === 'DARK' ? 'LIGHT' : 'DARK')}
             style={{ 
               background: t.bg, border: `1px solid ${t.border}`, color: t.text, 
-              width: "40px", height: "40px", borderRadius: "10px", cursor: "pointer", 
-              display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s ease" 
+              width: "40px", height: "40px", borderRadius: "12px", cursor: "pointer", 
+              display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
             }}
+            onMouseOver={e => { e.currentTarget.style.transform = "rotate(15deg)"; e.currentTarget.style.borderColor = "#3b82f6"; }}
+            onMouseOut={e => { e.currentTarget.style.transform = "rotate(0)"; e.currentTarget.style.borderColor = t.border; }}
             title={`Switch to ${theme === 'DARK' ? 'Light' : 'Dark'} Mode`}
           >
-            {theme === 'DARK' ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="#64748b" />}
+            {theme === 'DARK' ? <Sun size={19} color="#f59e0b" /> : <Moon size={19} color="#64748b" />}
           </button>
 
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: 600, color: t.text }}>{user.name || "Master Admin"}</div>
-            <div style={{ fontSize: "0.75rem", color: t.textMuted }}>{user.email}</div>
+          <div style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ fontSize: "0.875rem", fontWeight: 700, color: t.text, letterSpacing: "-0.01em" }}>{user.name || "Master Admin"}</div>
+            <div style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 500 }}>{user.email}</div>
           </div>
           
-          <div style={{ height: "30px", width: "1px", background: t.bg }}></div>
-
+          <div style={{ height: "30px", width: "1px", background: t.border, opacity: 0.5 }}></div>
 
           <button 
             onClick={() => { 
@@ -3761,7 +3819,16 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               }
               setShowOptionsModal(true); 
             }} 
-            style={{ padding: "8px 16px", background: t.bg, color: t.textMuted, border: `1px solid ${t.border}`, borderRadius: "8px", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.875rem" }}
+            className="btn-polish"
+            style={{ 
+              padding: "10px 18px", background: "#f8fafc", color: "#475569", 
+              border: `1px solid #e2e8f0`, borderRadius: "12px", fontWeight: 700, 
+              display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", 
+              fontSize: "0.8125rem", transition: "all 0.2s ease",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.color = "#1e293b"; }}
+            onMouseOut={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; }}
           >
             {isAdmin ? <ShieldCheck size={16} /> : canImport ? <Sliders size={16} /> : <Sliders size={16} />}
             {isAdmin ? "Control Center" : canImport ? "Control Center" : "Account Settings"}
@@ -3769,12 +3836,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           
           <button 
             onClick={() => setShowLogoutConfirm(true)} 
-            style={{ color: t.textMuted, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}
+            style={{ 
+              color: "#94a3b8", background: "none", border: "none", cursor: "pointer", 
+              display: "flex", alignItems: "center", justifyContent: "center", 
+              width: "36px", height: "36px", borderRadius: "10px", transition: "all 0.2s" 
+            }}
+            onMouseOver={e => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.background = "#fef2f2"; }}
+            onMouseOut={e => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "none"; }}
             title="Sign Out"
           >
             <LogOut size={18} />
           </button>
         </div>
+
       </header>
 
       {/* Main Body (Sidebar + Content) */}
@@ -4384,42 +4458,31 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     </div>
                   </div>
 
-                  {/* 4. Achievements - Modern List */}
-                  <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "24px", marginTop: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <div style={{ background: "#eff6ff", padding: "10px", borderRadius: "12px" }}>
-                        <Award size={26} color="#2563eb" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "#1e293b" }}>Major Milestones</h3>
+                  {/* 5. Strategic Advantages - Departmental Growth */}
+                  <div style={{ position: "relative", zIndex: 1, marginTop: "40px" }}>
+                    <div style={{ textAlign: "center", marginBottom: "40px" }}>
+                      <div style={{ display: "inline-block", background: "rgba(99, 102, 241, 0.1)", color: "#6366f1", padding: "6px 16px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.1em", marginBottom: "12px" }}>OPERATIONAL IMPACT</div>
+                      <h3 style={{ margin: 0, fontSize: "2.25rem", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.04em" }}>Departmental Advantages</h3>
+                      <p style={{ margin: "8px 0 0 0", color: "#64748b", fontWeight: 600, fontSize: "1rem" }}>HOW FINPULSE EMPOWERS EVERY TEAM</p>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
-                      {(() => {
-                        const achievements = content.achievements || [
-                          { id: 1, title: "Platform Launch", date: "Apr 2026" },
-                          { id: 2, title: "100+ Tasks Completed", date: "May 2026" }
-                        ];
-                        return achievements.map((a: any) => (
-                          <div key={a.id} style={{ 
-                            padding: "24px", 
-                            borderRadius: "24px", 
-                            background: "rgba(255, 255, 255, 0.6)", 
-                            border: "1px solid #f1f5f9", 
-                            display: "flex", 
-                            alignItems: "center", 
-                            gap: "20px",
-                            backdropFilter: "blur(10px)",
-                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)"
-                          }}>
-                            <div style={{ background: "linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%)", padding: "12px", borderRadius: "14px" }}>
-                              <ShieldCheck size={24} color="#db2777" />
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+                      {[
+                        { title: "Finance", icon: <Building2 />, desc: "10s Live Sync for absolute data integrity. LO tracking turns mistakes into structural growth." },
+                        { title: "Operations", icon: <Briefcase />, desc: "Instant Inter-Dept requests. Real-time status visibility eliminates status-check meetings." },
+                        { title: "HR & Admin", icon: <Users />, desc: "Effortless resource management and role-based data security for every employee." },
+                        { title: "Management", icon: <ShieldCheck />, desc: "Bird's-eye view of organizational health with automated LO Analytics and trends." }
+                      ].map((adv, i) => (
+                        <div key={i} style={{ padding: "32px", borderRadius: "28px", background: "white", border: "1px solid #f1f5f9", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)", transition: "all 0.3s ease" }} className="hover-card">
+                          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                            <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: "12px", borderRadius: "16px", color: "#2563eb" }}>
+                              {adv.icon}
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b" }}>{a.title}</div>
-                              <div style={{ fontSize: "0.8125rem", color: "#94a3b8", fontWeight: 600 }}>{a.date}</div>
-                            </div>
+                            <h4 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#1e293b" }}>{adv.title}</h4>
                           </div>
-                        ));
-                      })()}
+                          <p style={{ margin: 0, fontSize: "0.9375rem", color: "#475569", lineHeight: 1.6, fontWeight: 500 }}>{adv.desc}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -5055,9 +5118,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={22} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>Loading tasks...</td></tr>
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={`skeleton-${i}`} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td colSpan={24} style={{ padding: "16px" }}>
+                            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                              <div style={{ width: "40px", height: "12px", background: "#f1f5f9", borderRadius: "4px", animation: "pulse 1.5s infinite" }}></div>
+                              <div style={{ width: "100px", height: "12px", background: "#f1f5f9", borderRadius: "4px", animation: "pulse 1.5s infinite" }}></div>
+                              <div style={{ flex: 1, height: "12px", background: "#f1f5f9", borderRadius: "4px", animation: "pulse 1.5s infinite" }}></div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
                     ) : paginatedTasks.length === 0 ? (
-                      <tr><td colSpan={22} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
+                      <tr><td colSpan={24} style={{ padding: "40px", textAlign: "center", color: t.textMuted }}>No tasks found for the current filters.</td></tr>
                     ) : (
                       paginatedTasks.map((task) => {
                         const currentUserName = user?.name || user?.email;
