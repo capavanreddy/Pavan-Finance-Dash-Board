@@ -2399,7 +2399,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <Eye size={20} />
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>Assignment History Log</h3>
+                  <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>Assigner History Log</h3>
                   <span style={{ fontSize: "0.8125rem", opacity: 0.8 }}>Rule: {selectedTemplateForHistory?.taskNamePattern}</span>
                 </div>
               </div>
@@ -2430,14 +2430,29 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                     </tr>
                   </thead>
                   <tbody>
-                    {assignmentHistory.map((h, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={tdStyle}>{new Date(h.effectiveFrom).toLocaleDateString('en-GB')}</td>
-                        <td style={tdStyle}>{h.ownerName}</td>
-                        <td style={tdStyle}>{h.reviewerName}</td>
-                        <td style={tdStyle}>{new Date(h.createdAt).toLocaleString('en-GB')}</td>
-                      </tr>
-                    ))}
+                    {assignmentHistory.map((h, i) => {
+                      // Compare with previous record (next in sorted list)
+                      const prev = assignmentHistory[i + 1];
+                      const ownerChanged = !prev || h.ownerName !== prev.ownerName;
+                      const reviewerChanged = !prev || h.reviewerName !== prev.reviewerName;
+
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={tdStyle}>{new Date(h.effectiveFrom).toLocaleDateString('en-GB')}</td>
+                          <td style={tdStyle}>
+                            <span style={{ color: ownerChanged ? "#1e293b" : "#94a3b8", fontWeight: ownerChanged ? 700 : 400 }}>
+                              {h.ownerName} {!ownerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
+                            </span>
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ color: reviewerChanged ? "#1e293b" : "#94a3b8", fontWeight: reviewerChanged ? 700 : 400 }}>
+                              {h.reviewerName} {!reviewerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
+                            </span>
+                          </td>
+                          <td style={tdStyle}>{new Date(h.createdAt).toLocaleString('en-GB')}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
