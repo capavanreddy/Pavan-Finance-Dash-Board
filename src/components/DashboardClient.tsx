@@ -3,7 +3,7 @@
 // Deploy Trigger: LO UI Fix - 2026-04-28
 
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import TaskForm from "@/components/TaskForm";
 import LOForm from "@/components/LOForm";
 import { LayoutDashboard, CheckCircle2, Clock, AlertCircle, AlertTriangle, LogOut, Plus, Trash2, Users, UserPlus, Send, Sliders, Mail, Download, FileText, ChevronLeft, ChevronRight, FileSpreadsheet, Lightbulb, Edit2, Quote, UserCheck, BookOpen, Search, ArrowUp, ArrowDown, Home, ChevronDown, Building2, Tag, ShieldCheck, ListFilter, Shield, X, Key, Repeat, Briefcase, RefreshCw, FileCode, Wallet, MessageSquare, Database, Activity, Sun, Moon, Share2, RotateCcw, Zap, Calendar, Rocket, Award, Compass, Trophy, Link, ExternalLink, Eye, Filter, User, CreditCard, Paperclip, ShieldAlert } from "lucide-react";
@@ -4279,7 +4279,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </button>
                     )
                   ) : (activeView === 'TASKS' && activeSubView === 'OTHER_DEPT') ? (
-                    <React.Fragment>
+                    <Fragment>
                       <div style={{ position: "relative" }}>
                         <button 
                           onClick={() => setShowExtReqDownloadDropdown(!showExtReqDownloadDropdown)}
@@ -4329,7 +4329,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           <Plus size={18} /> Submit New Request
                         </button>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   ) : (activeView as string) === 'LOS' ? (
                     !isViewer && (
                       <button onClick={() => setShowLOForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.text, padding: "10px 20px", borderRadius: "14px", border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#ffffff"}>
