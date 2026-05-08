@@ -1831,9 +1831,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         <div style={{ fontWeight: 600, color: "#2563eb" }}>{t.frequency}</div>
                         <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Day {t.dayOffset}</div>
                     </td>
-                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                        <div style={{ fontSize: "0.8125rem" }}>{t.startDate ? formatDateDisplay(t.startDate) : "--"} to</div>
-                        <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? formatDateDisplay(t.endDate) : "Forever"}</div>
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap", fontSize: "0.75rem" }}>
+                        <div style={{ fontSize: "0.75rem" }}>{t.startDate ? formatDateDisplay(t.startDate) : "--"} to</div>
+                        <div style={{ fontSize: "0.75rem" }}>{t.endDate ? formatDateDisplay(t.endDate) : "Forever"}</div>
                     </td>
                     <td style={tdStyle}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>

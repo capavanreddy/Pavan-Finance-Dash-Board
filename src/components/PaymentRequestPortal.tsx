@@ -425,8 +425,8 @@ export default function PaymentRequestPortal({
                   <td style={{ ...tdStyle, fontWeight: 700 }}>{req.vendorName}</td>
                   <td style={{ ...tdStyle, color: t.textMuted, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.description}</td>
                   <td style={{ ...tdStyle, fontWeight: 800, color: t.text }}>₹{Number(req.amount).toLocaleString()}</td>
-                  <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                    <div style={{ fontWeight: 600 }}>{formatDate(req.dueDate)}</div>
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap", fontSize: "0.75rem" }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.75rem" }}>{formatDate(req.dueDate)}</div>
                     {req.dateStatus && (
                       <div style={{ fontSize: '0.65rem', fontWeight: 800, color: dateStyle.color, background: dateStyle.bg, padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px' }}>
                         {req.dateStatus}

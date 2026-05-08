@@ -1393,8 +1393,8 @@ export default function PaymentsCalendar({   user, isAdmin, t, theme, settings ,
                         <td style={tdStyle}>
                           <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#2563eb" }}>{occ.frequency}</span>
                         </td>
-                        <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDate(occ.dueDate)}</td>
-                        <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{occ.actualDate ? formatDate(occ.actualDate) : "--"}</td>
+                        <td style={{ ...tdStyle, whiteSpace: "nowrap", fontSize: "0.75rem" }}>{formatDate(occ.dueDate)}</td>
+                        <td style={{ ...tdStyle, whiteSpace: "nowrap", fontSize: "0.75rem" }}>{occ.actualDate ? formatDate(occ.actualDate) : "--"}</td>
                         <td style={tdStyle}>{formatCurrency(occ.amountToRelease || 0)}</td>
                         <td style={tdStyle}>
                           <span style={{ 

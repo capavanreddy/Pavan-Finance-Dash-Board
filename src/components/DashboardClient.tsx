@@ -5206,9 +5206,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <td style={getTdStyle(t)}>
                               {renderOriginBadge(task)}
                             </td>
-                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
+                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap", fontSize: "0.75rem" }}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                              <td 
-                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed" && !task.reviewCompletionDate)) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
+                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", fontSize: "0.75rem", cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed" && !task.reviewCompletionDate)) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
                               title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${formatDateTime(task.completedSubmissionAt)}\nBy: ${task.completedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
@@ -5265,7 +5265,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               />
                             </td>
                              <td 
-                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
+                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", fontSize: "0.75rem", cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
                               title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${formatDateTime(task.reviewedSubmissionAt)}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
@@ -6684,7 +6684,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <td style={getTdStyle(t)}>{lo.submittedBy || <span style={{color: t.textMuted, fontStyle: 'italic'}}>Auto</span>}</td>
                               <td style={getTdStyle(t)}>{lo.identifiedBy}</td>
                               <td style={getTdStyle(t)}>{lo.committedBy}</td>
-                              <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{formatDate(lo.dateOfIdentification)}</td>
+                              <td style={{ ...getTdStyle(t), whiteSpace: "nowrap", fontSize: "0.75rem" }}>{formatDate(lo.dateOfIdentification)}</td>
                               <td style={getTdStyle(t)}>{lo.entity}</td>
                               <td style={getTdStyle(t)}>{lo.classification || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
                               <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{lo.learningOpportunity}</td>
