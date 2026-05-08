@@ -277,13 +277,17 @@ export default function RecurringActivities({   settings, usersList = [] , showN
           let reviewerName = t.defaultReviewer || "";
           
           if (t.assignmentHistory && t.assignmentHistory.length > 0) {
-            const occDateStr = dueDate.toISOString().split('T')[0];
             // Find the most recent assignment where effectiveFrom <= occurrence date
+            // Use a stable date comparison that doesn't suffer from ISO string shifts
             const activeAssignment = [...t.assignmentHistory]
               .sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .find(h => {
-                const effectiveDateStr = new Date(h.effectiveFrom).toISOString().split('T')[0];
-                return effectiveDateStr <= occDateStr;
+                const effDate = new Date(h.effectiveFrom);
+                const occDate = new Date(dueDate.toISOString().split('T')[0]); // Use midnight local
+                // Reset both to midnight for clean comparison
+                effDate.setHours(0,0,0,0);
+                occDate.setHours(0,0,0,0);
+                return effDate.getTime() <= occDate.getTime();
               });
             
             if (activeAssignment) {

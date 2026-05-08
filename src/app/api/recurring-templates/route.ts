@@ -74,9 +74,37 @@ export async function GET() {
       ORDER BY "effectiveFrom" DESC, "createdAt" DESC
     `;
 
+    // --- Self-Healing: Ensure baseline exists for templates with history ---
+    for (const t of templates) {
+      const tHistory = history.filter((h: any) => h.templateId === t.id);
+      if (tHistory.length > 0) {
+        // Check if there's a "baseline" (one starting very early or at startDate)
+        const hasBaseline = tHistory.some((h: any) => {
+          const eff = new Date(h.effectiveFrom).toISOString().split('T')[0];
+          const start = t.startDate ? new Date(t.startDate).toISOString().split('T')[0] : '2024-01-01';
+          return eff <= start;
+        });
+
+        if (!hasBaseline) {
+          // Use the oldest known record as the baseline for the past
+          const oldest = [...tHistory].sort((a, b) => new Date(a.effectiveFrom).getTime() - new Date(b.effectiveFrom).getTime())[0];
+          await sql`
+            INSERT INTO "AssignmentHistory" ("templateId", "ownerName", "reviewerName", "effectiveFrom", "createdAt")
+            VALUES (${t.id}, ${oldest.ownerName}, ${oldest.reviewerName}, ${t.startDate || new Date('2024-01-01')}, NOW())
+          `;
+        }
+      }
+    }
+
+    // Re-fetch history after potential baseline creation
+    const updatedHistory = await sql`
+      SELECT * FROM "AssignmentHistory"
+      ORDER BY "effectiveFrom" DESC, "createdAt" DESC
+    `;
+
     const templatesWithHistory = templates.map(t => ({
       ...t,
-      assignmentHistory: history.filter((h: any) => h.templateId === t.id)
+      assignmentHistory: updatedHistory.filter((h: any) => h.templateId === t.id)
     }));
 
     return NextResponse.json(templatesWithHistory);
