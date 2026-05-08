@@ -2264,6 +2264,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           t.taskType.toLowerCase().includes(q) || 
           t.entityName.toLowerCase().includes(q) || 
           t.ownerName.toLowerCase().includes(q) ||
+          String(t.id).toLowerCase().includes(q) ||
+          (t.displayId || "").toLowerCase().includes(q) ||
           (t.reviewerName || "").toLowerCase().includes(q))) return false;
     }
 
@@ -2394,6 +2396,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         t.taskType.toLowerCase().includes(q) || 
         t.entityName.toLowerCase().includes(q) || 
         t.ownerName.toLowerCase().includes(q) ||
+        String(t.id).toLowerCase().includes(q) ||
+        (t.displayId || "").toLowerCase().includes(q) ||
         (t.reviewerName || "").toLowerCase().includes(q);
     }
 
