@@ -236,6 +236,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     paymentReportEmail: '',
     paymentReportDay: 'Monday',
     paymentReportDate: 1,
+    masterDepartments: 'SW - Engineering,Manufacturing and Supply Chain,Field Operations Technicians,HW - Engineering,Operations,CSM & Sales,Finance,HR and Admin,External People',
     masterEntities: 'Intellicar-BLR,Intellicar-MUM,Intellicar-DEL',
     masterTaskTypes: 'Accounts Receivable,Accounts Payable,MIS,Inventory,Banking & Treasury,Customer Reconciliations,Vendor Reconciliation,Reporting,Financial Audit,Tax Audit,Other Audits,Assements & Notices,Month Closure,Corporate Taxation,GST,Employee Laws,Due Diligence,Presentations & Trainings,Other Reconciallitions,MCA Filings,Miscellaneous Activities,Month End Billing,Credit Cards & Debt,Customizations / Automations',
     masterCommunicationModes: 'Email,Verbal Discussion,Hangouts,Whatsapp-IC Group',
@@ -525,6 +526,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [resourceLink, setResourceLink] = useState("");
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [resourceCategory, setResourceCategory] = useState("Miscellaneous");
+  const [resourceDepartment, setResourceDepartment] = useState("");
   const [libraryViewMode, setLibraryViewMode] = useState<'tiles' | 'list'>('tiles');
   const [currentLibraryPath, setCurrentLibraryPath] = useState<string | null>(null);
   const [librarySearchQuery, setLibrarySearchQuery] = useState("");
@@ -1240,6 +1242,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     };
 
     addMasterDataList('Entities', settings.masterEntities);
+    addMasterDataList('Departments', settings.masterDepartments);
     addMasterDataList('Task Types', settings.masterTaskTypes);
     addMasterDataList('Frequencies', settings.masterFrequencies);
     addMasterDataList('Finance Functions', settings.masterRequestTypes);
@@ -6495,7 +6498,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                          {!librarySearchQuery && !currentLibraryPath ? (
                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" }}>
                              {Array.from(new Set(resources.map(r => r.category || "General"))).sort().map(cat => {
-                               const count = resources.filter(r => (r.category || "General") === dept).length;
+                               const count = resources.filter(r => (r.category || "General") === cat).length;
                                return (
                                  <div 
                                    key={cat}
@@ -8037,6 +8040,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
                                     >
                                       <option value="">Select Dept</option>
+                                      {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
                                         <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
                                       ))}
                                     </select>
@@ -8090,6 +8094,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             style={{ padding: "8px 12px", borderRadius: "10px", border: `1px solid ${t.border}`, fontSize: "0.8125rem", outline: "none" }}
                           >
                             <option value="ALL">All Departments</option>
+                            {settings.masterDepartments.split(',').map(d => <option key={d.trim()} value={d.trim()}>{d.trim()}</option>)}
                           </select>
                           <select 
                             value={userRoleFilter}
@@ -8206,6 +8211,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     style={{ padding: "6px 12px", borderRadius: "6px", border: pendingUserUpdates[u.id]?.department !== undefined ? "2px solid #10b981" : "1px solid #cbd5e1", width: "100%", maxWidth: "150px" }}
                                   >
                                     <option value="">Select Dept</option>
+                                    {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
                                       <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
                                     ))}
                                   </select>
@@ -8696,6 +8702,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {settings.masterDepartments.split(',').filter(d => d.trim()).map((dept, idx) => (
                               <div key={idx} style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
                                 {dept.trim()}
                                 <button 
@@ -8705,6 +8712,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       showNotification(`Cannot delete "${dept.trim()}". It is currently used in ${usage.count} ${usage.usedBy} and is therefore non-deletable.`, "error");
                                     } else {
                                       showConfirm(`Are you sure you want to remove "${dept.trim()}"?`, () => {
+                                        const items = settings.masterDepartments.split(',').filter((_, i) => i !== idx);
+                                        setSettings({...settings, masterDepartments: items.join(',')});
                                       });
                                     }
                                   }}
@@ -8723,10 +8732,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 if (e.key === 'Enter') {
                                   const val = e.currentTarget.value.trim();
                                   if (val) {
+                                    const currentItems = (settings.masterDepartments || "").split(',').map(i => i.trim().toLowerCase());
                                     if (currentItems.includes(val.toLowerCase())) {
                                       showNotification(`"${val}" already exists in Departments.`);
                                       return;
                                     }
+                                    setSettings({...settings, masterDepartments: (settings.masterDepartments || "") + (settings.masterDepartments?.trim() ? "," : "") + val});
                                     e.currentTarget.value = "";
                                   }
                                 }
@@ -9937,9 +9948,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </tr>
                               </thead>
                               <tbody>
+                                {settings.masterDepartments.split(',').filter((d: string) => d.trim()).map((dept: string) => {
                                   const matrix = JSON.parse(settings.moduleAccessMatrix || '{}');
                                   return (
-                                    <tr key={cat} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "12px", fontWeight: 600, color: t.text, fontSize: "0.875rem" }}>{dept}</td>
                                       {['Home', 'Tasks', 'Requests', 'Learning', 'Recurring Activities', 'Payments'].map((module: string) => (
                                         <td key={module} style={{ padding: "12px", textAlign: "center" }}>
@@ -10313,11 +10325,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </tr>
                               </thead>
                               <tbody>
+                                {settings.masterDepartments.split(',').map(dept => dept.trim()).filter(Boolean).map(dept => {
                                   const matrix = JSON.parse(settings.departmentHeadMatrix || '{}');
                                   const assignedHeads = matrix[dept] || [];
                                   
                                   return (
-                                    <tr key={cat} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                    <tr key={dept} style={{ borderBottom: "1px solid #f1f5f9" }}>
                                       <td style={{ padding: "16px", fontWeight: 700, fontSize: "0.875rem", color: t.text }}>{dept}</td>
                                       <td style={{ padding: "16px" }}>
                                         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -10369,6 +10382,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                               {/* Department Filter */}
                               <MultiSelectFilter
+                                options={settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).sort() || []}
                                 selected={matrixDeptFilter}
                                 onChange={setMatrixDeptFilter}
                                 placeholder="All Departments"
@@ -11171,16 +11185,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               </div>
 
               <div>
-                <select 
-                  style={getInputStyle(t)}
-                  required
-                >
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>TYPE</label>
                 <div style={{ display: "flex", gap: "12px" }}>
                   {['LINK', 'FILE'].map(type => (
@@ -11288,6 +11292,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     style={getInputStyle(t)}
                   >
                     <option value="">Select Dept</option>
+                    {settings.masterDepartments.split(',').filter(d => d.trim()).map(dept => (
                       <option key={dept.trim()} value={dept.trim()}>{dept.trim()}</option>
                     ))}
                   </select>
