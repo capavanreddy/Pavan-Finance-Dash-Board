@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
           RETURNING "nextVal"
         `;
         const nextVal = sequences[0].nextVal;
-        const displayId = `${prefix}-${String(nextVal).padStart(2, '0')}`;
+        const displayId = `T-${prefix}-${String(nextVal).padStart(2, '0')}`;
 
         const resolvedReviewer = template.defaultReviewer || "Not Applicable";
         const reviewStatus = resolvedReviewer === "Not Applicable" ? "Review Not Required" : "Task Pending From Owner";

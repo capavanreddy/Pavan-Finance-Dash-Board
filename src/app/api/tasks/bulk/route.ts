@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
           DO UPDATE SET "nextVal" = "TaskSequence"."nextVal" + 1
           RETURNING "nextVal"
         `;
-        displayId = `${prefix}-${String(sequences[0].nextVal).padStart(2, '0')}`;
+        displayId = `T-${prefix}-${String(sequences[0].nextVal).padStart(2, '0')}`;
       } catch (e) {
         console.error("Display ID generation error in bulk:", e);
       }

@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
           RETURNING "nextVal"
         `;
         const nextVal = sequences[0].nextVal;
-        displayId = `${prefix}-${String(nextVal).padStart(2, '0')}`;
+        displayId = `T-${prefix}-${String(nextVal).padStart(2, '0')}`;
       } catch (e) {
         console.error("Display ID generation error (Non-fatal):", e);
       }

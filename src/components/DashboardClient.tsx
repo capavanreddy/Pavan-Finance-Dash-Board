@@ -5129,7 +5129,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 >
                                   <Eye size={16} />
                                 </button>
-                                <span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500 }}>{task.displayId || `#${task.id}`}</span>
+                                <span style={{ color: isOverdue ? "inherit" : "#94a3b8", fontWeight: isOverdue ? "inherit" : 500, whiteSpace: "nowrap" }}>
+                                  {task.displayId ? (task.displayId.startsWith('T-') ? task.displayId : `T-${task.displayId}`) : `T-${task.id}`}
+                                </span>
                               </div>
                             </td>
                             <td style={getTdStyle(t)}>
@@ -5202,9 +5204,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <td style={getTdStyle(t)}>
                               {renderOriginBadge(task)}
                             </td>
-                            <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
-                            <td 
-                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed" && !task.reviewCompletionDate)) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
+                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
+                             <td 
+                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed" && !task.reviewCompletionDate)) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
                               title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${formatDateTime(task.completedSubmissionAt)}\nBy: ${task.completedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
@@ -5260,8 +5262,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 completionDate={task.completionDate}
                               />
                             </td>
-                            <td 
-                              style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
+                             <td 
+                               style={{ ...getTdStyle(t), whiteSpace: "nowrap", cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
                               title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${formatDateTime(task.reviewedSubmissionAt)}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
@@ -5389,7 +5391,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   style={getInputStyle(t)}
                                 />
                               ) : (
-                                <span style={{ color: task.ownerComments ? "#475569" : "#cbd5e1" }}>{task.ownerComments || "Click to add..."}</span>
+                                <span 
+                                  style={{ 
+                                    color: task.ownerComments ? "#475569" : "#cbd5e1",
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                  }}
+                                  title={task.ownerComments || "Click to add..."}
+                                >
+                                  {task.ownerComments || "Click to add..."}
+                                </span>
                               )}
                             </td>
 
@@ -5412,7 +5426,17 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                   style={getInputStyle(t)}
                                 />
                               ) : (
-                                <span style={{ color: task.reviewerComments ? "#475569" : "#cbd5e1" }}>
+                                <span 
+                                  style={{ 
+                                    color: task.reviewerComments ? "#475569" : "#cbd5e1",
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                  }}
+                                  title={task.reviewerComments || "Click to add..."}
+                                >
                                   {task.reviewerComments || "Click to add..."}
                                 </span>
                               )}
@@ -6004,7 +6028,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                  {renderOriginBadge(req)}
                                </td>
                              )}
-                            <td style={getTdStyle(t)}>{new Date(req.createdAt).toLocaleDateString()}</td>
+                            <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{new Date(req.createdAt).toLocaleDateString()}</td>
                             <td style={getTdStyle(t)}>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ padding: "4px 10px", borderRadius: "6px", background: t.bg, fontSize: "0.75rem", fontWeight: 600, color: t.textMuted }}>
@@ -6012,9 +6036,45 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 </span>
                               </div>
                             </td>
-                            <td style={{ ...getTdStyle(t), minWidth: "10cm", maxWidth: "10cm", whiteSpace: "normal" }}>{req.natureOfRequest}</td>
-                            <td style={{ ...getTdStyle(t), minWidth: "10cm", maxWidth: "10cm", whiteSpace: "normal" }}>{req.reasonForRequest || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
-                            <td style={{ ...getTdStyle(t), minWidth: "7.5cm", maxWidth: "7.5cm", whiteSpace: "normal", wordBreak: "break-word" }}>{(req as any).mailSubject || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
+                            <td 
+                              style={{ 
+                                ...getTdStyle(t), 
+                                minWidth: "10cm", 
+                                maxWidth: "10cm",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                              }}
+                              title={req.natureOfRequest}
+                            >
+                              {req.natureOfRequest}
+                            </td>
+                            <td 
+                              style={{ 
+                                ...getTdStyle(t), 
+                                minWidth: "10cm", 
+                                maxWidth: "10cm",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                              }}
+                              title={req.reasonForRequest || "N/A"}
+                            >
+                              {req.reasonForRequest || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}
+                            </td>
+                            <td 
+                              style={{ 
+                                ...getTdStyle(t), 
+                                minWidth: "7.5cm", 
+                                maxWidth: "7.5cm",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                              }}
+                              title={(req as any).mailSubject || "N/A"}
+                            >
+                              {(req as any).mailSubject || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}
+                            </td>
                             <td style={{ ...getTdStyle(t), minWidth: "160px" }}>
                                 {(!req.status || req.status === 'Pending') && (
                                   <span style={{ padding: "4px 10px", borderRadius: "100px", background: "#fff7ed", fontSize: "0.75rem", fontWeight: 700, color: "#9a3412", border: "1px solid #ffedd5", whiteSpace: "nowrap" }}>
@@ -6190,7 +6250,11 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                           TASK CREATED
                                         </span>
                                         <span style={{ fontSize: "0.75rem", color: t.text, fontWeight: 700, marginLeft: "4px" }}>
-                                          ID: { (req as any).taskDisplayId || req.convertedTaskId }
+                                          ID: { (() => {
+                                            const dispId = (req as any).taskDisplayId || req.convertedTaskId?.toString();
+                                            if (!dispId) return "N/A";
+                                            return dispId.startsWith('T-') ? dispId : `T-${dispId}`;
+                                          })() }
                                         </span>
                                       </div>
                                       {isAdmin && (
