@@ -5391,57 +5391,86 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               {task.reviewStatus === "Review Not Required" ? (
                                 <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
                               ) : task.reviewStatus === "Completed" ? (
-                                los.some(lo => lo.taskId === task.id) ? (
-                                  <span style={{ 
-                                    padding: "4px 8px", 
-                                    borderRadius: "6px", 
-                                    fontSize: "0.75rem", 
-                                    fontWeight: 700, 
-                                    background: "rgba(16,185,129,0.1)", 
-                                    color: "#10b981",
-                                    display: "inline-block"
-                                  }}>
-                                    Captured
-                                  </span>
-                                ) : task.requestStatus === "Processed" ? (
-                                  <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
-                                ) : (
-                                  <select
-                                    value={task.captureLO || "No"}
-                                    disabled={!isAdmin && !isCurrentUserReviewer}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      const val = e.target.value;
-                                      if (val === "Yes") {
-                                        setLOCaptureForm({
-                                          ...loCaptureForm,
-                                          entity: task.entityName,
-                                          identifiedBy: task.reviewerName && task.reviewerName !== "Not Applicable" ? task.reviewerName : currentUserName || '',
-                                          committedBy: task.ownerName || '',
-                                          taskId: task.id,
-                                          dateOfIdentification: new Date().toISOString().split('T')[0]
-                                        });
-                                        setShowLOCaptureModal(true);
-                                      } else if (val === "No") {
-                                        handleUpdate(task.id, 'captureLO', 'No');
-                                      }
-                                    }}
-                                    style={{
-                                      padding: "4px 8px",
-                                      borderRadius: "6px",
-                                      fontSize: "0.75rem",
-                                      fontWeight: 600,
-                                      border: `1px solid ${t.border}`,
-                                      background: t.bg,
-                                      color: t.text,
-                                      cursor: (!isAdmin && !isCurrentUserReviewer) ? "not-allowed" : "pointer",
-                                      outline: "none"
-                                    }}
-                                  >
-                                    <option value="No">No</option>
-                                    <option value="Yes">Yes</option>
-                                  </select>
-                                )
+                                (() => {
+                                  const linkedLO = los.find(lo => lo.taskId === task.id);
+                                  return linkedLO ? (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                                      <span style={{ 
+                                        padding: "4px 8px", 
+                                        borderRadius: "6px", 
+                                        fontSize: "0.75rem", 
+                                        fontWeight: 700, 
+                                        background: "rgba(16,185,129,0.1)", 
+                                        color: "#10b981",
+                                        display: "inline-block",
+                                        cursor: "help"
+                                      }}
+                                      title={`Submitted by ${getUserDisplayName(linkedLO.createdByEmail || linkedLO.submittedBy)} on ${formatDateTime(linkedLO.createdAt)}`}
+                                      >
+                                        Captured
+                                      </span>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedLOForView({
+                                            id: linkedLO.id,
+                                            learningOpportunity: linkedLO.learningOpportunity,
+                                            resolutionPlan: linkedLO.resolutionProvided,
+                                            sourceTaskName: task.taskName,
+                                            ownerName: linkedLO.committedBy,
+                                            status: linkedLO.isAcknowledged ? "Acknowledged" : "Pending",
+                                            createdAt: linkedLO.createdAt || linkedLO.dateOfIdentification,
+                                            ackBy: linkedLO.acknowledgedBy,
+                                            ackAt: linkedLO.acknowledgedAt,
+                                            ackComments: linkedLO.learnerComments
+                                          } as any);
+                                        }}
+                                        style={{ background: "none", border: "none", color: "#6366f1", cursor: "pointer", padding: "4px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                        title="View LO Details"
+                                      >
+                                        <Eye size={14} />
+                                      </button>
+                                    </div>
+                                  ) : task.requestStatus === "Processed" ? (
+                                    <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
+                                  ) : (
+                                    <select
+                                      value={task.captureLO || "No"}
+                                      disabled={!isAdmin && !isCurrentUserReviewer}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        const val = e.target.value;
+                                        if (val === "Yes") {
+                                          setLOCaptureForm({
+                                            ...loCaptureForm,
+                                            entity: task.entityName,
+                                            identifiedBy: task.reviewerName && task.reviewerName !== "Not Applicable" ? task.reviewerName : currentUserName || '',
+                                            committedBy: task.ownerName || '',
+                                            taskId: task.id,
+                                            dateOfIdentification: new Date().toISOString().split('T')[0]
+                                          });
+                                          setShowLOCaptureModal(true);
+                                        } else if (val === "No") {
+                                          handleUpdate(task.id, 'captureLO', 'No');
+                                        }
+                                      }}
+                                      style={{
+                                        padding: "4px 8px",
+                                        borderRadius: "6px",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        border: `1px solid ${t.border}`,
+                                        background: t.bg,
+                                        color: t.text,
+                                        cursor: (!isAdmin && !isCurrentUserReviewer) ? "not-allowed" : "pointer",
+                                        outline: "none"
+                                      }}
+                                    >
+                                      <option value="No">No</option>
+                                      <option value="Yes">Yes</option>
+                                    </select>
+                                  );
+                                })()
                               ) : (
                                 <span style={{ color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>N/A</span>
                               )}
