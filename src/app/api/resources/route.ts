@@ -27,19 +27,20 @@ export async function POST(req: NextRequest) {
 
   const sql = getDb();
   try {
-    const { name, type, url, data, category } = await req.json();
+    const { name, type, url, data, category, department } = await req.json();
     const uploadedBy = session.user.name || session.user.email;
     
-    // Self-healing migration for category field
+    // Self-healing migration for category and department fields
     try {
       await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Miscellaneous'`;
+      await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "department" TEXT DEFAULT 'General'`;
     } catch (e) {
-      console.log("Resource category migration failed/skipped", e);
+      console.log("Resource migration failed/skipped", e);
     }
 
     const resource = await sql`
-      INSERT INTO "LearningResource" ("name", "type", "url", "data", "category", "uploadedBy", "createdAt")
-      VALUES (${name}, ${type}, ${url}, ${data}, ${category || 'Miscellaneous'}, ${uploadedBy}, NOW())
+      INSERT INTO "LearningResource" ("name", "type", "url", "data", "category", "department", "uploadedBy", "createdAt")
+      VALUES (${name}, ${type}, ${url}, ${data}, ${category || 'Miscellaneous'}, ${department || 'General'}, ${uploadedBy}, NOW())
       RETURNING *
     `;
     return NextResponse.json(resource[0]);

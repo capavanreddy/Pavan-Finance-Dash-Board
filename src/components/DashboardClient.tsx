@@ -526,6 +526,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [resourceLink, setResourceLink] = useState("");
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [resourceCategory, setResourceCategory] = useState("Miscellaneous");
+  const [resourceDepartment, setResourceDepartment] = useState("");
+  const [libraryViewMode, setLibraryViewMode] = useState<'tiles' | 'list'>('tiles');
+  const [currentLibraryPath, setCurrentLibraryPath] = useState<string | null>(null);
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
   
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
@@ -2867,17 +2871,20 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           type: resourceType,
           url: resourceLink,
           data: dataStr,
-          category: resourceCategory
+          category: resourceCategory,
+          department: resourceDepartment || "General"
         })
       });
 
       if (res.ok) {
+        const newResource = await res.json();
+        setResources(prev => [newResource, ...prev]);
         showNotification("Resource added successfully!", "success");
         setShowResourceModal(false);
         setResourceName("");
         setResourceLink("");
         setResourceFile(null);
-        fetchResources();
+        setResourceDepartment("");
       } else {
         const errorData = await res.json();
         showNotification(`Failed to save resource: ${errorData.message || "Unknown error"}`, "error");
@@ -6403,101 +6410,205 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
         {/* LO View */}
         {activeView === 'LOS' && loActiveFilter !== 'ANALYTICS' && (
-          <div className="lo-view" style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden", animation: "fadeIn 0.5s ease-out" }}>
-              {loActiveFilter === 'RESOURCES' ? (
-                <div style={{ minHeight: "600px" }}>
+          <div className="lo-view" style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden", animation: "fadeIn 0.5s e                <div style={{ minHeight: "600px", display: "flex", flexDirection: "column" }}>
                    <div style={{ height: "180px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", padding: "40px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
                       <div>
                          <h2 style={{ color: "white", margin: 0, fontSize: "2.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Knowledge Library</h2>
                          <p style={{ color: "rgba(255,255,255,0.7)", margin: "8px 0 0 0", fontSize: "1rem" }}>Centralized reference materials, acts, and professional publications.</p>
                       </div>
-                      {!isViewer && (
-                        <button 
-                          onClick={() => {
-                            const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
-                            if (cats.length > 0) setResourceCategory(cats[0]);
-                            setShowResourceModal(true);
-                          }} 
-                          style={{ background: "#10b981", color: "white", padding: "14px 28px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", gap: "8px" }}
-                        >
-                          <Plus size={18} /> Add Resource
-                        </button>
-                      )}
+                      <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                        <div style={{ position: "relative" }}>
+                          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.5)" }} size={18} />
+                          <input 
+                            type="text" 
+                            placeholder="Search library..." 
+                            value={librarySearchQuery} 
+                            onChange={e => setLibrarySearchQuery(e.target.value)} 
+                            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "12px 12px 12px 40px", color: "white", width: "300px", outline: "none", backdropFilter: "blur(4px)" }}
+                          />
+                        </div>
+                        {!isViewer && (
+                          <button 
+                            onClick={() => {
+                              const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
+                              if (cats.length > 0) setResourceCategory(cats[0]);
+                              setShowResourceModal(true);
+                            }} 
+                            style={{ background: "#10b981", color: "white", padding: "14px 28px", borderRadius: "12px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", gap: "8px" }}
+                          >
+                            <Plus size={18} /> Add Resource
+                          </button>
+                        )}
+                      </div>
                    </div>
-                   <div style={{ padding: "40px" }}>
+
+                   <div style={{ background: "#f8fafc", padding: "16px 40px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem" }}>
+                       <button onClick={() => { setCurrentLibraryPath(null); setLibrarySearchQuery(""); }} style={{ color: "#4f46e5", background: "none", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                         <Home size={16} /> Library
+                       </button>
+                       {currentLibraryPath && !librarySearchQuery && (
+                         <>
+                           <ChevronRight size={14} color="#94a3b8" />
+                           <span style={{ fontWeight: 600, color: t.text }}>{currentLibraryPath}</span>
+                         </>
+                       )}
+                       {librarySearchQuery && (
+                         <>
+                           <ChevronRight size={14} color="#94a3b8" />
+                           <span style={{ fontWeight: 600, color: t.text }}>Search Results: "{librarySearchQuery}"</span>
+                         </>
+                       )}
+                     </div>
+                     <div style={{ display: "flex", background: "white", padding: "4px", borderRadius: "8px", border: `1px solid ${t.border}`, gap: "4px" }}>
+                       <button onClick={() => setLibraryViewMode('tiles')} style={{ padding: "6px", borderRadius: "6px", border: "none", background: libraryViewMode === 'tiles' ? "#f1f5f9" : "transparent", color: libraryViewMode === 'tiles' ? "#4f46e5" : "#64748b", cursor: "pointer" }} title="Tiles View"><LayoutGrid size={18} /></button>
+                       <button onClick={() => setLibraryViewMode('list')} style={{ padding: "6px", borderRadius: "6px", border: "none", background: libraryViewMode === 'list' ? "#f1f5f9" : "transparent", color: libraryViewMode === 'list' ? "#4f46e5" : "#64748b", cursor: "pointer" }} title="List View"><List size={18} /></button>
+                     </div>
+                   </div>
+
+                   <div style={{ padding: "40px", flex: 1 }}>
                      {resourcesLoading ? (
                        <div style={{ textAlign: "center", padding: "60px", color: t.textMuted }}>
                          <RefreshCw size={40} className="animate-spin" style={{ margin: "0 auto 16px", opacity: 0.5 }} />
                          <p>Fetching your library resources...</p>
                        </div>
-                     ) : resources.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "100px 40px", background: t.card, borderRadius: "24px", border: `1px dashed ${t.border}` }}>
-                           <BookOpen size={48} style={{ color: t.textMuted, opacity: 0.3, marginBottom: "16px" }} />
-                           <h3 style={{ color: t.text, margin: "0 0 8px 0" }}>Library is Empty</h3>
-                           <p style={{ color: t.textMuted, margin: 0 }}>Start building your knowledge base by adding your first resource.</p>
-                        </div>
                      ) : (
-                       <div style={{ display: "flex", flexDirection: "column", gap: "48px" }}>
-                         {(settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || ['Miscellaneous']).map(category => {
-                           const categoryResources = resources.filter(r => (r.category || 'Miscellaneous') === category);
-                           if (categoryResources.length === 0) return null;
+                       <>
+                         {!librarySearchQuery && !currentLibraryPath ? (
+                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" }}>
+                             {Array.from(new Set(resources.map(r => r.department || "General"))).sort().map(dept => {
+                               const count = resources.filter(r => (r.department || "General") === dept).length;
+                               return (
+                                 <div 
+                                   key={dept}
+                                   onClick={() => setCurrentLibraryPath(dept)}
+                                   style={{ 
+                                     background: "white", padding: "24px", borderRadius: "20px", border: `1px solid ${t.border}`, 
+                                     cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", 
+                                     alignItems: "center", gap: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+                                   }}
+                                   onMouseOver={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                                   onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateY(0)"; }}
+                                 >
+                                   <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}>
+                                     <Folder size={32} />
+                                   </div>
+                                   <div style={{ textAlign: "center" }}>
+                                     <h4 style={{ margin: 0, fontWeight: 700, color: t.text, fontSize: "1rem" }}>{dept}</h4>
+                                     <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>{count} Resources</p>
+                                   </div>
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         ) : (
+                           <div>
+                             {(() => {
+                               const filtered = librarySearchQuery 
+                                 ? resources.filter(r => r.name.toLowerCase().includes(librarySearchQuery.toLowerCase()) || (r.department || "").toLowerCase().includes(librarySearchQuery.toLowerCase()))
+                                 : resources.filter(r => (r.department || "General") === currentLibraryPath);
 
-                           return (
-                             <div key={category} style={{ animation: "fadeIn 0.5s ease-out" }}>
-                               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                                 <div style={{ width: "4px", height: "24px", background: "#4f46e5", borderRadius: "2px" }}></div>
-                                 <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: t.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>{category}</h3>
-                                 <span style={{ padding: "2px 10px", background: "#eef2ff", color: "#4f46e5", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700 }}>{categoryResources.length} Items</span>
-                               </div>
-                               
-                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
-                                 {categoryResources.map(res => (
-                                   <div key={res.id} className="resource-card" style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: "20px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px", transition: "all 0.3s ease", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                       <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: res.type === 'LINK' ? "#eff6ff" : "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                         {res.type === 'LINK' ? <Link size={20} color="#3b82f6" /> : <FileText size={20} color="#ef4444" />}
+                               if (filtered.length === 0) {
+                                 return (
+                                   <div style={{ textAlign: "center", padding: "60px" }}>
+                                     <Search size={40} style={{ color: "#94a3b8", opacity: 0.5, marginBottom: "16px" }} />
+                                     <p style={{ color: t.textMuted }}>No resources found matching your criteria.</p>
+                                   </div>
+                                 );
+                               }
+
+                               if (libraryViewMode === 'list') {
+                                 return (
+                                   <div style={{ background: "white", borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                                       <thead>
+                                         <tr style={{ background: "#f8fafc", borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
+                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Name</th>
+                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Type</th>
+                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Category</th>
+                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Modified</th>
+                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b", textAlign: "right" }}>Actions</th>
+                                         </tr>
+                                       </thead>
+                                       <tbody>
+                                         {filtered.map(res => (
+                                           <tr key={res.id} style={{ borderBottom: `1px solid ${t.border}` }} className="hover-bg-slate-50">
+                                             <td style={{ padding: "12px 20px" }}>
+                                               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                 {res.type === 'LINK' ? <Link size={16} color="#3b82f6" /> : <FileText size={16} color="#ef4444" />}
+                                                 <span style={{ fontWeight: 600, color: t.text }}>{res.name}</span>
+                                               </div>
+                                             </td>
+                                             <td style={{ padding: "12px 20px" }}>{res.type}</td>
+                                             <td style={{ padding: "12px 20px" }}>
+                                               <span style={{ padding: "2px 8px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.7rem", fontWeight: 700, color: "#475569" }}>{res.category}</span>
+                                             </td>
+                                             <td style={{ padding: "12px 20px", color: t.textMuted }}>{formatDate(res.createdAt)}</td>
+                                             <td style={{ padding: "12px 20px", textAlign: "right" }}>
+                                               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                                                 <button onClick={() => {
+                                                   if (res.type === 'LINK') window.open(res.url, '_blank');
+                                                   else {
+                                                     const win = window.open();
+                                                     if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
+                                                   }
+                                                 }} style={{ background: "#4f46e5", color: "white", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}>View</button>
+                                                 {isAdmin && (
+                                                   <button onClick={() => handleDeleteResource(res.id)} style={{ padding: "6px", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                                 )}
+                                               </div>
+                                             </td>
+                                           </tr>
+                                         ))}
+                                       </tbody>
+                                     </table>
+                                   </div>
+                                 );
+                               }
+
+                               return (
+                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "24px" }}>
+                                   {filtered.map(res => (
+                                     <div key={res.id} style={{ background: "white", border: `1px solid ${t.border}`, borderRadius: "20px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#4f46e5"} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
+                                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                         <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: res.type === 'LINK' ? "#eff6ff" : "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                           {res.type === 'LINK' ? <Link size={20} color="#3b82f6" /> : <FileText size={20} color="#ef4444" />}
+                                         </div>
+                                         {isAdmin && (
+                                           <button onClick={() => handleDeleteResource(res.id)} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", opacity: 0.6 }}><Trash2 size={16} /></button>
+                                         )}
                                        </div>
-                                       {isAdmin && (
-                                         <button 
-                                           onClick={() => handleDeleteResource(res.id)} 
-                                           style={{ padding: "8px", borderRadius: "8px", border: "none", background: "transparent", color: "#ef4444", cursor: "pointer", opacity: 0.6 }}
-                                         >
-                                           <Trash2 size={16} />
-                                         </button>
-                                       )}
-                                     </div>
-                                     
-                                     <div>
-                                       <h5 style={{ margin: "0 0 6px 0", fontSize: "1.0625rem", fontWeight: 700, color: t.text, lineHeight: 1.4 }}>{res.name}</h5>
-                                       <p style={{ margin: 0, fontSize: "0.75rem", color: t.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
-                                         <Clock size={12} /> {formatDate(res.createdAt)} • {res.uploadedBy}
-                                       </p>
-                                     </div>
-
-                                     <div style={{ marginTop: "auto", paddingTop: "12px" }}>
-                                       <button 
-                                         onClick={() => {
-                                           if (res.type === 'LINK') window.open(res.url, '_blank');
-                                           else {
-                                             const win = window.open();
-                                             if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
-                                           }
-                                         }} 
-                                         style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.2)" }}
-                                       >
+                                       <div>
+                                         <h5 style={{ margin: "0 0 4px 0", fontSize: "1rem", fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{res.name}</h5>
+                                         <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
+                                           <span style={{ fontSize: "0.65rem", padding: "2px 6px", background: "#f1f5f9", borderRadius: "4px", fontWeight: 700, color: "#64748b" }}>{res.category}</span>
+                                           {librarySearchQuery && <span style={{ fontSize: "0.65rem", padding: "2px 6px", background: "#f5f3ff", borderRadius: "4px", fontWeight: 700, color: "#4f46e5" }}>{res.department}</span>}
+                                         </div>
+                                         <p style={{ margin: 0, fontSize: "0.75rem", color: t.textMuted, display: "flex", alignItems: "center", gap: "4px" }}>
+                                           <Clock size={12} /> {formatDate(res.createdAt)} • {res.uploadedBy}
+                                         </p>
+                                       </div>
+                                       <button onClick={() => {
+                                         if (res.type === 'LINK') window.open(res.url, '_blank');
+                                         else {
+                                           const win = window.open();
+                                           if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
+                                         }
+                                       }} style={{ width: "100%", padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                                          <Eye size={18} /> View Resource
                                        </button>
                                      </div>
-                                   </div>
-                                 ))}
-                               </div>
-                             </div>
-                           );
-                         })}
-                       </div>
+                                   ))}
+                                 </div>
+                               );
+                             })()}
+                           </div>
+                         )}
+                       </>
                      )}
                    </div>
                 </div>
+        </div>
               ) : (
                 <div style={{ minHeight: "600px" }}>
                   <div style={{ padding: "32px 32px 0 32px" }}>
@@ -11049,6 +11160,21 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 >
                   {settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean).map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>DEPARTMENT / FOLDER</label>
+                <select 
+                  value={resourceDepartment}
+                  onChange={e => setResourceDepartment(e.target.value)}
+                  style={getInputStyle(t)}
+                  required
+                >
+                  <option value="">Select Department...</option>
+                  {settings.masterDepartments?.split(',').map(d => d.trim()).filter(Boolean).map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
               </div>
