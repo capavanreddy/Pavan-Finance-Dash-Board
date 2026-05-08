@@ -6410,7 +6410,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
         {/* LO View */}
         {activeView === 'LOS' && loActiveFilter !== 'ANALYTICS' && (
-          <div className="lo-view" style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden", animation: "fadeIn 0.5s e                <div style={{ minHeight: "600px", display: "flex", flexDirection: "column" }}>
+          <div className="lo-view" style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", overflow: "hidden", animation: "fadeIn 0.5s ease-out" }}>
+            {loActiveFilter === 'RESOURCES' ? (
+                <div style={{ minHeight: "600px", display: "flex", flexDirection: "column" }}>
                    <div style={{ height: "180px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", padding: "40px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
                       <div>
                          <h2 style={{ color: "white", margin: 0, fontSize: "2.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Knowledge Library</h2>
@@ -6608,7 +6610,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                      )}
                    </div>
                 </div>
-        </div>
               ) : (
                 <div style={{ minHeight: "600px" }}>
                   <div style={{ padding: "32px 32px 0 32px" }}>
