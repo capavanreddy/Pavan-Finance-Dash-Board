@@ -4255,7 +4255,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   {activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? null : (
                     <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
                       {activeView === 'TASKS' ? 
-                        (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "") :
+                        (activeSubView === 'MAIN' ? "" : "") :
                        activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments and Treasury obligations." :
                        "Turning challenges into structured growth opportunities."}
                     </p>
@@ -4831,7 +4831,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       }} 
                       onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
                     >
-                      <Download size={18} color="#2563eb" /> Download Report
+                      <Download size={18} color="#2563eb" /> Report
                     </button>
                     
                     {showTaskDownloadDropdown && (
