@@ -4252,12 +4252,14 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     {activeView === 'TASKS' ? (activeSubView === 'MAIN' ? "Task Dash Board" : "Inter Department Request") : 
                      activeView === 'PAYMENTS' ? "Payments Calendar" : "Learning Opportunities"}
                   </h2>
-                  <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
-                    {activeView === 'TASKS' ? 
-                      (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "View and manage incoming tasks from other departments.") :
-                     activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments and Treasury obligations." :
-                     "Turning challenges into structured growth opportunities."}
-                  </p>
+                  {activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' ? null : (
+                    <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.95rem", fontWeight: 500 }}>
+                      {activeView === 'TASKS' ? 
+                        (activeSubView === 'MAIN' ? "Track team productivity and operational milestones." : "") :
+                       activeView === 'PAYMENTS' ? "Manage and track recurring vendor payments and Treasury obligations." :
+                       "Turning challenges into structured growth opportunities."}
+                    </p>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
@@ -11412,23 +11414,23 @@ function MetricCard({ title, value, icon, bg, isActive, onClick, t }: { title: s
       onClick={onClick}
       style={{ 
         background: t.card, 
-        padding: "24px", 
+        padding: "16px", 
         borderRadius: "12px", 
         border: isActive ? "2px solid #2563eb" : "1px solid #e2e8f0", 
         boxShadow: isActive ? "0 4px 6px -1px rgba(37, 99, 235, 0.2)" : "0 1px 3px 0 rgb(0 0 0 / 0.1)", 
         display: "flex", 
         alignItems: "center", 
-        gap: "16px",
+        gap: "12px",
         cursor: onClick ? "pointer" : "default",
         transition: "all 0.2s"
       }}
     >
-      <div style={{ background: bg, padding: "16px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: bg, padding: "10px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {icon}
       </div>
       <div>
-        <p style={{ margin: "0 0 4px 0", fontSize: "0.875rem", color: t.textMuted, fontWeight: 500 }}>{title}</p>
-        <p style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
+        <p style={{ margin: "0 0 2px 0", fontSize: "0.8rem", color: t.textMuted, fontWeight: 500 }}>{title}</p>
+        <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: t.text, letterSpacing: "-0.025em" }}>{value}</p>
       </div>
     </div>
   );
