@@ -1212,39 +1212,38 @@ export default function RecurringActivities({   settings, usersList = [] , showN
       {activeSubTab === 'STAGING' && (
         <div>
           {/* Advanced Filters Bar */}
-          <div style={{ background: "white", padding: "16px 20px", borderRadius: "16px", border: "1px solid #e2e8f0", marginBottom: "24px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b" }}>FROM:</label>
-               <input type="date" value={dateFilter.from} onChange={e => setDateFilter({...dateFilter, from: e.target.value})} style={{...inputStyle, width: "135px"}} />
+          <div style={{ background: "white", padding: "12px 16px", borderRadius: "16px", border: "1px solid #e2e8f0", marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", flexWrap: "nowrap" }}>
+             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+               <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "#64748b" }}>FROM:</label>
+               <input type="date" value={dateFilter.from} onChange={e => setDateFilter({...dateFilter, from: e.target.value})} style={{...inputStyle, width: "120px", padding: "6px 8px"}} />
              </div>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b" }}>TO:</label>
-               <input type="date" value={dateFilter.to} onChange={e => setDateFilter({...dateFilter, to: e.target.value})} style={{...inputStyle, width: "135px"}} />
+             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+               <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "#64748b" }}>TO:</label>
+               <input type="date" value={dateFilter.to} onChange={e => setDateFilter({...dateFilter, to: e.target.value})} style={{...inputStyle, width: "120px", padding: "6px 8px"}} />
              </div>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b" }}>FREQ:</label>
-               <select value={freqFilter} onChange={e => setFreqFilter(e.target.value)} style={{...inputStyle, width: "110px"}}>
+             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+               <select value={freqFilter} onChange={e => setFreqFilter(e.target.value)} style={{...inputStyle, width: "100px", padding: "6px 8px"}}>
                  <option value="ALL">ALL Freq</option>
                  {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
                </select>
              </div>
              
              {/* Status Filter Dropdown */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", padding: "4px 8px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                 <Filter size={14} color="#64748b" />
                 <select 
                   value={statusFilter} 
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", fontWeight: 600, color: "#334155", cursor: "pointer" }}
                 >
-                  <option value="ALL">Show All Status</option>
-                  <option value="PENDING">Pending Conversions</option>
-                  <option value="CONVERTED">Converted Tasks</option>
+                  <option value="ALL">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CONVERTED">Converted</option>
                 </select>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#f8fafc", padding: "4px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "240px" }}>
-                <Search size={16} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", padding: "4px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", width: "200px" }}>
+                <Search size={15} color="#64748b" />
                 <input 
                   type="text" 
                   placeholder="Search staging..." 
@@ -1254,11 +1253,11 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 />
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <select 
                   value={entityFilterStaging} 
                   onChange={e => { setEntityFilterStaging(e.target.value); setStagingCurrentPage(1); }} 
-                  style={{ ...inputStyle, width: "130px" }}
+                  style={{ ...inputStyle, width: "120px", padding: "6px 8px" }}
                 >
                   <option value="ALL">All Entities</option>
                   {Array.from(new Set(stagingTasks.map(t => t.entityName))).sort().map(entity => (
@@ -1267,7 +1266,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                 </select>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingLeft: "8px", borderLeft: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", paddingLeft: "8px", borderLeft: "1px solid #e2e8f0" }}>
                 <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>Rows:</span>
                 <select 
                   value={stagingItemsPerPage} 
@@ -1288,10 +1287,10 @@ export default function RecurringActivities({   settings, usersList = [] , showN
              <div style={{ position: "relative" }}>
                 <button 
                   onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#334155", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s" }}
+                  style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", color: "#334155", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", transition: "all 0.2s", whiteSpace: "nowrap" }}
                 >
                   <Download size={18} />
-                  Download Report
+                  Download
                   <ChevronDown size={16} style={{ transform: showDownloadMenu ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
                 </button>
 
