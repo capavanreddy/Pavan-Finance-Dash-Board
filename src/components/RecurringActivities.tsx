@@ -96,7 +96,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     subject: "Recurring Task Conversion Report",
     format: "excel" as "excel" | "pdf" | "both",
     recipientInput: "",
-    ccInput: ""
+    ccInput: "",
+    type: "staging" as "staging" | "master" | "daily",
+    attachmentName: ""
   });
   const [showMasterDownloadDropdown, setShowMasterDownloadDropdown] = useState(false);
   const [shareMode, setShareMode] = useState<'STAGING' | 'MASTER'>('STAGING');
@@ -709,7 +711,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
     setShareData({
         ...shareData,
         subject: `Recurring Task Conversion Report (${dateFilter.from} to ${dateFilter.to})`,
-        format: "excel"
+        format: "excel",
+        type: 'staging'
     });
     setShowShareModal(true);
   };
@@ -1742,7 +1745,8 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                       setShareData({
                         ...shareData, 
                         subject: "Recurring Master Registry Report", 
-                        format: "excel"
+                        format: "excel",
+                        type: 'master'
                       });
                       setShareMode('MASTER');
                       setShowShareModal(true); 
