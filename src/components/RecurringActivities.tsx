@@ -1236,9 +1236,9 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   style={{ border: "none", background: "none", outline: "none", fontSize: "0.8125rem", fontWeight: 600, color: "#334155", cursor: "pointer" }}
                 >
-                  <option value="ALL">All Status</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="CONVERTED">Converted</option>
+                  <option value="ALL">Show All Status</option>
+                  <option value="PENDING">Pending Conversions</option>
+                  <option value="CONVERTED">Converted Tasks</option>
                 </select>
               </div>
 
