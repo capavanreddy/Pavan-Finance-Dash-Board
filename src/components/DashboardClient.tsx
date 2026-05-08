@@ -669,7 +669,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const isTransferred = item.transferStatus === 'T';
     const transferredAtStr = item.transferredAt ? formatDateTime(item.transferredAt) : 'N/A';
     const hoverText = isTransferred 
-      ? `Transferred By: ${item.transferredBy || 'Unknown'}\nDate & Time: ${transferredAtStr}`
+      ? `Transferred By: ${item.transferredBy || 'Unknown'}\nDate & Time: ${transferredAtStr}${item.originalRequestType ? `\nOriginal Finance Function: ${item.originalRequestType}` : ''}`
       : 'This is an original request.';
       
     return (
