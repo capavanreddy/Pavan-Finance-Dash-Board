@@ -2942,7 +2942,13 @@ const handleResourceUpload = async (e: React.FormEvent) => {
   const filteredExternalRequests = visibleExternalRequests.filter(r => {
     if (extReqSearch) {
       const q = extReqSearch.toLowerCase();
-      if (!r.natureOfRequest.toLowerCase().includes(q) && !r.requestFrom.toLowerCase().includes(q)) return false;
+      const matches = 
+        r.natureOfRequest.toLowerCase().includes(q) || 
+        r.requestFrom.toLowerCase().includes(q) ||
+        (r.convertedTaskId?.toString().toLowerCase().includes(q)) ||
+        ((r as any).taskDisplayId?.toLowerCase().includes(q));
+        
+      if (!matches) return false;
     }
     
     if (extReqStatusFilter.length > 0 && !extReqStatusFilter.includes(r.status || "")) return false;
@@ -5634,7 +5640,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
               
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {filteredTasksToDisplay.length > 0 && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: `1px solid ${t.border}`, background: t.bg }}>
                 <div style={{ fontSize: "0.875rem", color: t.textMuted }}>
                   Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTasksToDisplay.length)} of {filteredTasksToDisplay.length} tasks
@@ -5648,12 +5654,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <ChevronLeft size={16} /> Prev
                   </button>
                   <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px" }}>
-                    Page {currentPage} of {totalPages}
+                    Page {currentPage} of {totalPages || 1}
                   </div>
                   <button 
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === totalPages ? "#94a3b8" : "#0f172a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                    disabled={currentPage === (totalPages || 1)}
+                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: currentPage === (totalPages || 1) ? "#94a3b8" : "#0f172a", cursor: currentPage === (totalPages || 1) ? "not-allowed" : "pointer" }}
                   >
                     Next <ChevronRight size={16} />
                   </button>
@@ -6334,7 +6340,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
             </div>
               
             {/* Pagination Controls */}
-            {totalExtReqPages > 1 && (
+            {sortedExternalRequests.length > 0 && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: `1px solid ${t.border}`, background: t.bg, borderBottomLeftRadius: "24px", borderBottomRightRadius: "24px" }}>
                 <div style={{ fontSize: "0.875rem", color: t.textMuted }}>
                   Showing {(extReqCurrentPage - 1) * extReqItemsPerPage + 1} to {Math.min(extReqCurrentPage * extReqItemsPerPage, sortedExternalRequests.length)} of {sortedExternalRequests.length} requests
@@ -6348,12 +6354,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                     <ChevronLeft size={16} /> Prev
                   </button>
                   <div style={{ fontSize: "0.875rem", fontWeight: 500, padding: "0 12px" }}>
-                    Page {extReqCurrentPage} of {totalExtReqPages}
+                    Page {extReqCurrentPage} of {totalExtReqPages || 1}
                   </div>
                   <button 
                     onClick={() => setExtReqCurrentPage(prev => Math.min(prev + 1, totalExtReqPages))}
-                    disabled={extReqCurrentPage === totalExtReqPages}
-                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: extReqCurrentPage === totalExtReqPages ? "#94a3b8" : "#0f172a", cursor: extReqCurrentPage === totalExtReqPages ? "not-allowed" : "pointer" }}
+                    disabled={extReqCurrentPage === (totalExtReqPages || 1)}
+                    style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: t.card, border: `1px solid ${t.border}`, borderRadius: "6px", color: extReqCurrentPage === (totalExtReqPages || 1) ? "#94a3b8" : "#0f172a", cursor: extReqCurrentPage === (totalExtReqPages || 1) ? "not-allowed" : "pointer" }}
                   >
                     Next <ChevronRight size={16} />
                   </button>
