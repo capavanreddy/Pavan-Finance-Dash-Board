@@ -1831,7 +1831,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                         <div style={{ fontWeight: 600, color: "#2563eb" }}>{t.frequency}</div>
                         <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>Day {t.dayOffset}</div>
                     </td>
-                    <td style={tdStyle}>
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                         <div style={{ fontSize: "0.8125rem" }}>{t.startDate ? formatDateDisplay(t.startDate) : "--"} to</div>
                         <div style={{ fontSize: "0.8125rem" }}>{t.endDate ? formatDateDisplay(t.endDate) : "Forever"}</div>
                     </td>
@@ -2440,7 +2440,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
 
                       return (
                         <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={tdStyle}>{formatDateDisplay(h.effectiveFrom)}</td>
+                          <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDateDisplay(h.effectiveFrom)}</td>
                           <td style={tdStyle}>
                             <span style={{ color: ownerChanged ? "#1e293b" : "#94a3b8", fontWeight: ownerChanged ? 700 : 400 }}>
                               {h.ownerName} {!ownerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
@@ -2451,7 +2451,7 @@ export default function RecurringActivities({   settings, usersList = [] , showN
                               {h.reviewerName} {!reviewerChanged && <span style={{ fontSize: "0.75rem", fontStyle: "italic", opacity: 0.8 }}>(No Change)</span>}
                             </span>
                           </td>
-                          <td style={tdStyle}>{formatDateTime(h.createdAt)}</td>
+                          <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{formatDateTime(h.createdAt)}</td>
                         </tr>
                       );
                     })}

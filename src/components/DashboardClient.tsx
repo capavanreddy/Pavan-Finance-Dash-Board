@@ -6684,7 +6684,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               <td style={getTdStyle(t)}>{lo.submittedBy || <span style={{color: t.textMuted, fontStyle: 'italic'}}>Auto</span>}</td>
                               <td style={getTdStyle(t)}>{lo.identifiedBy}</td>
                               <td style={getTdStyle(t)}>{lo.committedBy}</td>
-                              <td style={getTdStyle(t)}>{formatDate(lo.dateOfIdentification)}</td>
+                              <td style={{ ...getTdStyle(t), whiteSpace: "nowrap" }}>{formatDate(lo.dateOfIdentification)}</td>
                               <td style={getTdStyle(t)}>{lo.entity}</td>
                               <td style={getTdStyle(t)}>{lo.classification || <span style={{color: t.textMuted, fontStyle: 'italic'}}>N/A</span>}</td>
                               <td style={{ ...getTdStyle(t), maxWidth: "300px", whiteSpace: "normal" }}>{lo.learningOpportunity}</td>
