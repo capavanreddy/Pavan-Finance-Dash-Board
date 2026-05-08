@@ -573,6 +573,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [loSortConfig, setLoSortConfig] = useState<{ key: keyof LearningOpportunity; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' });
   const [editRequestSubTab, setEditRequestSubTab] = useState<'TASK_EDIT' | 'TASK_DELETE' | 'LO' | 'PAYMENT' | 'DELETE_PAYMENT'>('TASK_EDIT');
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [showTaskDownloadDropdown, setShowTaskDownloadDropdown] = useState(false);
   const [showLODownloadDropdown, setShowLODownloadDropdown] = useState(false);
   const [showExtReqDownloadDropdown, setShowExtReqDownloadDropdown] = useState(false);
@@ -820,6 +821,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       setPaymentRequests([...trackerRequests, ...masterRequests]);
     } catch (error) {
       console.error("Failed to fetch payment requests", error);
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
