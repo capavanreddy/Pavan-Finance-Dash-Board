@@ -4763,122 +4763,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         {activeView === 'TASKS' && activeSubView === 'MAIN' && (
           <div className="main-tasks-view">
             {/* Action Toolbar */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", background: t.card, padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: t.textMuted }}>Filter by Date:</span>
-                <select
-                  value={dateFilterPreset}
-                  onChange={(e) => handlePresetChange(e.target.value)}
-                  style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text, background: t.bg }}
-                >
-                  <option value="ALL_TIME">All Time</option>
-                  <option value="CURRENT_MONTH">Current Month</option>
-                  <option value="LAST_MONTH">Last Month</option>
-                  <option value="LAST_3_MONTHS">Last 3 Months</option>
-                  <option value="LAST_6_MONTHS">Last 6 Months</option>
-                  <option value="LAST_FY">Last Financial Year</option>
-                  <option value="CUSTOM">Custom Range</option>
-                </select>
-
-                {dateFilterPreset === "CUSTOM" && (
-                  <>
-                    <input 
-                      type="date" 
-                      value={startDate} 
-                      onChange={e => setStartDate(e.target.value)}
-                      style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
-                    />
-                    <span style={{ color: t.textMuted }}>to</span>
-                    <input 
-                      type="date" 
-                      value={endDate} 
-                      onChange={e => setEndDate(e.target.value)}
-                      style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
-                    />
-                    {(startDate || endDate) && (
-                      <button 
-                        onClick={() => { setStartDate(""); setEndDate(""); setDateFilterPreset("ALL_TIME"); }}
-                        style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              
-              <div className="download-container" style={{ position: "relative" }}>
-                  <button 
-                    onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
-                    style={{ 
-                      display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
-                      padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
-                      cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
-                    }} 
-                    onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
-                  >
-                    <Download size={18} color="#2563eb" /> Download Report
-                  </button>
-                  
-                  {showTaskDownloadDropdown && (
-                    <div style={{ 
-                      position: "absolute", top: "100%", right: 0, marginTop: "8px", 
-                      background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
-                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
-                      minWidth: "160px", overflow: "hidden" 
-                    }}>
-                      <button 
-                        onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
-                        style={{ 
-                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                          padding: "12px 16px", border: "none", background: t.card, 
-                          color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
-                          textAlign: "left", transition: "background 0.2s" 
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-                        onMouseOut={e => e.currentTarget.style.background = "white"}
-                      >
-                        <FileSpreadsheet size={16} color="#166534" /> Excel Format
-                      </button>
-                      <button 
-                        onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
-                        style={{ 
-                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                          padding: "12px 16px", border: "none", background: t.card, 
-                          color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
-                          textAlign: "left", transition: "background 0.2s" 
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
-                        onMouseOut={e => e.currentTarget.style.background = "white"}
-                      >
-                        <FileText size={16} color="#991b1b" /> PDF Document
-                      </button>
-                      <div style={{ height: "1px", background: t.bg, margin: "4px 0" }}></div>
-                      <button 
-                        onClick={() => { 
-                          setShareData({...shareData, type: 'task', format: 'excel', subject: `Task Report - ${new Date().toISOString().split('T')[0]}`});
-                          setShowShareModal(true); 
-                          setShowTaskDownloadDropdown(false); 
-                        }}
-                        style={{ 
-                          width: "100%", display: "flex", alignItems: "center", gap: "10px", 
-                          padding: "12px 16px", border: "none", background: t.card, 
-                          color: "#2563eb", cursor: "pointer", fontSize: "0.875rem", 
-                          textAlign: "left", transition: "background 0.2s", fontWeight: 600
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
-                        onMouseOut={e => e.currentTarget.style.background = "white"}
-                      >
-                        <Share2 size={16} color="#2563eb" /> Share via Email
-                      </button>
-                    </div>
-                  )}
-              </div>
-            </div>
-              
-            {/* Filter Bar */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "12px", alignItems: "center" }}>
-              <div style={{ position: "relative", flex: 1, minWidth: "250px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+              {/* Search Bar - Left Side */}
+              <div style={{ position: "relative", flex: 1, minWidth: "300px" }}>
                 <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textMuted }} size={18} />
                 <input 
                   type="text" 
@@ -4888,6 +4775,124 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   style={{ width: "100%", padding: "10px 10px 10px 40px", borderRadius: "10px", border: `1px solid ${t.border}`, outline: "none", fontSize: "0.875rem", background: t.bg }} 
                 />
               </div>
+
+              {/* Date Filter & Download Container - Right Side */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", background: t.card, padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 500, color: t.textMuted }}>Filter by Date:</span>
+                  <select
+                    value={dateFilterPreset}
+                    onChange={(e) => handlePresetChange(e.target.value)}
+                    style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text, background: t.bg }}
+                  >
+                    <option value="ALL_TIME">All Time</option>
+                    <option value="CURRENT_MONTH">Current Month</option>
+                    <option value="LAST_MONTH">Last Month</option>
+                    <option value="LAST_3_MONTHS">Last 3 Months</option>
+                    <option value="LAST_6_MONTHS">Last 6 Months</option>
+                    <option value="LAST_FY">Last Financial Year</option>
+                    <option value="CUSTOM">Custom Range</option>
+                  </select>
+
+                  {dateFilterPreset === "CUSTOM" && (
+                    <>
+                      <input 
+                        type="date" 
+                        value={startDate} 
+                        onChange={e => setStartDate(e.target.value)}
+                        style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
+                      />
+                      <span style={{ color: t.textMuted }}>to</span>
+                      <input 
+                        type="date" 
+                        value={endDate} 
+                        onChange={e => setEndDate(e.target.value)}
+                        style={{ border: `1px solid ${t.border}`, borderRadius: "6px", padding: "4px 8px", fontSize: "0.875rem", outline: "none", color: t.text }}
+                      />
+                      {(startDate || endDate) && (
+                        <button 
+                          onClick={() => { setStartDate(""); setEndDate(""); setDateFilterPreset("ALL_TIME"); }}
+                          style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600, padding: "4px 8px" }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                <div className="download-container" style={{ position: "relative" }}>
+                    <button 
+                      onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
+                      style={{ 
+                        display: "flex", alignItems: "center", gap: "8px", background: t.card, color: t.textMuted, 
+                        padding: "8px 16px", borderRadius: "10px", border: `1px solid ${t.border}`, 
+                        cursor: "pointer", fontSize: "0.875rem", fontWeight: 600, transition: "all 0.2s" 
+                      }} 
+                      onMouseOver={e => e.currentTarget.style.borderColor = "#2563eb"}
+                    >
+                      <Download size={18} color="#2563eb" /> Download Report
+                    </button>
+                    
+                    {showTaskDownloadDropdown && (
+                      <div style={{ 
+                        position: "absolute", top: "100%", right: 0, marginTop: "8px", 
+                        background: t.card, borderRadius: "12px", border: `1px solid ${t.border}`, 
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", zIndex: 1000, 
+                        minWidth: "160px", overflow: "hidden" 
+                      }}>
+                        <button 
+                          onClick={() => { exportToExcel(); setShowTaskDownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "12px 16px", border: "none", background: t.card, 
+                            color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileSpreadsheet size={16} color="#166534" /> Excel Format
+                        </button>
+                        <button 
+                          onClick={() => { exportToPDF(); setShowTaskDownloadDropdown(false); }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "12px 16px", border: "none", background: t.card, 
+                            color: t.textMuted, cursor: "pointer", fontSize: "0.875rem", 
+                            textAlign: "left", transition: "background 0.2s" 
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <FileText size={16} color="#991b1b" /> PDF Document
+                        </button>
+                        <div style={{ height: "1px", background: t.bg, margin: "4px 0" }}></div>
+                        <button 
+                          onClick={() => { 
+                            setShareData({...shareData, type: 'task', format: 'excel', subject: `Task Report - ${new Date().toISOString().split('T')[0]}`});
+                            setShowShareModal(true); 
+                            setShowTaskDownloadDropdown(false); 
+                          }}
+                          style={{ 
+                            width: "100%", display: "flex", alignItems: "center", gap: "10px", 
+                            padding: "12px 16px", border: "none", background: t.card, 
+                            color: "#2563eb", cursor: "pointer", fontSize: "0.875rem", 
+                            textAlign: "left", transition: "background 0.2s", fontWeight: 600
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "#eff6ff"}
+                          onMouseOut={e => e.currentTarget.style.background = "white"}
+                        >
+                          <Share2 size={16} color="#2563eb" /> Share via Email
+                        </button>
+                      </div>
+                    )}
+                </div>
+              </div>
+            </div>
+              
+            {/* Filter Bar */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", background: t.card, padding: "12px", borderRadius: "12px", border: `1px solid ${t.border}`, boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)", marginBottom: "12px", alignItems: "center" }}>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <MultiSelectFilter
