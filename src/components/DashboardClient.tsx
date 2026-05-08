@@ -667,7 +667,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   
   const renderOriginBadge = (item: any) => {
     const isTransferred = item.transferStatus === 'T';
-    const transferredAtStr = item.transferredAt ? new Date(item.transferredAt).toLocaleString() : 'N/A';
+    const transferredAtStr = item.transferredAt ? formatDateTime(item.transferredAt) : 'N/A';
     const hoverText = isTransferred 
       ? `Transferred By: ${item.transferredBy || 'Unknown'}\nDate & Time: ${transferredAtStr}`
       : 'This is an original request.';
@@ -5159,7 +5159,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <td style={getTdStyle(t)}>{task.dueDate ? formatDate(task.dueDate) : <span style={{ color: "#cbd5e1" }}>--</span>}</td>
                             <td 
                               style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserOwner && task.requestStatus !== "Processed" && !task.reviewCompletionDate)) ? "pointer" : "default", fontWeight: 600, color: isOverdue ? "inherit" : "#475569" }} 
-                              title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${new Date(task.completedSubmissionAt).toLocaleString()}\nBy: ${task.completedBy || "Unknown"}` : ""}
+                              title={task.completedSubmissionAt ? `[Audit Log]\nUpdated: ${formatDateTime(task.completedSubmissionAt)}\nBy: ${task.completedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserOwner) return;
@@ -5216,7 +5216,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             <td 
                               style={{ ...getTdStyle(t), cursor: (isAdmin || (isCurrentUserReviewer && task.requestStatus !== "Processed")) ? "pointer" : "default", fontWeight: 600, color: "#64748b" }} 
-                              title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${new Date(task.reviewedSubmissionAt).toLocaleString()}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
+                              title={task.reviewedSubmissionAt ? `[Audit Log]\nReviewed: ${formatDateTime(task.reviewedSubmissionAt)}\nBy: ${task.reviewedBy || "Unknown"}` : ""}
                               onClick={() => {
                                 if (task.requestStatus === "Processed" && !isAdmin) return;
                                 if (!isAdmin && !isCurrentUserReviewer) return;
@@ -5380,7 +5380,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                     color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
                                     textAlign: "center", whiteSpace: "nowrap"
                                   }}
-                                  title={task.processedSubmissionAt ? `[Audit Log]\nProcessed: ${new Date(task.processedSubmissionAt).toLocaleString()}\nBy: ${task.processedBy || "Unknown"}` : ""}
+                                  title={task.processedSubmissionAt ? `[Audit Log]\nProcessed: ${formatDateTime(task.processedSubmissionAt)}\nBy: ${task.processedBy || "Unknown"}` : ""}
                                 >
                                   {task.requestStatus || "Pending"}
                                 </span>
@@ -5946,7 +5946,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       <span style={{ fontWeight: 600, color: t.text }}>{req.taskOwnerName}</span>
                                     </div>
                                     <div style={{ fontSize: "0.7rem", color: t.textMuted, marginLeft: "18px" }}>
-                                      {req.taskCreatedAt ? `(${new Date(req.taskCreatedAt).toLocaleString()})` : ""}
+                                      {req.taskCreatedAt ? `(${formatDateTime(req.taskCreatedAt)})` : ""}
                                     </div>
                                   </div>
                                 ) : (
@@ -6010,7 +6010,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                       }}>
                                         <div style={{ fontWeight: 700, marginBottom: "4px", color: "#4ade80", fontSize: "0.65rem", textTransform: "uppercase" }}>Completion Details</div>
                                         Processed by: {req.processedBy || "System"} <br/>
-                                        Date: {req.processedAt ? new Date(req.processedAt).toLocaleString() : "N/A"}
+                                        Date: {req.processedAt ? formatDateTime(req.processedAt) : "N/A"}
                                         <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", border: "6px solid transparent", borderTopColor: "#1e293b" }}></div>
                                       </div>
                                     )}
@@ -8964,7 +8964,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <div>
                               <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.025em" }}>System Status</div>
                               <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9375rem", marginTop: "4px" }}>
-                                {settings.lastDailyGenerationAt ? `Last Ran: ${new Date(settings.lastDailyGenerationAt).toLocaleString()}` : "Not yet run today"}
+                                {settings.lastDailyGenerationAt ? `Last Ran: ${formatDateTime(settings.lastDailyGenerationAt)}` : "Not yet run today"}
                               </div>
                             </div>
                             <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.1)" }}></div>
@@ -11005,8 +11005,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <DetailItemView label="Frequency" value={selectedTaskForView.frequency || "Ad-hoc"} />
                 <DetailItemView label="Owner" value={selectedTaskForView.ownerName} />
                 <DetailItemView label="Reviewer" value={selectedTaskForView.reviewerName || "N/A"} />
-                <DetailItemView label="Due Date" value={selectedTaskForView.dueDate ? new Date(selectedTaskForView.dueDate).toLocaleDateString() : "N/A"} />
-                <DetailItemView label="Created At" value={new Date(selectedTaskForView.createdAt).toLocaleString()} />
+                <DetailItemView label="Due Date" value={selectedTaskForView.dueDate ? formatDate(selectedTaskForView.dueDate) : "N/A"} />
+                <DetailItemView label="Created At" value={formatDateTime(selectedTaskForView.createdAt)} />
                 
                 <div style={{ gridColumn: "span 1" }}>
                   <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px" }}>Task Status</label>
