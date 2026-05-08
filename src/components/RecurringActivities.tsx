@@ -1996,25 +1996,25 @@ export default function RecurringActivities({   settings, usersList = [] , showN
 
           {/* Master Pagination Controls */}
           {filteredAndSortedMaster.length > 0 && (
-            <div style={{ display: \"flex\", justifyContent: \"space-between\", alignItems: \"center\", padding: \"16px 24px\", borderTop: \"1px solid #e2e8f0\", background: \"white\", borderBottomLeftRadius: \"16px\", borderBottomRightRadius: \"16px\", marginTop: \"-1px\" }}>
-              <div style={{ fontSize: \"0.875rem\", color: \"#64748b\" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: "1px solid #e2e8f0", background: "white", borderBottomLeftRadius: "16px", borderBottomRightRadius: "16px", marginTop: "-1px" }}>
+              <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
                 Showing {(masterCurrentPage - 1) * masterItemsPerPage + 1} to {Math.min(masterCurrentPage * masterItemsPerPage, filteredAndSortedMaster.length)} of {filteredAndSortedMaster.length} templates
               </div>
-              <div style={{ display: \"flex\", gap: \"8px\", alignItems: \"center\" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button 
                   onClick={() => setMasterCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={masterCurrentPage === 1}
-                  style={{ display: \"flex\", alignItems: \"center\", padding: \"6px 12px\", background: \"white\", border: \"1px solid #e2e8f0\", borderRadius: \"6px\", color: masterCurrentPage === 1 ? \"#94a3b8\" : \"#334155\", cursor: masterCurrentPage === 1 ? \"not-allowed\" : \"pointer\", fontSize: \"0.875rem\", fontWeight: 500 }}
+                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", color: masterCurrentPage === 1 ? "#94a3b8" : "#334155", cursor: masterCurrentPage === 1 ? "not-allowed" : "pointer", fontSize: "0.875rem", fontWeight: 500 }}
                 >
-                  <ChevronDown size={16} style={{ transform: \"rotate(90deg)\" }} /> Prev
+                  <ChevronDown size={16} style={{ transform: "rotate(90deg)" }} /> Prev
                 </button>
-                <div style={{ fontSize: \"0.875rem\", fontWeight: 600, padding: \"0 12px\", color: \"#334155\" }}>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600, padding: "0 12px", color: "#334155" }}>
                   Page {masterCurrentPage} of {totalMasterPages || 1}
                 </div>
                 <button 
                   onClick={() => setMasterCurrentPage(prev => Math.min(prev + 1, totalMasterPages))}
                   disabled={masterCurrentPage === (totalMasterPages || 1)}
-                  style={{ display: \"flex\", alignItems: \"center\", padding: \"6px 12px\", background: \"white\", border: \"1px solid #e2e8f0\", borderRadius: \"6px\", color: masterCurrentPage === (totalMasterPages || 1) ? \"#94a3b8\" : \"#334155\", cursor: masterCurrentPage === (totalMasterPages || 1) ? \"not-allowed\" : \"pointer\", fontSize: \"0.875rem\", fontWeight: 500 }}
+                  style={{ display: "flex", alignItems: "center", padding: "6px 12px", background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", color: masterCurrentPage === (totalMasterPages || 1) ? "#94a3b8" : "#334155", cursor: masterCurrentPage === (totalMasterPages || 1) ? "not-allowed" : "pointer", fontSize: "0.875rem", fontWeight: 500 }}
                 >
                   Next <ChevronRight size={16} />
                 </button>
