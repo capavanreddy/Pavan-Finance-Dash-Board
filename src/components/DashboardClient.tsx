@@ -131,6 +131,7 @@ type LearningOpportunity = {
   createdAt: string;
   isAcknowledged?: boolean;
   acknowledgedAt?: string | null;
+  acknowledgedBy?: string | null;
   learnerComments?: string | null;
   editRequested?: boolean;
   editApproved?: boolean;
@@ -139,6 +140,7 @@ type LearningOpportunity = {
   deleteRequestReason?: string | null;
   createdByEmail?: string | null;
   taskId?: number | null;
+  taskName?: string | null;
   classification?: string | null;
 };
 
