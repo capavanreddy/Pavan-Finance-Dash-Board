@@ -281,7 +281,9 @@ export async function authenticate(
     };
   } catch (error: any) {
     console.error("[Session] Auth error:", error.message, error);
-    console.error("[v0] Auth error full:", JSON.stringify(error, null, 2));
-    return { success: false, error: "Authentication failed" };
+    if (error.message && (error.message.includes("password authentication failed") || error.message.includes("connection"))) {
+      return { success: false, error: "Database connection error. Please check environment variables." };
+    }
+    return { success: false, error: "Authentication failed: " + (error.message || "Unknown error") };
   }
 }
