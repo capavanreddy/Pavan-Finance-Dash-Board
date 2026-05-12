@@ -6928,31 +6928,70 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           />
                         </div>
                         {!isViewer && (
-                          <button 
-                            onClick={() => {
-                              const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
-                              if (cats.length > 0) setResourceCategory(cats[0]);
-                              setShowResourceModal(true);
-                            }} 
-                            className="btn-polish"
-                            style={{ 
-                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", 
-                              color: "white", 
-                              padding: "10px 22px", 
-                              borderRadius: "14px", 
-                              border: "none", 
-                              cursor: "pointer", 
-                              fontWeight: 700, 
-                              fontSize: "0.8125rem", 
-                              boxShadow: "0 8px 20px -6px rgba(16, 185, 129, 0.4)", 
-                              display: "flex", 
-                              alignItems: "center", 
-                              gap: "8px",
-                              transition: "all 0.3s ease"
-                            }}
-                          >
-                            <Plus size={18} /> Add Resource
-                          </button>
+                          <div style={{ position: "relative", overflow: "hidden", borderRadius: "14px" }}>
+                            <style dangerouslySetInnerHTML={{ __html: `
+                              @keyframes shimmer-btn {
+                                0% { transform: translateX(-100%) skewX(-20deg); }
+                                100% { transform: translateX(250%) skewX(-20deg); }
+                              }
+                              .btn-add-resource:hover .btn-shimmer {
+                                animation: shimmer-btn 1.5s infinite;
+                              }
+                              .btn-add-resource:hover .plus-icon {
+                                transform: rotate(90deg);
+                              }
+                              .btn-add-resource:active {
+                                transform: scale(0.95);
+                              }
+                            `}} />
+                            <button 
+                              onClick={() => {
+                                const cats = settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean) || [];
+                                if (cats.length > 0) setResourceCategory(cats[0]);
+                                setShowResourceModal(true);
+                              }} 
+                              className="btn-add-resource"
+                              style={{ 
+                                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", 
+                                color: "white", 
+                                padding: "10px 22px", 
+                                borderRadius: "14px", 
+                                border: "1px solid rgba(255,255,255,0.1)", 
+                                cursor: "pointer", 
+                                fontWeight: 700, 
+                                fontSize: "0.8125rem", 
+                                boxShadow: "0 8px 20px -6px rgba(16, 185, 129, 0.4)", 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "8px",
+                                transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                position: "relative",
+                                overflow: "hidden"
+                              }}
+                              onMouseOver={e => {
+                                e.currentTarget.style.boxShadow = "0 12px 24px -6px rgba(16, 185, 129, 0.6)";
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                              }}
+                              onMouseOut={e => {
+                                e.currentTarget.style.boxShadow = "0 8px 20px -6px rgba(16, 185, 129, 0.4)";
+                                e.currentTarget.style.transform = "translateY(0)";
+                              }}
+                            >
+                              {/* Shimmer Overlay */}
+                              <div className="btn-shimmer" style={{ 
+                                position: "absolute", 
+                                top: 0, 
+                                left: 0, 
+                                width: "40px", 
+                                height: "100%", 
+                                background: "linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent)", 
+                                pointerEvents: "none" 
+                              }} />
+                              
+                              <Plus className="plus-icon" size={18} style={{ transition: "transform 0.4s ease" }} /> 
+                              <span style={{ position: "relative", zIndex: 1 }}>Add Resource</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                    </div>
