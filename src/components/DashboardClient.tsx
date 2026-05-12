@@ -2862,19 +2862,27 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
     setResourcesLoading(true);
     try {
-      let dataStr = "";
+      let finalData = "";
+      let finalUrl = resourceLink;
+
       if (resourceType === 'FILE' && resourceFile) {
-        if (resourceFile.size > 3.5 * 1024 * 1024) {
-          showNotification("File too large. Maximum size is 3.5MB.", "error");
-          setResourcesLoading(false);
-          return;
+        // Upload to Vercel Blob
+        const response = await fetch(
+          `/api/upload?filename=${encodeURIComponent(resourceFile.name)}`,
+          {
+            method: 'POST',
+            body: resourceFile,
+          },
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to upload file to storage");
         }
-        const reader = new FileReader();
-        dataStr = await new Promise((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = () => reject(new Error("Failed to read file"));
-          reader.readAsDataURL(resourceFile);
-        });
+
+        const blob = await response.json();
+        finalData = blob.url; // Use blob URL as data
+        finalUrl = blob.url;
       }
 
       const res = await fetch("/api/resources", {
@@ -2883,10 +2891,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         body: JSON.stringify({
           name: resourceName,
           type: resourceType,
-          url: resourceLink,
-          data: dataStr,
+          url: finalUrl,
+          data: finalData,
           category: resourceCategory,
-          department: resourceCategory // Map department to category for folder-driven UI
+          department: resourceCategory
         })
       });
 

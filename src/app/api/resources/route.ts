@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getServerSession } from "@/lib/session";
+import { del } from '@vercel/blob';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession();
@@ -68,6 +69,21 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ message: "ID is required" }, { status: 400 });
 
   try {
+    // Get the resource first to find the URL
+    const resources = await sql`SELECT * FROM "LearningResource" WHERE "id" = ${id}`;
+    if (resources.length > 0) {
+      const resource = resources[0];
+      // If it's a file and has a Vercel Blob URL, delete it
+      if (resource.type === 'FILE' && resource.data && resource.data.includes('blob.vercel-storage.com')) {
+        try {
+          await del(resource.data);
+        } catch (blobError) {
+          console.error("Failed to delete from Vercel Blob", blobError);
+          // Continue even if blob deletion fails
+        }
+      }
+    }
+
     await sql`DELETE FROM "LearningResource" WHERE "id" = ${id}`;
     return NextResponse.json({ success: true });
   } catch (error) {
