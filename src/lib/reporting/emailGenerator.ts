@@ -16,11 +16,14 @@ export function generateProfessionalReportEmail({
   summaryText: string;
   ctaLink: string;
 }) {
-  const metricHtml = metrics.map(m => `
-    <div style="flex: 1; min-width: 120px; background: ${BRAND_COLORS.LIGHT}; padding: 15px; border-radius: 8px; text-align: center; margin: 5px;">
-      <div style="font-size: 12px; color: ${BRAND_COLORS.MUTED}; text-transform: uppercase; font-weight: bold;">${m.label}</div>
-      <div style="font-size: 24px; color: ${m.color || BRAND_COLORS.INTELLICAR_BLUE}; font-weight: bold; margin-top: 5px;">${m.value}</div>
-    </div>
+  // Generate metrics table rows
+  const metricCells = metrics.map(m => `
+    <td align="center" style="padding: 10px;">
+      <div style="background: ${BRAND_COLORS.LIGHT}; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; min-width: 140px;">
+        <div style="font-size: 11px; color: ${BRAND_COLORS.MUTED}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 8px;">${m.label}</div>
+        <div style="font-size: 24px; color: ${m.color || BRAND_COLORS.INTELLICAR_BLUE}; font-weight: 800;">${m.value}</div>
+      </div>
+    </td>
   `).join('');
 
   return `
@@ -28,44 +31,68 @@ export function generateProfessionalReportEmail({
     <html>
     <head>
       <meta charset="utf-8">
-      <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; }
-        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .header { background: ${BRAND_COLORS.DARK}; padding: 30px; text-align: center; color: #ffffff; }
-        .content { padding: 40px 30px; color: #334155; line-height: 1.6; }
-        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 11px; color: #94a3b8; }
-        .button { display: inline-block; padding: 14px 28px; background: ${BRAND_COLORS.INTELLICAR_BLUE}; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
-      </style>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
     </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; color: #94a3b8;">${BRAND_TEXT.CORPORATE_NAME}</div>
-          <div style="font-size: 24px; font-weight: bold;">${BRAND_TEXT.PRODUCT_NAME}</div>
-        </div>
-        <div class="content">
-          <h2 style="margin-top: 0; color: ${BRAND_COLORS.DARK};">${title}</h2>
-          <p style="color: ${BRAND_COLORS.MUTED}; margin-bottom: 30px;">${subtitle}</p>
-          
-          <div style="display: flex; flex-wrap: wrap; margin-bottom: 30px;">
-            ${metricHtml}
-          </div>
-          
-          <div style="background: #fdf2f2; border-left: 4px solid ${BRAND_COLORS.DANGER}; padding: 15px; margin-bottom: 30px;">
-            <strong style="color: ${BRAND_COLORS.DANGER};">Summary Insight:</strong><br/>
-            ${summaryText}
-          </div>
-          
-          <div style="text-align: center;">
-            <a href="${ctaLink}" class="button">View Live Dashboard</a>
-          </div>
-        </div>
-        <div class="footer">
-          <p>This is an automated system notification. Please do not reply directly to this email.</p>
-          <p><strong>${BRAND_TEXT.DIVISION}</strong><br/>${BRAND_TEXT.CONFIDENTIAL_NOTICE}</p>
-          <p style="margin-top: 15px;">${BRAND_TEXT.COPYRIGHT}</p>
-        </div>
-      </div>
+    <body style="font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; -webkit-font-smoothing: antialiased;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);">
+              
+              <!-- Header -->
+              <tr>
+                <td align="center" style="background-color: ${BRAND_COLORS.DARK}; padding: 40px 30px;">
+                  <div style="color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 10px;">${BRAND_TEXT.CORPORATE_NAME}</div>
+                  <h1 style="color: #ffffff; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px;">${BRAND_TEXT.PRODUCT_NAME}</h1>
+                </td>
+              </tr>
+
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 35px;">
+                  <h2 style="font-size: 22px; font-weight: 800; color: ${BRAND_COLORS.DARK}; margin: 0 0 10px 0;">${title}</h2>
+                  <p style="font-size: 15px; color: ${BRAND_COLORS.MUTED}; margin: 0 0 35px 0; font-weight: 500;">${subtitle}</p>
+
+                  <!-- Metrics Table -->
+                  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 35px;">
+                    <tr>
+                      ${metricCells}
+                    </tr>
+                  </table>
+
+                  <!-- Summary Box -->
+                  <div style="background-color: #fff1f2; border-left: 4px solid ${BRAND_COLORS.DANGER}; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 40px;">
+                    <div style="color: ${BRAND_COLORS.DANGER}; font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">Executive Summary</div>
+                    <div style="font-size: 15px; color: #475569; line-height: 1.6; font-weight: 500;">${summaryText}</div>
+                  </div>
+
+                  <!-- CTA Button (Bulletproof) -->
+                  <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td align="center">
+                        <a href="${ctaLink}" target="_blank" style="background-color: ${BRAND_COLORS.INTELLICAR_BLUE}; border-radius: 12px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 700; line-height: 60px; text-align: center; text-decoration: none; width: 260px; -webkit-text-size-adjust: none; box-shadow: 0 8px 15px rgba(79, 70, 229, 0.3);">View Live Dashboard</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td align="center" style="background-color: #f8fafc; padding: 35px; border-top: 1px solid #e2e8f0;">
+                  <div style="font-size: 12px; color: #94a3b8; line-height: 1.8;">
+                    <p style="margin: 0 0 15px 0;">This is an automated performance update from the <strong>${BRAND_TEXT.DIVISION}</strong>. This email contains confidential information.</p>
+                    <p style="margin: 0;">${BRAND_TEXT.COPYRIGHT}</p>
+                    <div style="margin-top: 20px; font-weight: 700; color: ${BRAND_COLORS.DARK}; opacity: 0.6;">${BRAND_TEXT.POWERED_BY}</div>
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
   `;
