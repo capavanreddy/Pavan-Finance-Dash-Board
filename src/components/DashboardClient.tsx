@@ -4456,7 +4456,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
-                    !isViewer && activeSubView !== 'ANALYTICS' && (
+                    !isViewer && (
                       <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "14px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                         <Plus size={18} /> New Task
                       </button>
@@ -5056,7 +5056,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   )}
                 </div>
                 
-                {activeSubView !== 'ANALYTICS' && (
+                {true && (
                   <div className="download-container" style={{ position: "relative" }}>
                     <button 
                       onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
