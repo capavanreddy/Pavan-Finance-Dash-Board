@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-import { getEmailFromName } from "./taskUtils";
+export { getEmailFromName } from "./taskUtils";
 
 export async function sendEmail({
   to,
