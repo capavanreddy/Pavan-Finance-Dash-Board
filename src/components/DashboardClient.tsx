@@ -3650,7 +3650,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     }
     setShareLoading(true);
     try {
-      const attachments = [];
+      const attachments: any[] = [];
       const now = new Date();
       const dateSuffix = now.toISOString().split('T')[0];
       const subject = shareData.subject || `Shared ${shareData.type === 'task' ? 'Task' : shareData.type === 'lo' ? 'LO' : 'Inter-Dept'} Report`;
