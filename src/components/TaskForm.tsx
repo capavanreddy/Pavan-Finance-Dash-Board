@@ -544,8 +544,8 @@ export default function TaskForm({   onClose, onSuccess, settings, usersList = [
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Due Date</label>
-                  <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} style={dynamicInputStyle} />
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Due Date *</label>
+                  <input type="date" name="dueDate" required value={formData.dueDate} onChange={handleChange} style={dynamicInputStyle} />
                 </div>
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.875rem", fontWeight: 500, color: t.text }}>Mail Sub</label>
