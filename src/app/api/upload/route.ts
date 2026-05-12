@@ -16,6 +16,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ message: "Storage configuration missing (Token not found)" }, { status: 500 });
+    }
+
     const blob = await put(filename, request.body, {
       access: 'public',
     });
@@ -23,6 +27,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(blob);
   } catch (error: any) {
     console.error("Blob upload failed:", error);
-    return NextResponse.json({ message: "Upload failed", error: error.message }, { status: 500 });
+    return NextResponse.json({ message: `Storage Error: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
