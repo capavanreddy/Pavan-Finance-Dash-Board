@@ -14,7 +14,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExternalRequestForm from "@/components/ExternalRequestForm";
-import { getTrackingStatus, COMPLETION_STATUSES } from "@/lib/taskUtils";
+import { getTrackingStatus, COMPLETION_STATUSES, getEmailFromName } from "@/lib/taskUtils";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import PaymentRequestPortal from "@/components/PaymentRequestPortal";
 
@@ -2293,9 +2293,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const baseFilteredTasks = tasks.filter(t => {
     // 0. Admin View Mode Filter
     if (isAdmin && !isAdminViewMode) {
-      const isOwner = t.ownerEmail?.toLowerCase() === currentUser.email?.toLowerCase();
-      const isReviewer = (t.reviewerEmail || "").toLowerCase() === currentUser.email?.toLowerCase();
-      const isCreator = (t.createdByEmail || "").toLowerCase() === currentUser.email?.toLowerCase();
+      const ownerEmail = getEmailFromName(t.ownerName);
+      const reviewerEmail = getEmailFromName(t.reviewerName);
+      const isOwner = ownerEmail?.toLowerCase() === user?.email?.toLowerCase();
+      const isReviewer = (reviewerEmail || "").toLowerCase() === user?.email?.toLowerCase();
+      const isCreator = (t.createdByEmail || "").toLowerCase() === user?.email?.toLowerCase();
       if (!isOwner && !isReviewer && !isCreator) return false;
     }
 
@@ -2530,9 +2532,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const filteredTasksToDisplay = tasks.filter(t => {
     // 0. Admin View Mode Filter
     if (isAdmin && !isAdminViewMode) {
-      const isOwner = t.ownerEmail?.toLowerCase() === currentUser.email?.toLowerCase();
-      const isReviewer = (t.reviewerEmail || "").toLowerCase() === currentUser.email?.toLowerCase();
-      const isCreator = (t.createdByEmail || "").toLowerCase() === currentUser.email?.toLowerCase();
+      const ownerEmail = getEmailFromName(t.ownerName);
+      const reviewerEmail = getEmailFromName(t.reviewerName);
+      const isOwner = ownerEmail?.toLowerCase() === user?.email?.toLowerCase();
+      const isReviewer = (reviewerEmail || "").toLowerCase() === user?.email?.toLowerCase();
+      const isCreator = (t.createdByEmail || "").toLowerCase() === user?.email?.toLowerCase();
       if (!isOwner && !isReviewer && !isCreator) return false;
     }
 
@@ -2647,8 +2651,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const filteredLOsToDisplay = los.filter(lo => {
     // 0. Admin View Mode Filter
     if (isAdmin && !isAdminViewMode) {
-      const isIdentifiedByMe = lo.identifiedByEmail?.toLowerCase() === currentUser.email?.toLowerCase();
-      const isCommittedByMe = lo.committedByEmail?.toLowerCase() === currentUser.email?.toLowerCase();
+      const identifiedByEmail = getEmailFromName(lo.identifiedBy);
+      const committedByEmail = getEmailFromName(lo.committedBy);
+      const isIdentifiedByMe = identifiedByEmail?.toLowerCase() === user?.email?.toLowerCase();
+      const isCommittedByMe = committedByEmail?.toLowerCase() === user?.email?.toLowerCase();
       if (!isIdentifiedByMe && !isCommittedByMe) return false;
     }
 
