@@ -215,7 +215,11 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
   const [showWorkplaceFlyout, setShowWorkplaceFlyout] = useState(false);
   const [showLearningFlyout, setShowLearningFlyout] = useState(false);
-  const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT'>('MAIN');
+  const [activeSubView, setActiveSubView] = useState<'MAIN' | 'OTHER_DEPT' | 'ANALYTICS'>('MAIN');
+  const [anaTaskEntityFilter, setAnaTaskEntityFilter] = useState('ALL');
+  const [anaTaskDeptFilter, setAnaTaskDeptFilter] = useState('ALL');
+  const [anaTaskUserFilter, setAnaTaskUserFilter] = useState('ALL');
+  const [showTaskAnaDownloadDropdown, setShowTaskAnaDownloadDropdown] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeMainView, setActiveMainView] = useState<'DASHBOARD' | 'ADMIN_MATRIX'>('DASHBOARD');
   const [showPaymentsFlyout, setShowPaymentsFlyout] = useState(false);
@@ -2345,6 +2349,121 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     return `${day}-${month}-${year}`;
   };
 
+  const taskAnalyticsData = useMemo(() => {
+    const filteredTasks = tasks.filter(t => {
+      const matchesEntity = anaTaskEntityFilter === 'ALL' || t.entityName === anaTaskEntityFilter;
+      const matchesDept = anaTaskDeptFilter === 'ALL' || t.departmentName === anaTaskDeptFilter;
+      const matchesUser = anaTaskUserFilter === 'ALL' || t.ownerName === anaTaskUserFilter || (t.reviewerName || "") === anaTaskUserFilter;
+      return matchesEntity && matchesDept && matchesUser;
+    });
+
+    const filteredIDR = externalRequests.filter(r => {
+      const matchesDept = anaTaskDeptFilter === 'ALL' || r.departmentName === anaTaskDeptFilter;
+      const matchesUser = anaTaskUserFilter === 'ALL' || r.requesterEmail.toLowerCase().includes(anaTaskUserFilter.toLowerCase());
+      return matchesDept && matchesUser;
+    });
+
+    const totalTasks = filteredTasks.length;
+    const completedTasks = filteredTasks.filter(t => isFinished(t)).length;
+    
+    const onTimeTasks = filteredTasks.filter(t => {
+      if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
+      return new Date(t.completionDate) <= new Date(t.dueDate);
+    }).length;
+
+    const overdueTasks = filteredTasks.filter(t => {
+      if (isFinished(t) || !t.dueDate) return false;
+      return new Date() > new Date(t.dueDate);
+    }).length;
+
+    const lateTasks = filteredTasks.filter(t => {
+      if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
+      return new Date(t.completionDate) > new Date(t.dueDate);
+    }).length;
+
+    const totalIDR = filteredIDR.length;
+    const convertedIDR = filteredIDR.filter(r => !!r.convertedTaskId).length;
+    const completedIDR = filteredIDR.filter(r => r.status === 'Processed').length;
+
+    const users = Array.from(new Set(filteredTasks.map(t => t.ownerName)));
+    const userPerformance = users.map(user => {
+      const uTasks = filteredTasks.filter(t => t.ownerName === user);
+      const uCompleted = uTasks.filter(t => isFinished(t)).length;
+      const uOnTime = uTasks.filter(t => isFinished(t) && t.dueDate && t.completionDate && new Date(t.completionDate) <= new Date(t.dueDate)).length;
+      const uLate = uTasks.filter(t => isFinished(t) && t.dueDate && t.completionDate && new Date(t.completionDate) > new Date(t.dueDate)).length;
+      const uOverdue = uTasks.filter(t => !isFinished(t) && t.dueDate && new Date() > new Date(t.dueDate)).length;
+      
+      return {
+        name: user,
+        total: uTasks.length,
+        completed: uCompleted,
+        onTime: uOnTime,
+        late: uLate,
+        overdue: uOverdue,
+        rate: uTasks.length > 0 ? Math.round((uOnTime / uTasks.length) * 100) : 0
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    const depts = Array.from(new Set(filteredTasks.map(t => t.departmentName)));
+    const deptWorkload = depts.map(dept => {
+        const dTasks = filteredTasks.filter(t => t.departmentName === dept);
+        return {
+            name: dept,
+            count: dTasks.length,
+            completed: dTasks.filter(t => isFinished(t)).length
+        }
+    }).sort((a, b) => b.count - a.count);
+
+    // Trend Analysis (Last 6 Months)
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        last6Months.push({
+            month: MONTHS[d.getMonth()],
+            year: d.getFullYear(),
+            created: 0,
+            completed: 0
+        });
+    }
+
+    filteredTasks.forEach(t => {
+        const cDate = new Date(t.createdAt);
+        const compDate = t.completionDate ? new Date(t.completionDate) : null;
+        
+        last6Months.forEach(m => {
+            if (m.month === MONTHS[cDate.getMonth()] && m.year === cDate.getFullYear()) {
+                m.created++;
+            }
+            if (compDate && m.month === MONTHS[compDate.getMonth()] && m.year === compDate.getFullYear()) {
+                m.completed++;
+            }
+        });
+    });
+
+    // Source Distribution
+    const sources = {
+        'IDR': filteredTasks.filter(t => (t as any).source === 'IDR' || !!t.linkedRequestId).length,
+        'TDB': filteredTasks.filter(t => (t as any).source === 'TDB' || (!t.linkedRequestId && !(t as any).isRecurring)).length,
+        'Recurring': filteredTasks.filter(t => (t as any).isRecurring || (t as any).source === 'RECURRING').length
+    };
+
+    return {
+      totalTasks,
+      completedTasks,
+      onTimeTasks,
+      overdueTasks,
+      lateTasks,
+      totalIDR,
+      convertedIDR,
+      completedIDR,
+      userPerformance,
+      deptWorkload,
+      trends: last6Months,
+      sources
+    };
+  }, [tasks, externalRequests, anaTaskEntityFilter, anaTaskDeptFilter, anaTaskUserFilter]);
+
   // Format date and time as DD-MMM-YYYY HH:mm
   const formatDateTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -4312,10 +4431,32 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       >LO Analytics</button>
                     </div>
                   )}
+                  {activeView === 'TASKS' && activeSubView !== 'OTHER_DEPT' && isAdmin && (
+                    <div style={{ display: "flex", background: theme === 'DARK' ? "rgba(255,255,255,0.05)" : "rgba(15, 23, 42, 0.05)", padding: "4px", borderRadius: "12px", border: `1px solid ${t.border}`, width: "fit-content", marginTop: "16px" }}>
+                      <button 
+                        onClick={() => setActiveSubView('MAIN')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: activeSubView === 'MAIN' ? "#4f46e5" : "transparent", 
+                          color: activeSubView === 'MAIN' ? "white" : t.textMuted,
+                          fontWeight: 700, cursor: "pointer", fontSize: "0.8125rem", transition: "all 0.2s" 
+                        }}
+                      >Task Dashboard</button>
+                      <button 
+                        onClick={() => setActiveSubView('ANALYTICS')}
+                        style={{ 
+                          padding: "8px 16px", borderRadius: "8px", border: "none", 
+                          background: activeSubView === 'ANALYTICS' ? "#4f46e5" : "transparent", 
+                          color: activeSubView === 'ANALYTICS' ? "white" : t.textMuted,
+                          fontWeight: 700, cursor: "pointer", fontSize: "0.8125rem", transition: "all 0.2s" 
+                        }}
+                      >Task Analytics</button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {(activeView === 'TASKS' && activeSubView === 'MAIN') ? (
-                    !isViewer && (
+                    !isViewer && activeSubView !== 'ANALYTICS' && (
                       <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "14px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", boxShadow: "0 4px 10px -2px rgba(37, 99, 235, 0.3)", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-1px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                         <Plus size={18} /> New Task
                       </button>
@@ -4915,7 +5056,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   )}
                 </div>
                 
-                <div className="download-container" style={{ position: "relative" }}>
+                {activeSubView !== 'ANALYTICS' && (
+                  <div className="download-container" style={{ position: "relative" }}>
                     <button 
                       onClick={() => setShowTaskDownloadDropdown(!showTaskDownloadDropdown)}
                       style={{ 
@@ -4981,7 +5123,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </button>
                       </div>
                     )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
               
@@ -5789,6 +5932,288 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           </div>
         )}
 
+
+
+        {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'ANALYTICS' && (
+          <div style={{ background: t.card, borderRadius: "24px", border: `1px solid ${t.border}`, minHeight: "calc(100vh - 200px)", padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "fadeIn 0.4s ease-out", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}>
+            {/* Analytics Header / Filters */}
+            <div style={{ background: t.bg, borderBottom: `1px solid ${t.border}`, padding: "16px 24px" }}>
+              <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#ffffff", padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                    <Building2 size={16} color={t.textMuted} />
+                    <select 
+                      value={anaTaskEntityFilter}
+                      onChange={(e) => setAnaTaskEntityFilter(e.target.value)}
+                      style={{ background: "transparent", border: "none", color: t.text, fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="ALL" style={{ background: t.card, color: t.text }}>All Entities</option>
+                      {uniqueTaskEntities.map(ent => <option key={ent} value={ent} style={{ background: t.card, color: t.text }}>{ent}</option>)}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#ffffff", padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                    <Tag size={16} color={t.textMuted} />
+                    <select 
+                      value={anaTaskDeptFilter}
+                      onChange={(e) => setAnaTaskDeptFilter(e.target.value)}
+                      style={{ background: "transparent", border: "none", color: t.text, fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="ALL" style={{ background: t.card, color: t.text }}>All Departments</option>
+                      {uniqueTaskDepts.map(dept => <option key={dept} value={dept} style={{ background: t.card, color: t.text }}>{dept}</option>)}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#ffffff", padding: "8px 16px", borderRadius: "12px", border: `1px solid ${t.border}` }}>
+                    <User size={16} color={t.textMuted} />
+                    <select 
+                      value={anaTaskUserFilter}
+                      onChange={(e) => setAnaTaskUserFilter(e.target.value)}
+                      style={{ background: "transparent", border: "none", color: t.text, fontSize: "0.875rem", fontWeight: 600, outline: "none", cursor: "pointer" }}
+                    >
+                      <option value="ALL" style={{ background: t.card, color: t.text }}>All Users</option>
+                      {uniqueTaskOwners.map(user => <option key={user} value={user} style={{ background: t.card, color: t.text }}>{user}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setShowTaskAnaDownloadDropdown(!showTaskAnaDownloadDropdown)}
+                    style={{ background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", border: "none", color: "white", cursor: "pointer", padding: "0 18px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", fontWeight: 700, boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}
+                  >
+                    <Download size={16} /> Download Analytics <ChevronDown size={14} style={{ transform: showTaskAnaDownloadDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                  </button>
+
+                  {showTaskAnaDownloadDropdown && (
+                    <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: t.card, border: `1px solid ${t.border}`, borderRadius: "14px", overflow: "hidden", minWidth: "210px", boxShadow: isDarkMode ? "0 16px 40px rgba(0,0,0,0.4)" : "0 10px 25px rgba(0,0,0,0.1)", zIndex: 100 }}>
+                      <button
+                        onClick={() => { /* Implementation for Excel Export */ setShowTaskAnaDownloadDropdown(false); }}
+                        style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#10b981", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: `1px solid ${t.border}` }}
+                      >
+                        <FileSpreadsheet size={18} /> Export as Excel
+                      </button>
+                      <button
+                        onClick={() => { /* Implementation for PDF Export */ setShowTaskAnaDownloadDropdown(false); }}
+                        style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
+                      >
+                        <FileText size={18} /> Export as PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+                {/* Scorecards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px" }}>
+                  {[
+                    { label: "Total Tasks", value: taskAnalyticsData.totalTasks, icon: <LayoutDashboard />, color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
+                    { label: "On-Time Completion", value: `${taskAnalyticsData.totalTasks > 0 ? Math.round((taskAnalyticsData.onTimeTasks / taskAnalyticsData.totalTasks) * 100) : 0}%`, icon: <CheckCircle2 />, color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
+                    { label: "Overdue Tasks", value: taskAnalyticsData.overdueTasks, icon: <AlertTriangle />, color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
+                    { label: "IDR Conversion", value: `${taskAnalyticsData.totalIDR > 0 ? Math.round((taskAnalyticsData.convertedIDR / taskAnalyticsData.totalIDR) * 100) : 0}%`, icon: <RefreshCw />, color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" }
+                  ].map((m, i) => (
+                    <div key={i} style={{ padding: "24px", borderRadius: "24px", background: t.card, border: `1px solid ${t.border}`, position: "relative", overflow: "hidden", boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                      <div style={{ position: "absolute", top: 0, right: 0, width: "100px", height: "100px", background: `radial-gradient(circle at center, ${m.color}20 0%, transparent 70%)`, pointerEvents: "none" }} />
+                      <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: m.bg, color: m.color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>{m.icon}</div>
+                      <div style={{ fontSize: "2rem", fontWeight: 800, color: t.text, marginBottom: "4px" }}>{m.value}</div>
+                      <div style={{ fontSize: "0.8125rem", color: t.textMuted, fontWeight: 600 }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Second Row: IDR Stats & Performance Donut */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  {/* IDR Funnel */}
+                  <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                    <h3 style={{ margin: "0 0 24px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>IDR Pipeline Analysis</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      {[
+                        { label: "Requests Received", value: taskAnalyticsData.totalIDR, color: "#94a3b8" },
+                        { label: "Converted to Tasks", value: taskAnalyticsData.convertedIDR, color: "#6366f1" },
+                        { label: "Successfully Completed", value: taskAnalyticsData.completedIDR, color: "#10b981" }
+                      ].map((item, idx) => {
+                        const maxVal = Math.max(taskAnalyticsData.totalIDR, 1);
+                        const width = (item.value / maxVal) * 100;
+                        return (
+                          <div key={idx} style={{ width: "100%" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "0.875rem", fontWeight: 600 }}>
+                              <span style={{ color: t.textMuted }}>{item.label}</span>
+                              <span style={{ color: t.text }}>{item.value}</span>
+                            </div>
+                            <div style={{ height: "12px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9", borderRadius: "6px", overflow: "hidden" }}>
+                              <div style={{ width: `${width}%`, height: "100%", background: item.color, borderRadius: "6px", transition: "width 1s ease-out" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Task Completion Status Donut */}
+                  <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                    <h3 style={{ margin: "0 0 32px 0", alignSelf: "flex-start", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Completion Health</h3>
+                    <div style={{ position: "relative", width: "180px", height: "180px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="180" height="180" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke={isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9"} strokeWidth="10" />
+                        {/* On-Time Circle */}
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" strokeWidth="10" 
+                                strokeDasharray={`${(taskAnalyticsData.onTimeTasks / Math.max(taskAnalyticsData.totalTasks, 1)) * 251.2} 251.2`} 
+                                strokeDashoffset="0" strokeLinecap="round" transform="rotate(-90 50 50)"
+                                style={{ transition: "stroke-dasharray 1s ease-out" }} />
+                        {/* Late Circle */}
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" strokeWidth="10" 
+                                strokeDasharray={`${(taskAnalyticsData.lateTasks / Math.max(taskAnalyticsData.totalTasks, 1)) * 251.2} 251.2`} 
+                                strokeDashoffset={`-${(taskAnalyticsData.onTimeTasks / Math.max(taskAnalyticsData.totalTasks, 1)) * 251.2}`} 
+                                strokeLinecap="round" transform="rotate(-90 50 50)"
+                                style={{ transition: "stroke-dasharray 1s ease-out" }} />
+                      </svg>
+                      <div style={{ position: "absolute", textAlign: "center" }}>
+                        <div style={{ fontSize: "2rem", fontWeight: 800, color: t.text }}>{taskAnalyticsData.totalTasks > 0 ? Math.round(((taskAnalyticsData.onTimeTasks + taskAnalyticsData.lateTasks) / taskAnalyticsData.totalTasks) * 100) : 0}%</div>
+                        <div style={{ fontSize: "0.65rem", color: t.textMuted, fontWeight: 600 }}>COMPLETED</div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "24px", width: "100%", display: "flex", justifyContent: "center", gap: "24px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#10b981" }} />
+                        <span style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 600 }}>On-Time</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#f59e0b" }} />
+                        <span style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 600 }}>Late</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#ef4444" }} />
+                        <span style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 600 }}>Overdue</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Third Row: User Performance Table */}
+                <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                    <h3 style={{ margin: 0, color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Team Efficiency Leaderboard</h3>
+                    <div style={{ fontSize: "0.8125rem", color: "#6366f1", background: "rgba(99, 102, 241, 0.1)", padding: "4px 12px", borderRadius: "20px", fontWeight: 700 }}>Top Performers</div>
+                  </div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase" }}>Owner / User</th>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase", textAlign: "center" }}>Tasks</th>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase", textAlign: "center" }}>On-Time</th>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase", textAlign: "center" }}>Late</th>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase", textAlign: "center" }}>Overdue</th>
+                          <th style={{ padding: "12px 16px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 800, textTransform: "uppercase", textAlign: "right" }}>Efficiency</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taskAnalyticsData.userPerformance.slice(0, 10).map((u, i) => (
+                          <tr key={i} style={{ borderBottom: `1px solid ${t.border}`, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = isDarkMode ? "rgba(255,255,255,0.02)" : "rgba(15, 23, 42, 0.02)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            <td style={{ padding: "16px", display: "flex", alignItems: "center", gap: "12px" }}>
+                              <div style={{ width: "32px", height: "32px", borderRadius: "10px", background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800 }}>{u.name[0]}</div>
+                              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: t.text }}>{u.name}</span>
+                            </td>
+                            <td style={{ padding: "16px", textAlign: "center", fontSize: "0.875rem", color: t.text, fontWeight: 600 }}>{u.total}</td>
+                            <td style={{ padding: "16px", textAlign: "center", fontSize: "0.875rem", color: "#10b981", fontWeight: 700 }}>{u.onTime}</td>
+                            <td style={{ padding: "16px", textAlign: "center", fontSize: "0.875rem", color: "#f59e0b", fontWeight: 700 }}>{u.late}</td>
+                            <td style={{ padding: "16px", textAlign: "center", fontSize: "0.875rem", color: "#ef4444", fontWeight: 700 }}>{u.overdue}</td>
+                            <td style={{ padding: "16px", textAlign: "right" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                                <div style={{ width: "60px", height: "6px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9", borderRadius: "3px", overflow: "hidden" }}>
+                                  <div style={{ width: `${u.rate}%`, height: "100%", background: u.rate > 80 ? "#10b981" : u.rate > 50 ? "#6366f1" : "#f59e0b" }} />
+                                </div>
+                                <span style={{ fontSize: "0.8125rem", fontWeight: 800, color: t.text }}>{u.rate}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Fourth Row: Departmental Workload */}
+                <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                  <h3 style={{ margin: "0 0 32px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Departmental Workload Distribution</h3>
+                  <div style={{ height: "300px", display: "flex", alignItems: "flex-end", gap: "20px", paddingBottom: "40px" }}>
+                    {taskAnalyticsData.deptWorkload.slice(0, 10).map((d, i) => {
+                      const maxTasks = Math.max(...taskAnalyticsData.deptWorkload.map(x => x.count), 1);
+                      const height = (d.count / maxTasks) * 100;
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", position: "relative" }}>
+                          <div style={{ width: "100%", height: `${height}%`, background: "linear-gradient(to top, #6366f1, #a855f7)", borderRadius: "10px", minHeight: "4px", transition: "height 1s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative" }}>
+                             <div style={{ position: "absolute", top: "-28px", width: "100%", textAlign: "center", color: t.text, fontSize: "0.875rem", fontWeight: 800 }}>{d.count}</div>
+                          </div>
+                          <div style={{ position: "absolute", bottom: "-30px", fontSize: "0.75rem", color: t.textMuted, fontWeight: 700, whiteSpace: "nowrap", transform: "rotate(-15deg)" }}>{d.name}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Fifth Row: Trends and Sources */}
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
+                  {/* Monthly Trend */}
+                  <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                    <h3 style={{ margin: "0 0 32px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Monthly Activity Trend</h3>
+                    <div style={{ height: "250px", width: "100%", display: "flex", alignItems: "flex-end", gap: "30px", position: "relative" }}>
+                      {/* Grid Lines */}
+                      {[0, 25, 50, 75, 100].map(p => (
+                        <div key={p} style={{ position: "absolute", bottom: `${p}%`, left: 0, right: 0, height: "1px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9" }} />
+                      ))}
+                      
+                      {taskAnalyticsData.trends.map((m, i) => {
+                        const maxVal = Math.max(...taskAnalyticsData.trends.map(x => Math.max(x.created, x.completed)), 1);
+                        const hCreated = (m.created / maxVal) * 100;
+                        const hCompleted = (m.completed / maxVal) * 100;
+                        return (
+                          <div key={i} style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "8px", height: "100%" }}>
+                            <div style={{ width: "12px", height: `${hCreated}%`, background: "#6366f1", borderRadius: "4px 4px 0 0", transition: "height 1s ease-out" }} title={`Created: ${m.created}`} />
+                            <div style={{ width: "12px", height: `${hCompleted}%`, background: "#10b981", borderRadius: "4px 4px 0 0", transition: "height 1s ease-out" }} title={`Completed: ${m.completed}`} />
+                            <div style={{ position: "absolute", bottom: "-30px", width: "32px", textAlign: "center", fontSize: "0.75rem", color: t.textMuted, fontWeight: 700 }}>{m.month}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ marginTop: "40px", display: "flex", gap: "24px", justifyContent: "center" }}>
+                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ width: "12px", height: "12px", borderRadius: "3px", background: "#6366f1" }} /><span style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 700 }}>Tasks Created</span></div>
+                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ width: "12px", height: "12px", borderRadius: "3px", background: "#10b981" }} /><span style={{ fontSize: "0.75rem", color: t.textMuted, fontWeight: 700 }}>Tasks Completed</span></div>
+                    </div>
+                  </div>
+
+                  {/* Task Source Breakdown */}
+                  <div style={{ padding: "32px", borderRadius: "32px", background: t.card, border: `1px solid ${t.border}`, boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                    <h3 style={{ margin: "0 0 32px 0", color: t.text, fontSize: "1.25rem", fontWeight: 700 }}>Source Analysis</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                      {[
+                        { label: "Inter-Dept (IDR)", value: taskAnalyticsData.sources['IDR'], color: "#8b5cf6" },
+                        { label: "Dashboard (TDB)", value: taskAnalyticsData.sources['TDB'], color: "#3b82f6" },
+                        { label: "Recurring", value: taskAnalyticsData.sources['Recurring'], color: "#f59e0b" }
+                      ].map((s, i) => {
+                        const total = Math.max(taskAnalyticsData.totalTasks, 1);
+                        const pct = Math.round((s.value / total) * 100);
+                        return (
+                          <div key={i}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: t.text }}>{s.label}</span>
+                              <span style={{ fontSize: "0.875rem", fontWeight: 800, color: s.color }}>{pct}%</span>
+                            </div>
+                            <div style={{ height: "8px", background: isDarkMode ? "rgba(255,255,255,0.05)" : "#f1f5f9", borderRadius: "4px" }}>
+                              <div style={{ width: `${pct}%`, height: "100%", background: s.color, borderRadius: "4px" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
 
         {activeMainView === 'DASHBOARD' && activeView === 'TASKS' && activeSubView === 'OTHER_DEPT' && (
