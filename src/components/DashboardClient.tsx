@@ -599,7 +599,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     recipientInput: "",
     ccInput: "",
     format: "excel" as "excel" | "pdf" | "both",
-    subject: "LO Analytics Report"
+    subject: "LO Analytics Report",
+    reportType: "lo" as "lo" | "task"
   });
   const [anaShareLoading, setAnaShareLoading] = useState(false);
 
@@ -3007,6 +3008,78 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       },
       generatedBy: user?.name || user?.email || 'Admin'
     });
+  };
+
+  const handleTaskAnaShareEmail = async () => {
+    if (anaShareConfig.recipients.length === 0) return;
+    setAnaShareLoading(true);
+    try {
+      const { filteredTasks, filteredIDR } = taskAnalyticsData;
+      const attachments: any[] = [];
+
+      if (anaShareConfig.format === 'excel' || anaShareConfig.format === 'both') {
+        const buffer = await generateProfessionalExcelReport({
+          tasks: filteredTasks,
+          idrs: filteredIDR,
+          los: los,
+          analytics: taskAnalyticsData,
+          filters: { 
+            entity: anaTaskEntityFilter, 
+            dept: anaTaskDeptFilter, 
+            user: anaTaskUserFilter 
+          },
+          generatedBy: user?.name || user?.email || 'Admin'
+        }, 'buffer');
+        attachments.push({ filename: 'Task_Analytics_Report.xlsx', content: Buffer.from(buffer as any).toString('base64'), encoding: 'base64' });
+      }
+
+      if (anaShareConfig.format === 'pdf' || anaShareConfig.format === 'both') {
+        const buffer = await generateProfessionalPDFReport({
+          tasks: filteredTasks,
+          analytics: taskAnalyticsData,
+          filters: { 
+            entity: anaTaskEntityFilter, 
+            dept: anaTaskDeptFilter, 
+            user: anaTaskUserFilter 
+          },
+          generatedBy: user?.name || user?.email || 'Admin'
+        }, 'buffer');
+        attachments.push({ filename: 'Task_Analytics_Report.pdf', content: Buffer.from(buffer as any).toString('base64'), encoding: 'base64' });
+      }
+
+      const emailHtml = generateProfessionalReportEmail({
+        title: 'Task Analytics & Performance',
+        subtitle: `Performance Report | Entity: ${anaTaskEntityFilter} | Dept: ${anaTaskDeptFilter}`,
+        metrics: [
+          { label: 'Total Tasks', value: taskAnalyticsData.totalTasks },
+          { label: 'On-Time %', value: `${taskAnalyticsData.totalTasks > 0 ? Math.round((taskAnalyticsData.onTimeTasks / taskAnalyticsData.totalTasks) * 100) : 0}%`, color: BRAND_COLORS.SUCCESS },
+          { label: 'Overdue', value: taskAnalyticsData.overdueTasks, color: BRAND_COLORS.DANGER }
+        ],
+        summaryText: `Summary of task distribution and performance across selected filters. On-time completion is currently at ${taskAnalyticsData.totalTasks > 0 ? Math.round((taskAnalyticsData.onTimeTasks / taskAnalyticsData.totalTasks) * 100) : 0}%.`,
+        ctaLink: 'https://v0-finpulse.vercel.app'
+      });
+
+      const res = await fetch('/api/lo-analytics/share-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: anaShareConfig.recipients.join(','),
+          cc: anaShareConfig.ccEmails.join(',') || undefined,
+          subject: anaShareConfig.subject,
+          html: emailHtml,
+          attachments
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to send mail');
+      showNotification('Task Analytics report shared successfully!');
+      setShowAnaShareModal(false);
+      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report', reportType: 'lo' });
+    } catch (err: any) {
+      showNotification('Error sharing report: ' + err.message);
+    } finally {
+      setAnaShareLoading(false);
+    }
   };
 
 
@@ -6060,9 +6133,23 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </button>
                       <button
                         onClick={() => { handleTaskAnaExportPDF(); setShowTaskAnaDownloadDropdown(false); }}
-                        style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
+                        style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: `1px solid ${t.border}` }}
                       >
                         <FileText size={18} /> Export as PDF
+                      </button>
+                      <button
+                        onClick={() => { 
+                          setAnaShareConfig({
+                            ...anaShareConfig, 
+                            reportType: 'task', 
+                            subject: `Task Analytics Report - ${new Date().toISOString().split('T')[0]}`
+                          });
+                          setShowAnaShareModal(true); 
+                          setShowTaskAnaDownloadDropdown(false); 
+                        }}
+                        style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#6366f1", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
+                      >
+                        <Mail size={18} /> Share via Email
                       </button>
                     </div>
                   )}
@@ -11340,16 +11427,16 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           )}
 
 
-      {/* ── LO Analytics Share Modal (Payments-style) ─────────────────── */}
+      {/* ── Analytics Share Modal (Co-Branded) ─────────────────── */}
       {showAnaShareModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4000, padding: "24px" }}>
           <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "520px", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
 
             {/* Header */}
-            <div style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ background: anaShareConfig.reportType === 'lo' ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "white" }}>Share LO Analytics Report</h3>
-                <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.8125rem" }}>Send the current LO analytics as an attachment.</p>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "white" }}>Share {anaShareConfig.reportType === 'lo' ? 'LO' : 'Task'} Analytics Report</h3>
+                <p style={{ margin: "4px 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.8125rem" }}>Send the current {anaShareConfig.reportType === 'lo' ? 'LO' : 'task'} analytics as an attachment.</p>
               </div>
               <button onClick={() => setShowAnaShareModal(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "white", cursor: "pointer", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={18} /></button>
             </div>
@@ -11363,9 +11450,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <div style={{ border: "1px solid #d1d5db", borderRadius: "10px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "46px", alignItems: "center", cursor: "text" }}
                      onClick={() => (document.getElementById('ana-to-input') as HTMLInputElement)?.focus()}>
                   {anaShareConfig.recipients.map((email: string) => (
-                    <span key={email} style={{ background: "#dcfce7", color: "#166534", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span key={email} style={{ background: anaShareConfig.reportType === 'lo' ? "#dcfce7" : "#e0e7ff", color: anaShareConfig.reportType === 'lo' ? "#166534" : "#4338ca", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
                       {email}
-                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, recipients: anaShareConfig.recipients.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: "#166534", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
+                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, recipients: anaShareConfig.recipients.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: anaShareConfig.reportType === 'lo' ? "#166534" : "#4338ca", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
                     </span>
                   ))}
                   <input id="ana-to-input" type="email" placeholder={anaShareConfig.recipients.length === 0 ? "Type email and press Enter..." : "Add more..."} value={anaShareConfig.recipientInput}
@@ -11381,9 +11468,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <div style={{ border: "1px solid #d1d5db", borderRadius: "10px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "46px", alignItems: "center", cursor: "text" }}
                      onClick={() => (document.getElementById('ana-cc-input') as HTMLInputElement)?.focus()}>
                   {anaShareConfig.ccEmails.map((email: string) => (
-                    <span key={email} style={{ background: "#e0f2fe", color: "#075985", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span key={email} style={{ background: "#f1f5f9", color: "#475569", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8125rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
                       {email}
-                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, ccEmails: anaShareConfig.ccEmails.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: "#075985", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
+                      <button onClick={(e) => { e.stopPropagation(); setAnaShareConfig({...anaShareConfig, ccEmails: anaShareConfig.ccEmails.filter((r: string) => r !== email)}); }} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", padding: 0, fontSize: "1rem", lineHeight: "1" }}>×</button>
                     </span>
                   ))}
                   <input id="ana-cc-input" type="email" placeholder="Type email and press Enter..." value={anaShareConfig.ccInput}
@@ -11414,22 +11501,38 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: "10px", padding: "12px 16px", fontSize: "0.9375rem", color: "#111827", outline: "none", boxSizing: "border-box" }} />
               </div>
 
+              {/* Attachment Info Box (from Screenshot) */}
+              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "12px", padding: "16px", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ background: "#3b82f6", color: "white", width: "40px", height: "40px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0369a1" }}>Attachment Info</h4>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#0ea5e9", fontWeight: 500 }}>
+                    {anaShareConfig.reportType === 'lo' ? 'LO Analytics Dashboard Export' : 'Task Analytics Dashboard Export'} ({anaShareConfig.format.toUpperCase()})
+                  </p>
+                </div>
+              </div>
+
               {/* Buttons */}
               <div style={{ display: "flex", gap: "12px", paddingTop: "4px" }}>
                 <button onClick={() => setShowAnaShareModal(false)} style={{ flex: 1, height: "46px", background: "white", border: "1px solid #d1d5db", borderRadius: "10px", color: "#374151", fontWeight: 600, cursor: "pointer", fontSize: "0.9375rem" }}>Cancel</button>
                 <button
                   disabled={anaShareLoading || (anaShareConfig.recipients.length === 0 && !anaShareConfig.recipientInput.includes('@'))}
                   onClick={() => {
-                    // Auto-add any typed email before sending
                     if (anaShareConfig.recipientInput.includes('@')) {
                       const updated = {...anaShareConfig, recipients: [...anaShareConfig.recipients, anaShareConfig.recipientInput.trim()], recipientInput: ''};
                       setAnaShareConfig(updated);
                     }
-                    handleAnaShareEmail();
+                    if (anaShareConfig.reportType === 'lo') {
+                      handleAnaShareEmail();
+                    } else {
+                      handleTaskAnaShareEmail();
+                    }
                   }}
-                  style={{ flex: 2, height: "46px", background: (anaShareLoading || (anaShareConfig.recipients.length === 0 && !anaShareConfig.recipientInput.includes('@'))) ? "#86efac" : "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", border: "none", borderRadius: "10px", color: "white", fontWeight: 700, cursor: (anaShareLoading || (anaShareConfig.recipients.length === 0 && !anaShareConfig.recipientInput.includes('@'))) ? "not-allowed" : "pointer", fontSize: "0.9375rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                  {anaShareLoading ? <RefreshCw size={18} /> : <Send size={18} />}
-                  {anaShareLoading ? "Sending..." : "Share Report"}
+                  style={{ flex: 2, height: "46px", background: (anaShareLoading || (anaShareConfig.recipients.length === 0 && !anaShareConfig.recipientInput.includes('@'))) ? "#cbd5e1" : (anaShareConfig.reportType === 'lo' ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"), border: "none", borderRadius: "10px", color: "white", fontWeight: 700, cursor: (anaShareLoading || (anaShareConfig.recipients.length === 0 && !anaShareConfig.recipientInput.includes('@'))) ? "not-allowed" : "pointer", fontSize: "0.9375rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  {anaShareLoading ? <RefreshCw size={18} className="animate-spin" /> : <Send size={18} />}
+                  {anaShareLoading ? "Sending..." : "Send Email"}
                 </button>
               </div>
 
