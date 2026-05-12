@@ -2415,7 +2415,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     }).sort((a, b) => b.count - a.count);
 
     // Trend Analysis (Last 6 Months)
-    const last6Months = [];
+    const last6Months: { month: string; year: number; created: number; completed: number }[] = [];
     for (let i = 5; i >= 0; i--) {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
