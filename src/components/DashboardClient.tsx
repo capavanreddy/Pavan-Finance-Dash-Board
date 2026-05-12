@@ -419,8 +419,8 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         setProcessingMode("");
         setProcessingMailLink("");
         setProcessingAttachments([]);
-        fetchTasks();
-        fetchExternalRequests();
+        fetchTasks(true);
+        fetchExternalRequests(true);
       } else {
         const error = await res.json();
         showNotification(`Error: ${error.message}`, "error");
@@ -1066,7 +1066,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
           .then(data => {
              if (data.success && data.count > 0) {
                console.log(`Auto-generated ${data.count} daily tasks.`);
-               fetchTasks(); // Refresh dashboard
+               fetchTasks(true); // Refresh dashboard
              }
           })
           .catch(err => console.error("Auto-generation trigger failed", err));
@@ -1565,10 +1565,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         showNotification(`${validRows.length} records imported successfully!`);
         setImportPreview(null);
-        if (type === 'tasks') fetchTasks(); 
+        if (type === 'tasks') fetchTasks(true); 
         else if (type === 'lo') fetchLOs();
         else if (type === 'employees') fetchUsersList();
-        else fetchTasks(); 
+        else fetchTasks(true); 
       } else {
         const errorData = await res.json();
         showNotification(errorData.message || "Import failed. Please check data format.", "error");
@@ -2011,7 +2011,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         body: JSON.stringify(updates),
       });
       if (res.ok) {
-        fetchTasks();
+        fetchTasks(true);
       } else {
         const errData = await res.json().catch(() => ({}));
         showNotification(errData.message || "Failed to update. You may not have permission.", "error");
@@ -2046,7 +2046,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         });
         if (res.ok) {
           showNotification("Deletion request sent successfully.");
-          fetchTasks();
+          fetchTasks(true);
         } else {
           showNotification("Failed to send deletion request.");
         }
@@ -2066,7 +2066,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         });
         if (res.ok) {
           showNotification("Edit request sent to Admin successfully.");
-          fetchTasks();
+          fetchTasks(true);
         } else {
           showNotification("Failed to send edit request.");
         }
@@ -2086,7 +2086,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         });
         if (res.ok) {
           showNotification(`Edit request ${action.toLowerCase()}d successfully.`);
-          fetchTasks();
+          fetchTasks(true);
         } else {
           showNotification("Failed to process edit request.", 'error');
         }
@@ -2104,7 +2104,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         });
         if (res.ok) {
           showNotification(`Deletion request ${action.toLowerCase()}d successfully.`);
-          fetchTasks();
+          fetchTasks(true);
         } else {
           showNotification("Failed to process deletion request.", 'error');
         }
@@ -7065,8 +7065,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           onSuccess={() => {
             setShowForm(false);
             setPreFilledTask(null);
-            fetchTasks();
-            fetchExternalRequests();
+            fetchTasks(true);
+            fetchExternalRequests(true);
           }} 
         />
       )}
@@ -9409,7 +9409,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                               if (data.success) {
                                 showNotification(`Success! Automated engine generated ${data.count} tasks.`);
                                 fetchSettings();
-                                fetchTasks();
+                                fetchTasks(true);
                                 setLoading(false);
                               } else {
                                 showNotification(`Error: ${data.message || data.error || "Unknown error"}`);
@@ -9544,7 +9544,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 <button 
                                   onClick={async () => {
                                     const res = await fetch(`/api/tasks/${task.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isApproved: true }) });
-                                    if (res.ok) fetchTasks();
+                                    if (res.ok) fetchTasks(true);
                                   }}
                                   style={{ background: "#22c55e", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
                                 >
@@ -9553,7 +9553,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 <button 
                                   onClick={async () => {
                                     const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-                                    if (res.ok) fetchTasks();
+                                    if (res.ok) fetchTasks(true);
                                   }}
                                   style={{ background: "#ef4444", color: "white", padding: "5px 10px", borderRadius: "5px", border: "none", cursor: "pointer" }}
                                 >
