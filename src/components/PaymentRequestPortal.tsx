@@ -54,7 +54,7 @@ function FileUpload({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     
     if (files.length + selectedFiles.length > maxFiles) {
@@ -62,19 +62,34 @@ function FileUpload({
       return;
     }
 
-    selectedFiles.forEach(file => {
+    const uploadedFiles: { name: string; data: string; type: string }[] = [];
+    for (const file of selectedFiles) {
       if (file.size > maxSizeMB * 1024 * 1024) {
         alert(`File ${file.name} exceeds ${maxSizeMB}MB limit.`);
-        return;
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        onFilesChange([...files, { name: file.name, data: base64, type: file.type }]);
-      };
-      reader.readAsDataURL(file);
-    });
+      try {
+        const response = await fetch(
+          `/api/upload?filename=${encodeURIComponent(file.name)}`,
+          {
+            method: 'POST',
+            body: file,
+          },
+        );
+
+        if (!response.ok) throw new Error("Upload failed");
+
+        const blob = await response.json();
+        uploadedFiles.push({ name: file.name, data: blob.url, type: file.type });
+      } catch (err) {
+        alert(`Failed to upload ${file.name}`);
+      }
+    }
+    
+    if (uploadedFiles.length > 0) {
+      onFilesChange([...files, ...uploadedFiles]);
+    }
     
     if (fileInputRef.current) fileInputRef.current.value = '';
   };

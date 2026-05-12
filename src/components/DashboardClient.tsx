@@ -341,53 +341,53 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       return;
     }
 
-    files.forEach(file => {
+    // Use for...of to handle async uploads properly
+    for (const file of files) {
       if (file.size > 3.5 * 1024 * 1024) {
         showNotification(`${file.name} exceeds 3.5MB limit`, "error");
-        return;
+        continue;
       }
 
       const tempId = Math.random().toString(36).substring(7);
       
-      // Add placeholder
+      // Add placeholder with initial progress
       setProcessingAttachments(prev => [...prev, {
         id: tempId,
         name: file.name,
         type: file.type,
         data: "",
-        progress: 0,
+        progress: 10,
         isLoaded: false
       }]);
 
-      const reader = new FileReader();
-      
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setProcessingAttachments(prev => prev.map(att => 
-            att.id === tempId ? { ...att, progress } : att
-          ));
-        }
-      };
+      try {
+        const response = await fetch(
+          `/api/upload?filename=${encodeURIComponent(file.name)}`,
+          {
+            method: 'POST',
+            body: file,
+          },
+        );
 
-      reader.onload = (event) => {
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const blob = await response.json();
+        
         setProcessingAttachments(prev => prev.map(att => 
           att.id === tempId ? { 
             ...att, 
-            data: event.target?.result as string, 
+            data: blob.url, 
             progress: 100, 
             isLoaded: true 
           } : att
         ));
-      };
-
-      reader.onerror = () => {
-        showNotification(`Failed to load ${file.name}`, "error");
+      } catch (err) {
+        showNotification(`Failed to upload ${file.name}`, "error");
         setProcessingAttachments(prev => prev.filter(att => att.id !== tempId));
-      };
-
-      reader.readAsDataURL(file);
-    });
+      }
+    }
   };
 
   const handleFinalizeProcessing = async () => {
