@@ -2972,7 +2972,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (!res.ok) throw new Error('Failed to send mail');
       showNotification('LO Analytics report shared successfully!');
       setShowAnaShareModal(false);
-      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report' });
+      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report', reportType: 'lo' });
     } catch (err: any) {
       showNotification('Error sharing report: ' + err.message);
     } finally {
