@@ -1,0 +1,15 @@
+﻿
+  
+                        <td style={getTdStyle(t)}>
+>                         <StatusPill t={t} 
+                            status={(task.reviewerName === "Not Applicable" || task.reviewerName === "N/A" || 
+!task.reviewerName) ? "Review Not Required" : task.reviewStatus} 
+                            type="review" 
+  );
+  
+> function StatusPill({ status, type, taskId, onUpdate, disabled, t }: { status: string, type: "task" | "review", 
+taskId: number, onUpdate: any, disabled?: boolean, t: any }) {
+    let bg = "#f1f5f9";
+    let color = "#475569";
+
+

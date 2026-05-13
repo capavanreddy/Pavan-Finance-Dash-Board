@@ -510,7 +510,7 @@ export default function PaymentsAnalytics({
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; padding: 40px 20px;">
           <div style="max-width: 800px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
             <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 40px; color: #ffffff;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">Finance Hub • Intelligence Report</h1>
+              <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">FinPulse • Intelligence Report</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 16px;">Analytical summary for ${periodStr}</p>
             </div>
             
@@ -546,7 +546,7 @@ export default function PaymentsAnalytics({
 
               <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9; text-align: center; color: #94a3b8; font-size: 14px;">
                 <p>Detailed PDF and Excel files are attached for deep-dive analysis.</p>
-                <p>© 2026 Intellicar Finance Hub • Automated Intelligence Engine</p>
+                <p>© 2026 Intellicar FinPulse • Automated Intelligence Engine</p>
               </div>
             </div>
           </div>
@@ -582,7 +582,7 @@ export default function PaymentsAnalytics({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme === 'DARK' ? "rgba(30, 41, 59, 0.7)" : "white", padding: "20px 24px", borderRadius: "20px", border: `1px solid ${theme === 'DARK' ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "white", padding: "12px", borderRadius: "14px" }}><Activity size={24} /></div>
-          <div><h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Finance Analytics Hub</h2></div>
+          <div><h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>FinPulse Analytics</h2></div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ position: "relative" }}>

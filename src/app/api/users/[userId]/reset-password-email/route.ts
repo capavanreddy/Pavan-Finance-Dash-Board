@@ -40,7 +40,7 @@ export async function POST(
 
     await sendEmail({
       to: user.email,
-      subject: "Password Reset Request - Finance Hub",
+      subject: "Password Reset Request - FinPulse",
       html: `
         <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
           <div style="background: #2563eb; padding: 24px; color: white; text-align: center;">

@@ -1,6 +1,6 @@
 
 /**
- * Professional Email Templates for Finance Hub
+ * Professional Email Templates for FinPulse
  * Uses table-based layouts for high compatibility across email clients.
  */
 
@@ -50,7 +50,7 @@ export const getBaseTemplate = (data: EmailData) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Finance Hub</h1>
+            <h1>FinPulse</h1>
           </div>
           <div class="content">
             <div class="badge badge-${data.badgeType}">${data.badgeText}</div>
@@ -67,7 +67,7 @@ export const getBaseTemplate = (data: EmailData) => {
             ` : ''}
           </div>
           <div class="footer">
-            This is an automated notification from the Finance Hub Platform.<br>
+            This is an automated notification from the FinPulse Platform.<br>
             © ${new Date().getFullYear()} IntelliCar Finance Team
           </div>
         </div>

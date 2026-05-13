@@ -174,11 +174,11 @@ export async function POST(req: NextRequest) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://v0-finpulse.vercel.app';
       await sendEmail({
         to: user.email,
-        subject: "Welcome to Finance Hub!",
+        subject: "Welcome to FinPulse!",
         html: `
           <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
             <div style="background: #2563eb; padding: 24px; color: white; text-align: center;">
-              <h2 style="margin: 0; font-size: 24px;">Welcome to Finance Hub!</h2>
+              <h2 style="margin: 0; font-size: 24px;">Welcome to FinPulse!</h2>
             </div>
             <div style="padding: 32px; text-align: center;">
               <p style="font-size: 18px;">Hello <strong>${user.name}</strong>,</p>

@@ -3904,7 +3904,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </div>
               </div>
               <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from Finance Hub</p>
+                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from FinPulse</p>
               </div>
             </div>
           </div>
@@ -3925,7 +3925,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </div>
               </div>
               <div style="background-color: #fef2f2; padding: 20px; text-align: center; border-top: 1px solid #fee2e2;">
-                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from Finance Hub</p>
+                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from FinPulse</p>
               </div>
             </div>
           </div>
@@ -3964,7 +3964,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </div>
               </div>
               <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from Finance Hub</p>
+                <p style="margin: 0; color: #94a3b8; font-size: 12px;">Automated Report from FinPulse</p>
               </div>
             </div>
           </div>
@@ -4046,7 +4046,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 return `${g}, ${user?.name || "User"}`;
               })()}
             </h3>
-            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 500 }}>Finance Hub • Welcome back!</p>
+            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 500 }}>FinPulse • Welcome back!</p>
           </div>
         </div>
 
@@ -4535,10 +4535,10 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>Finance Hub</span>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>FinPulse</span>
                     <span style={{ color: "#cbd5e1" }}>/</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
-                      {activeView === 'TASKS' ? (activeSubView === 'MAIN' || activeSubView === 'ANALYTICS' ? "Finance Hub" : "Collaboration") : 
+                      {activeView === 'TASKS' ? (activeSubView === 'MAIN' || activeSubView === 'ANALYTICS' ? "FinPulse" : "Collaboration") : 
                        activeView === 'PAYMENTS' ? "Treasury" : "Development"}
                     </span>
                   </div>
