@@ -177,6 +177,25 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const isAdmin = user?.role === 'ADMIN' || user?.email === 'pavanreddy@intellicar.in';
   const isViewer = user?.role === 'VIEWER';
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [backups, setBackups] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchBackups();
+    }
+  }, [isAdmin]);
+
+  const fetchBackups = async () => {
+    try {
+      const res = await fetch("/api/admin/master-reset");
+      if (res.ok) {
+        const data = await res.json();
+        setBackups(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch backups", e);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: "", type: null });
   const [confirmState, setConfirmState] = useState<{ message: string; onConfirm: () => void; isOpen: boolean }>({ message: "", onConfirm: () => {}, isOpen: false });
@@ -2044,6 +2063,50 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       showNotification("Network error. Failed to add employee.", "error");
     } finally {
       setIsAddingEmployee(false);
+    }
+  };
+
+  const handleExportBackup = async (backup: any) => {
+    try {
+      const snapshot = typeof backup.snapshot === 'string' ? JSON.parse(backup.snapshot) : backup.snapshot;
+      const data = snapshot.data || {};
+      
+      const workbook = new ExcelJS.Workbook();
+      
+      for (const tableName in data) {
+        const rows = data[tableName];
+        if (!rows || !Array.isArray(rows) || rows.length === 0) continue;
+        
+        const sheet = workbook.addWorksheet(tableName);
+        
+        // Add headers
+        const headers = Object.keys(rows[0]);
+        sheet.addRow(headers);
+        
+        // Add data
+        rows.forEach(row => {
+          const values = Object.values(row).map(v => 
+            v !== null && typeof v === 'object' ? JSON.stringify(v) : v
+          );
+          sheet.addRow(values);
+        });
+        
+        // Simple styling
+        sheet.getRow(1).font = { bold: true };
+        sheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE2E8F0' }
+        };
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const fileName = `System_Backup_${new Date(backup.createdAt).toISOString().split('T')[0]}_${backup.id}.xlsx`;
+      saveAs(new Blob([buffer]), fileName);
+      showNotification("Backup exported to Excel successfully!", "success");
+    } catch (e) {
+      console.error("Export failed", e);
+      showNotification("Failed to export backup", "error");
     }
   };
 
@@ -8498,6 +8561,59 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           <RefreshCw size={16} /> Sync Database Schema
                         </button>
                       </div>
+
+                      <div style={{ border: `1px solid ${t.border}`, borderRadius: "12px", padding: "20px", background: "#fdf2f8" }}>
+                        <h5 style={{ margin: "0 0 12px 0", fontWeight: 700, color: "#9d174d", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <History size={18} /> 4. Purge & Reset Audit Trail
+                        </h5>
+                        <p style={{ fontSize: "0.8125rem", color: t.textMuted, marginBottom: "20px" }}>
+                          Historical record of all system resets and data purges.
+                        </p>
+                        
+                        {backups.length === 0 ? (
+                          <div style={{ padding: "20px", textAlign: "center", background: "white", borderRadius: "8px", border: `1px dashed ${t.border}` }}>
+                            <span style={{ fontSize: "0.75rem", color: t.textMuted }}>No audit records found.</span>
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: "auto", background: "white", borderRadius: "8px", border: `1px solid ${t.border}` }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+                              <thead style={{ background: "#f8fafc", borderBottom: `1px solid ${t.border}` }}>
+                                <tr>
+                                  <th style={{ padding: "12px", textAlign: "left" }}>Timestamp</th>
+                                  <th style={{ padding: "12px", textAlign: "left" }}>Performed By</th>
+                                  <th style={{ padding: "12px", textAlign: "left" }}>Snapshot ID</th>
+                                  <th style={{ padding: "12px", textAlign: "center" }}>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {backups.map((b) => {
+                                  const snapshot = typeof b.snapshot === 'string' ? JSON.parse(b.snapshot) : b.snapshot;
+                                  return (
+                                    <tr key={b.id} style={{ borderBottom: `1px solid #f1f5f9` }}>
+                                      <td style={{ padding: "12px", fontWeight: 600 }}>{new Date(b.createdAt).toLocaleString()}</td>
+                                      <td style={{ padding: "12px" }}>{snapshot?.resetBy || "System Admin"}</td>
+                                      <td style={{ padding: "12px", color: t.textMuted }}>{b.id}</td>
+                                      <td style={{ padding: "12px", textAlign: "center" }}>
+                                        <button 
+                                          onClick={() => handleExportBackup(b)}
+                                          style={{ 
+                                            padding: "6px 12px", borderRadius: "6px", background: "#fdf2f8", color: "#9d174d", 
+                                            border: "1px solid #fbcfe8", fontWeight: 700, cursor: "pointer",
+                                            display: "flex", alignItems: "center", gap: "6px", margin: "0 auto"
+                                          }}
+                                        >
+                                          <FileSpreadsheet size={14} /> Export to Excel
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     </div>
                   </div>
                 )}

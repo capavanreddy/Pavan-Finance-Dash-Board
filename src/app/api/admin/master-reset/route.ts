@@ -152,3 +152,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Critical failure during master reset operation.", error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const sql = getDb();
+    const session = await getServerSession();
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const backupId = searchParams.get("id");
+
+    if (backupId) {
+       const backups = await sql`SELECT * FROM "DataBackup" WHERE id = ${backupId}`;
+       if (backups.length === 0) return NextResponse.json({ message: "Backup not found" }, { status: 404 });
+       return NextResponse.json(backups[0]);
+    }
+
+    // List all backups
+    // Note: We select the full snapshot here to extract metadata on the client, 
+    // but in a production app with many backups, we'd optimize this.
+    const backups = await sql`
+      SELECT id, "createdAt", snapshot
+      FROM "DataBackup" 
+      ORDER BY "createdAt" DESC
+    `;
+    
+    return NextResponse.json(backups);
+  } catch (error: any) {
+    console.error("Failed to fetch backups:", error);
+    return NextResponse.json({ message: "Failed to fetch backups", error: error.message }, { status: 500 });
+  }
+}
