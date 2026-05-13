@@ -3212,11 +3212,26 @@ const handleResourceUpload = async (e: React.FormEvent) => {
 
       // Handle on-the-fly subfolder creation
       if (resourceSubfolderId === "NEW" && newSubfolderName.trim()) {
-        const newFolder = await handleCreateSubfolder(newSubfolderName, resourceCategory);
-        if (newFolder) {
-          finalSubfolderId = newFolder.id;
-        } else {
-          showNotification("Failed to create new subfolder", "error");
+        try {
+          const res = await fetch("/api/resources/subfolders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newSubfolderName, category: resourceCategory })
+          });
+          
+          if (res.ok) {
+            const newFolder = await res.json();
+            finalSubfolderId = newFolder.id;
+            // Update subfolders list locally so it shows up in future selects
+            setSubfolders(prev => [...prev, newFolder]);
+          } else {
+            const errorData = await res.json();
+            showNotification(`Failed to create subfolder: ${errorData.message || "Unknown error"}`, "error");
+            setResourcesLoading(false);
+            return;
+          }
+        } catch (err) {
+          showNotification("Connection error while creating subfolder", "error");
           setResourcesLoading(false);
           return;
         }
