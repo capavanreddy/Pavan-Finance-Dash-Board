@@ -4046,7 +4046,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 return `${g}, ${user?.name || "User"}`;
               })()}
             </h3>
-            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 500 }}>FinPulse • Welcome back!</p>
+            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 500, display: "flex", alignItems: "center" }}>
+              FinPulse • Welcome back!
+              {isAdminViewMode && (
+                <span style={{ 
+                  marginLeft: "12px", background: "#f5f3ff", color: "#4f46e5", 
+                  padding: "2px 8px", borderRadius: "6px", fontSize: "0.6rem", 
+                  fontWeight: 800, textTransform: "uppercase", border: "1px solid #ddd6fe",
+                  animation: "fade-in 0.3s ease-out"
+                }}>
+                  Admin Console
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
@@ -4535,6 +4547,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                    {isAdminViewMode && (
+                      <>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#4f46e5", textTransform: "uppercase", letterSpacing: "0.05em" }}>ADMIN</span>
+                        <span style={{ color: "#cbd5e1" }}>/</span>
+                      </>
+                    )}
                     <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.05em" }}>FinPulse</span>
                     <span style={{ color: "#cbd5e1" }}>/</span>
                     <span style={{ fontSize: "0.75rem", fontWeight: 500, color: t.textMuted }}>
