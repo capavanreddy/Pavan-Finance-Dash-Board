@@ -188,6 +188,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    let processedMode = existingTask.processedMode;
+    let processedMailLink = existingTask.processedMailLink;
+    let processedAttachments = existingTask.processedAttachments;
+
     if (data.processedMode !== undefined) processedMode = data.processedMode;
     if (data.processedMailLink !== undefined) processedMailLink = data.processedMailLink;
     if (data.processedAttachments !== undefined) processedAttachments = data.processedAttachments;
