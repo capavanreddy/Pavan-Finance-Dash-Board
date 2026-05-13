@@ -4368,31 +4368,51 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           
           <div style={{ height: "30px", width: "1px", background: t.border, opacity: 0.5 }}></div>
 
-          {isAdmin && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f8fafc", padding: "4px 8px 4px 12px", borderRadius: "14px", border: "1px solid #e2e8f0", marginRight: "8px" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: isAdminViewMode ? "#64748b" : "#4f46e5", transition: "all 0.3s" }}>User View</span>
-              <button 
-                onClick={() => setIsAdminViewMode(!isAdminViewMode)}
-                style={{ 
-                  width: "44px", height: "24px", background: isAdminViewMode ? "#10b981" : "#e2e8f0", 
-                  borderRadius: "20px", border: "none", cursor: "pointer", position: "relative",
-                  transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                  boxShadow: isAdminViewMode ? "0 4px 12px rgba(16,185,129,0.2)" : "inset 0 2px 4px rgba(0,0,0,0.05)"
-                }}
-              >
-                <div style={{ 
-                  position: "absolute", top: "3px", left: isAdminViewMode ? "23px" : "3px",
-                  width: "18px", height: "18px", background: "white", borderRadius: "50%",
-                  transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                  {isAdminViewMode ? <ShieldCheck size={10} color="#10b981" /> : <User size={10} color="#94a3b8" />}
-                </div>
-              </button>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: isAdminViewMode ? "#10b981" : "#64748b", transition: "all 0.3s" }}>Admin View</span>
-            </div>
-           )}
+           {isAdmin && (
+             <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f8fafc", padding: "4px", borderRadius: "14px", border: "1px solid #e2e8f0", marginRight: "8px" }}>
+               <span style={{ 
+                 fontSize: "0.75rem", fontWeight: 700, 
+                 color: isAdminViewMode ? "#64748b" : "#ffffff", 
+                 background: isAdminViewMode ? "transparent" : "#07285c",
+                 padding: "6px 12px",
+                 borderRadius: "10px",
+                 transition: "all 0.3s",
+                 cursor: "pointer"
+               }}
+               onClick={() => setIsAdminViewMode(false)}
+               >User View</span>
+               <button 
+                 onClick={() => setIsAdminViewMode(!isAdminViewMode)}
+                 style={{ 
+                   width: "44px", height: "24px", background: isAdminViewMode ? "#07285c" : "#e2e8f0", 
+                   borderRadius: "20px", border: "none", cursor: "pointer", position: "relative",
+                   transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                   boxShadow: isAdminViewMode ? "0 4px 12px rgba(7,40,92,0.2)" : "inset 0 2px 4px rgba(0,0,0,0.05)"
+                 }}
+               >
+                 <div style={{ 
+                   position: "absolute", top: "3px", left: isAdminViewMode ? "23px" : "3px",
+                   width: "18px", height: "18px", background: "white", borderRadius: "50%",
+                   transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                   display: "flex", alignItems: "center", justifyContent: "center"
+                 }}>
+                   {isAdminViewMode ? <ShieldCheck size={10} color="#07285c" /> : <User size={10} color="#94a3b8" />}
+                 </div>
+               </button>
+               <span style={{ 
+                 fontSize: "0.75rem", fontWeight: 700, 
+                 color: isAdminViewMode ? "#ffffff" : "#64748b", 
+                 background: isAdminViewMode ? "#07285c" : "transparent",
+                 padding: "6px 12px",
+                 borderRadius: "10px",
+                 transition: "all 0.3s",
+                 cursor: "pointer"
+               }}
+               onClick={() => setIsAdminViewMode(true)}
+               >Admin View</span>
+             </div>
+            )}
 
            <button 
              onClick={() => { 
