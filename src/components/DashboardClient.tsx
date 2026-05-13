@@ -746,11 +746,34 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const iconSize = viewMode === 'extra-large' ? 32 : viewMode === 'large' ? 24 : 20;
     const boxSize = viewMode === 'extra-large' ? 64 : viewMode === 'large' ? 56 : 48;
     
+    const getFileIcon = (res: any, size: number) => {
+      if (res.type === 'LINK') return <Link size={size} color="#3b82f6" />;
+      const ext = res.data?.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return <Image size={size} color="#10b981" />;
+      if (['pdf'].includes(ext)) return <FileText size={size} color="#ef4444" />;
+      if (['xls', 'xlsx', 'csv'].includes(ext)) return <FileSpreadsheet size={size} color="#059669" />;
+      if (['doc', 'docx'].includes(ext)) return <FileText size={size} color="#2563eb" />;
+      if (['ppt', 'pptx'].includes(ext)) return <Zap size={size} color="#f59e0b" />;
+      if (['zip', 'rar', '7z'].includes(ext)) return <Briefcase size={size} color="#6366f1" />;
+      return <FileText size={size} color="#64748b" />;
+    };
+
+    const getIconBg = (res: any) => {
+      if (res.type === 'LINK') return "#eff6ff";
+      const ext = res.data?.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return "#ecfdf5";
+      if (['pdf'].includes(ext)) return "#fef2f2";
+      if (['xls', 'xlsx', 'csv'].includes(ext)) return "#f0fdf4";
+      if (['doc', 'docx'].includes(ext)) return "#eff6ff";
+      if (['ppt', 'pptx'].includes(ext)) return "#fffbeb";
+      return "#f8fafc";
+    };
+    
     return (
       <div key={res.id} style={{ background: "white", border: `1px solid ${themeColors.border}`, borderRadius: "20px", padding: viewMode === 'extra-large' ? "32px" : "24px", display: "flex", flexDirection: "column", gap: "16px", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#4f46e5"} onMouseOut={e => e.currentTarget.style.borderColor = themeColors.border}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ width: `${boxSize}px`, height: `${boxSize}px`, borderRadius: "12px", background: res.type === 'LINK' ? "#eff6ff" : "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {res.type === 'LINK' ? <Link size={iconSize} color="#3b82f6" /> : <FileText size={iconSize} color="#ef4444" />}
+          <div style={{ width: `${boxSize}px`, height: `${boxSize}px`, borderRadius: "12px", background: getIconBg(res), display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {getFileIcon(res, iconSize)}
           </div>
           {isAdmin && (
             <button onClick={(e) => { e.stopPropagation(); deleteFn(res.id); }} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", opacity: 0.6 }}><Trash2 size={16} /></button>
@@ -12069,7 +12092,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       onClick={() => setResourceType(type as any)}
                       style={{ flex: 1, padding: "10px", borderRadius: "10px", border: `1px solid ${resourceType === type ? '#10b981' : t.border}`, background: resourceType === type ? '#ecfdf5' : t.bg, color: resourceType === type ? '#059669' : t.textMuted, fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer" }}
                     >
-                      {type === 'LINK' ? 'External Link' : 'PDF/Image File'}
+                      {type === 'LINK' ? 'External Link' : 'Upload File'}
                     </button>
                   ))}
                 </div>
@@ -12089,13 +12112,12 @@ const handleResourceUpload = async (e: React.FormEvent) => {
               ) : (
                 <div>
                   <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>SELECT FILE</label>
-                  <input 
-                    type="file" required
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={e => setResourceFile(e.target.files?.[0] || null)}
-                    style={{ ...getInputStyle(t), padding: "8px" }} 
-                  />
-                  <p style={{ margin: "4px 0 0 0", fontSize: "0.65rem", color: t.textMuted }}>Supported: PDF, JPG, PNG (Max 3.5MB)</p>
+                    <input 
+                      type="file" required
+                      onChange={e => setResourceFile(e.target.files?.[0] || null)}
+                      style={{ ...getInputStyle(t), padding: "8px" }} 
+                    />
+                    <p style={{ margin: "4px 0 0 0", fontSize: "0.65rem", color: t.textMuted }}>Supported: All Formats - PPT, Excel, Word, PDF, etc. (Max 3.5MB)</p>
                 </div>
               )}
 
