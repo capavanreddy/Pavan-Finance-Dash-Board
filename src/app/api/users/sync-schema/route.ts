@@ -40,6 +40,20 @@ export async function POST(req: NextRequest) {
     // Ensure TaskSequence table exists
     await sql`CREATE TABLE IF NOT EXISTS "TaskSequence" ("monthYear" TEXT PRIMARY KEY, "nextVal" INTEGER DEFAULT 1)`;
 
+    // Knowledge Library Hierarchy Migration
+    await sql`
+      CREATE TABLE IF NOT EXISTS "KnowledgeSubfolder" (
+        id SERIAL PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "category" TEXT NOT NULL,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `;
+
+    await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Miscellaneous'`;
+    await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "department" TEXT DEFAULT 'General'`;
+    await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "subfolderId" INTEGER`;
+
     console.log("Schema sync completed successfully.");
 
     return NextResponse.json({ 

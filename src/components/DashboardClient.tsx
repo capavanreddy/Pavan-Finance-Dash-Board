@@ -566,6 +566,13 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [showLibraryViewMenu, setShowLibraryViewMenu] = useState(false);
   const [currentLibraryPath, setCurrentLibraryPath] = useState<string | null>(null);
   const [librarySearchQuery, setLibrarySearchQuery] = useState("");
+  const [subfolders, setSubfolders] = useState<any[]>([]);
+  const [resourceSubfolderId, setResourceSubfolderId] = useState<number | string>("");
+  const [newSubfolderName, setNewSubfolderName] = useState("");
+  const [showAddSubfolderModal, setShowAddSubfolderModal] = useState(false);
+  const [currentSubfolderPath, setCurrentSubfolderPath] = useState<string | null>(null);
+  const [currentSubfolderId, setCurrentSubfolderId] = useState<number | null>(null);
+  const [isAddingSubfolder, setIsAddingSubfolder] = useState(false);
   
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
@@ -732,6 +739,42 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       >
         {isTransferred ? 'Transferred' : 'Original'}
       </span>
+    );
+  };
+
+  const renderResourceCard = (res: any, viewMode: string, themeColors: any, isAdmin: boolean, deleteFn: (id: number) => void) => {
+    const iconSize = viewMode === 'extra-large' ? 32 : viewMode === 'large' ? 24 : 20;
+    const boxSize = viewMode === 'extra-large' ? 64 : viewMode === 'large' ? 56 : 48;
+    
+    return (
+      <div key={res.id} style={{ background: "white", border: `1px solid ${themeColors.border}`, borderRadius: "20px", padding: viewMode === 'extra-large' ? "32px" : "24px", display: "flex", flexDirection: "column", gap: "16px", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#4f46e5"} onMouseOut={e => e.currentTarget.style.borderColor = themeColors.border}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ width: `${boxSize}px`, height: `${boxSize}px`, borderRadius: "12px", background: res.type === 'LINK' ? "#eff6ff" : "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {res.type === 'LINK' ? <Link size={iconSize} color="#3b82f6" /> : <FileText size={iconSize} color="#ef4444" />}
+          </div>
+          {isAdmin && (
+            <button onClick={(e) => { e.stopPropagation(); deleteFn(res.id); }} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", opacity: 0.6 }}><Trash2 size={16} /></button>
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <h5 style={{ margin: "0 0 8px 0", fontSize: viewMode === 'extra-large' ? "1.125rem" : "1rem", fontWeight: 700, color: themeColors.text, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{res.name}</h5>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ padding: "2px 8px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.7rem", fontWeight: 700, color: "#475569" }}>{res.category}</span>
+            <span style={{ color: themeColors.textMuted, fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Clock size={12} /> {formatDate(res.createdAt)}
+            </span>
+          </div>
+        </div>
+        <button onClick={() => {
+          if (res.type === 'LINK') window.open(res.url, '_blank');
+          else {
+            const win = window.open();
+            if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
+          }
+        }} style={{ width: "100%", padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "12px" }}>
+          <Eye size={18} /> View Resource
+        </button>
+      </div>
     );
   };
 
@@ -960,11 +1003,51 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         const data = await res.json();
         setResources(Array.isArray(data) ? data : []);
       }
+      // Also fetch subfolders whenever resources are fetched
+      fetchSubfolders();
     } catch (error) {
       console.error("Failed to fetch resources", error);
     } finally {
       setResourcesLoading(false);
     }
+  };
+
+  const fetchSubfolders = async () => {
+    try {
+      const res = await fetch("/api/resources/subfolders");
+      if (res.ok) {
+        const data = await res.json();
+        setSubfolders(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch subfolders", error);
+    }
+  };
+
+  const handleCreateSubfolder = async (name: string, category: string) => {
+    if (!name.trim()) return null;
+    setIsAddingSubfolder(true);
+    try {
+      const res = await fetch("/api/resources/subfolders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, category })
+      });
+      if (res.ok) {
+        const newFolder = await res.json();
+        setSubfolders(prev => {
+          // If already exists (returned from API check), don't duplicate
+          if (prev.some(f => f.id === newFolder.id)) return prev;
+          return [...prev, newFolder];
+        });
+        return newFolder;
+      }
+    } catch (error) {
+      console.error("Failed to create subfolder", error);
+    } finally {
+      setIsAddingSubfolder(false);
+    }
+    return null;
   };
 
   const fetchExternalRequests = async (silent = false) => {
@@ -3102,6 +3185,19 @@ const handleResourceUpload = async (e: React.FormEvent) => {
     try {
       let finalData = "";
       let finalUrl = resourceLink;
+      let finalSubfolderId = resourceSubfolderId;
+
+      // Handle on-the-fly subfolder creation
+      if (resourceSubfolderId === "NEW" && newSubfolderName.trim()) {
+        const newFolder = await handleCreateSubfolder(newSubfolderName, resourceCategory);
+        if (newFolder) {
+          finalSubfolderId = newFolder.id;
+        } else {
+          showNotification("Failed to create new subfolder", "error");
+          setResourcesLoading(false);
+          return;
+        }
+      }
 
       if (resourceType === 'FILE' && resourceFile) {
         // Upload to Vercel Blob
@@ -3132,7 +3228,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
           url: finalUrl,
           data: finalData,
           category: resourceCategory,
-          department: resourceCategory
+          department: resourceCategory,
+          subfolderId: finalSubfolderId || null
         })
       });
 
@@ -3144,6 +3241,8 @@ const handleResourceUpload = async (e: React.FormEvent) => {
         setResourceName("");
         setResourceLink("");
         setResourceFile(null);
+        setResourceSubfolderId("");
+        setNewSubfolderName("");
       } else {
         const errorData = await res.json();
         showNotification(`Failed to save resource: ${errorData.message || "Unknown error"}`, "error");
@@ -7227,185 +7326,160 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                       </div>
                    </div>
 
-                   <div style={{ padding: "40px", flex: 1 }}>
-                     {resourcesLoading ? (
-                       <div style={{ textAlign: "center", padding: "60px", color: t.textMuted }}>
-                         <RefreshCw size={40} className="animate-spin" style={{ margin: "0 auto 16px", opacity: 0.5 }} />
-                         <p>Fetching your library resources...</p>
-                       </div>
-                     ) : (
-                       <>
-                         {!librarySearchQuery && !currentLibraryPath ? (
-                            <div style={{ display: libraryViewMode === 'list' || libraryViewMode === 'details' ? "block" : "grid", gridTemplateColumns: libraryViewMode === 'extra-large' ? "repeat(auto-fill, minmax(300px, 1fr))" : libraryViewMode === 'large' ? "repeat(auto-fill, minmax(260px, 1fr))" : "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" }}>
-                              {libraryViewMode === 'list' || libraryViewMode === 'details' ? (
-                                <div style={{ background: "white", borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
-                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
-                                    <thead>
-                                      <tr style={{ background: "#f8fafc", borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
-                                        <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Folder Name</th>
-                                        <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Resources</th>
-                                        <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b", textAlign: "right" }}>Action</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {Array.from(new Set(resources.map(r => r.category || "General"))).sort().map(cat => {
-                                        const count = resources.filter(r => (r.category || "General") === cat).length;
-                                        return (
-                                          <tr key={cat} style={{ borderBottom: `1px solid ${t.border}`, cursor: "pointer" }} className="hover-bg-slate-50" onClick={() => setCurrentLibraryPath(cat)}>
-                                            <td style={{ padding: "12px 20px" }}>
-                                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                                <Folder size={20} color="#4f46e5" />
-                                                <span style={{ fontWeight: 600, color: t.text }}>{cat}</span>
-                                              </div>
-                                            </td>
-                                            <td style={{ padding: "12px 20px", color: t.textMuted }}>{count} items</td>
-                                            <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                              <ChevronRight size={16} color="#94a3b8" />
-                                            </td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                Array.from(new Set(resources.map(r => r.category || "General"))).sort().map(cat => {
-                                  const count = resources.filter(r => (r.category || "General") === cat).length;
-                                  const size = libraryViewMode === 'extra-large' ? 80 : libraryViewMode === 'large' ? 72 : 64;
-                                  const iconSize = libraryViewMode === 'extra-large' ? 40 : libraryViewMode === 'large' ? 36 : 32;
-                                  return (
-                                    <div 
-                                      key={cat}
-                                      onClick={() => setCurrentLibraryPath(cat)}
-                                      style={{ 
-                                        background: "white", padding: libraryViewMode === 'extra-large' ? "32px" : "24px", borderRadius: "20px", border: `1px solid ${t.border}`, 
-                                        cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", 
-                                        alignItems: "center", gap: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-                                      }}
-                                      onMouseOver={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                                      onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateY(0)"; }}
-                                    >
-                                      <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: "16px", background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}>
-                                        <Folder size={iconSize} />
-                                      </div>
-                                      <div style={{ textAlign: "center" }}>
-                                        <h4 style={{ margin: 0, fontWeight: 700, color: t.text, fontSize: libraryViewMode === 'extra-large' ? "1.125rem" : "1rem" }}>{cat}</h4>
-                                        <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>{count} Resources</p>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              )}
+                    <div style={{ padding: "40px", flex: 1 }}>
+                      {resourcesLoading ? (
+                        <div style={{ textAlign: "center", padding: "60px", color: t.textMuted }}>
+                          <RefreshCw size={40} className="animate-spin" style={{ margin: "0 auto 16px", opacity: 0.5 }} />
+                          <p>Fetching your library resources...</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Breadcrumbs */}
+                          <div style={{ background: "#f8fafc", padding: "12px 0", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${t.border}` }}>
+                             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem" }}>
+                                <button onClick={() => { setCurrentLibraryPath(null); setCurrentSubfolderId(null); setCurrentSubfolderPath(null); setLibrarySearchQuery(""); }} style={{ color: "#4f46e5", background: "none", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <Home size={16} /> Library
+                                </button>
+                                {currentLibraryPath && (
+                                  <>
+                                    <ChevronRight size={14} color="#94a3b8" />
+                                    <button onClick={() => { setCurrentSubfolderId(null); setCurrentSubfolderPath(null); }} style={{ color: currentSubfolderId ? "#4f46e5" : t.text, background: "none", border: "none", fontWeight: 600, cursor: currentSubfolderId ? "pointer" : "default" }}>
+                                      {currentLibraryPath}
+                                    </button>
+                                  </>
+                                )}
+                                {currentSubfolderPath && (
+                                  <>
+                                    <ChevronRight size={14} color="#94a3b8" />
+                                    <span style={{ fontWeight: 600, color: t.text }}>{currentSubfolderPath}</span>
+                                  </>
+                                )}
+                                {librarySearchQuery && (
+                                   <>
+                                     <ChevronRight size={14} color="#94a3b8" />
+                                     <span style={{ fontWeight: 600, color: t.text }}>Search: "{librarySearchQuery}"</span>
+                                   </>
+                                )}
+                             </div>
+
+                             {currentLibraryPath && !currentSubfolderId && !librarySearchQuery && !isViewer && (
+                               <button 
+                                 onClick={() => {
+                                   setShowAddSubfolderModal(true);
+                                 }}
+                                 style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #dbeafe", padding: "6px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                               >
+                                 <Plus size={14} /> Add Folder
+                               </button>
+                             )}
+                          </div>
+
+                          {/* Search Results View */}
+                          {librarySearchQuery ? (
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
+                               {resources.filter(r => 
+                                 r.name.toLowerCase().includes(librarySearchQuery.toLowerCase()) || 
+                                 (r.category || "").toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                                 subfolders.find(sf => sf.id === r.subfolderId)?.name.toLowerCase().includes(librarySearchQuery.toLowerCase())
+                               ).map(res => renderResourceCard(res, libraryViewMode, t, isAdmin, handleDeleteResource))}
                             </div>
-                         ) : (
-                           <div>
-                             {(() => {
-                               const filtered = librarySearchQuery 
-                                 ? resources.filter(r => r.name.toLowerCase().includes(librarySearchQuery.toLowerCase()) || (r.category || "").toLowerCase().includes(librarySearchQuery.toLowerCase()))
-                                 : resources.filter(r => (r.category || "General") === currentLibraryPath);
+                          ) : (
+                            <>
+                              {/* Level 1: Categories */}
+                              {!currentLibraryPath && (
+                                <div style={{ display: libraryViewMode === 'list' ? "block" : "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" }}>
+                                  {Array.from(new Set(resources.map(r => r.category || "General"))).concat(subfolders.map(sf => sf.category)).filter((v, i, a) => a.indexOf(v) === i).sort().map(cat => {
+                                    const resCount = resources.filter(r => (r.category || "General") === cat).length;
+                                    const sfCount = subfolders.filter(sf => sf.category === cat).length;
+                                    return (
+                                      <div 
+                                        key={cat}
+                                        onClick={() => setCurrentLibraryPath(cat)}
+                                        style={{ 
+                                          background: "white", padding: "24px", borderRadius: "20px", border: `1px solid ${t.border}`, 
+                                          cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", 
+                                          alignItems: "center", gap: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+                                        }}
+                                        onMouseOver={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                                        onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateY(0)"; }}
+                                      >
+                                        <div style={{ width: "64px", height: "64px", borderRadius: "16px", background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}>
+                                          <Folder size={32} />
+                                        </div>
+                                        <div style={{ textAlign: "center" }}>
+                                          <h4 style={{ margin: 0, fontWeight: 700, color: t.text, fontSize: "1rem" }}>{cat}</h4>
+                                          <p style={{ margin: "4px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 600 }}>{resCount} Resources | {sfCount} Folders</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
 
-                               if (filtered.length === 0) {
-                                 return (
-                                   <div style={{ textAlign: "center", padding: "60px" }}>
-                                     <Search size={40} style={{ color: "#94a3b8", opacity: 0.5, marginBottom: "16px" }} />
-                                     <p style={{ color: t.textMuted }}>No resources found matching your criteria.</p>
-                                   </div>
-                                 );
-                               }
+                              {/* Level 2: Subfolders & Root Resources */}
+                              {currentLibraryPath && !currentSubfolderId && (
+                                <>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+                                    {subfolders.filter(sf => sf.category === currentLibraryPath).sort((a,b) => a.name.localeCompare(b.name)).map(sf => {
+                                      const resCount = resources.filter(r => r.subfolderId === sf.id).length;
+                                      return (
+                                        <div 
+                                          key={sf.id}
+                                          onClick={() => { setCurrentSubfolderId(sf.id); setCurrentSubfolderPath(sf.name); }}
+                                          style={{ 
+                                            background: "white", padding: "20px", borderRadius: "16px", border: `1px solid ${t.border}`, 
+                                            cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "14px", boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+                                          }}
+                                          onMouseOver={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#4f46e5"; }}
+                                          onMouseOut={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = t.border; }}
+                                        >
+                                          <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#ecfdf5", display: "flex", alignItems: "center", justifyContent: "center", color: "#10b981" }}>
+                                            <Folder size={20} />
+                                          </div>
+                                          <div>
+                                            <h4 style={{ margin: 0, fontWeight: 700, color: t.text, fontSize: "0.875rem" }}>{sf.name}</h4>
+                                            <p style={{ margin: 0, color: t.textMuted, fontSize: "0.7rem", fontWeight: 600 }}>{resCount} Items</p>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
 
-                               if (libraryViewMode === 'list' || libraryViewMode === 'details') {
-                                 return (
-                                   <div style={{ background: "white", borderRadius: "16px", border: `1px solid ${t.border}`, overflow: "hidden" }}>
-                                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
-                                       <thead>
-                                         <tr style={{ background: "#f8fafc", borderBottom: `1px solid ${t.border}`, textAlign: "left" }}>
-                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Name</th>
-                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Type</th>
-                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Category</th>
-                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b" }}>Modified</th>
-                                           <th style={{ padding: "12px 20px", fontWeight: 700, color: "#64748b", textAlign: "right" }}>Actions</th>
-                                         </tr>
-                                       </thead>
-                                       <tbody>
-                                         {filtered.map(res => (
-                                           <tr key={res.id} style={{ borderBottom: `1px solid ${t.border}` }} className="hover-bg-slate-50">
-                                             <td style={{ padding: "12px 20px" }}>
-                                               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                                 {res.type === 'LINK' ? <Link size={16} color="#3b82f6" /> : <FileText size={16} color="#ef4444" />}
-                                                 <span style={{ fontWeight: 600, color: t.text }}>{res.name}</span>
-                                               </div>
-                                             </td>
-                                             <td style={{ padding: "12px 20px" }}>{res.type}</td>
-                                             <td style={{ padding: "12px 20px" }}>
-                                               <span style={{ padding: "2px 8px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.7rem", fontWeight: 700, color: "#475569" }}>{res.category}</span>
-                                             </td>
-                                             <td style={{ padding: "12px 20px", color: t.textMuted }}>{formatDate(res.createdAt)}</td>
-                                             <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                                                 <button onClick={() => {
-                                                   if (res.type === 'LINK') window.open(res.url, '_blank');
-                                                   else {
-                                                     const win = window.open();
-                                                     if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
-                                                   }
-                                                 }} style={{ background: "#4f46e5", color: "white", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}>View</button>
-                                                 {isAdmin && (
-                                                   <button onClick={() => handleDeleteResource(res.id)} style={{ padding: "6px", color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={16} /></button>
-                                                 )}
-                                               </div>
-                                             </td>
-                                           </tr>
-                                         ))}
-                                       </tbody>
-                                     </table>
-                                   </div>
-                                 );
-                               }
+                                  {/* Resources not in any subfolder (Root of Category) */}
+                                  <div style={{ marginTop: "24px" }}>
+                                    <h4 style={{ fontSize: "0.875rem", fontWeight: 800, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                                      <div style={{ width: "4px", height: "16px", background: "#4f46e5", borderRadius: "2px" }} />
+                                      Resources in {currentLibraryPath}
+                                    </h4>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
+                                      {resources.filter(r => (r.category || "General") === currentLibraryPath && !r.subfolderId).map(res => renderResourceCard(res, libraryViewMode, t, isAdmin, handleDeleteResource))}
+                                      {resources.filter(r => (r.category || "General") === currentLibraryPath && !r.subfolderId).length === 0 && (
+                                        <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", background: "#f8fafc", borderRadius: "16px", border: `1px dashed ${t.border}` }}>
+                                          <p style={{ color: t.textMuted, margin: 0, fontSize: "0.875rem" }}>No direct resources in this category.</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
 
-                               return (
-                                 <div style={{ display: "grid", gridTemplateColumns: libraryViewMode === 'extra-large' ? "repeat(auto-fill, minmax(320px, 1fr))" : libraryViewMode === 'large' ? "repeat(auto-fill, minmax(280px, 1fr))" : "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
-                                   {filtered.map(res => {
-                                     const iconSize = libraryViewMode === 'extra-large' ? 32 : libraryViewMode === 'large' ? 24 : 20;
-                                     const boxSize = libraryViewMode === 'extra-large' ? 64 : libraryViewMode === 'large' ? 56 : 48;
-                                     return (
-                                       <div key={res.id} style={{ background: "white", border: `1px solid ${t.border}`, borderRadius: "20px", padding: libraryViewMode === 'extra-large' ? "32px" : "24px", display: "flex", flexDirection: "column", gap: "16px", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.borderColor = "#4f46e5"} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
-                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                           <div style={{ width: `${boxSize}px`, height: `${boxSize}px`, borderRadius: "12px", background: res.type === 'LINK' ? "#eff6ff" : "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                             {res.type === 'LINK' ? <Link size={iconSize} color="#3b82f6" /> : <FileText size={iconSize} color="#ef4444" />}
-                                           </div>
-                                           {isAdmin && (
-                                             <button onClick={() => handleDeleteResource(res.id)} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", opacity: 0.6 }}><Trash2 size={16} /></button>
-                                           )}
-                                         </div>
-                                         <div>
-                                           <h5 style={{ margin: "0 0 8px 0", fontSize: libraryViewMode === 'extra-large' ? "1.125rem" : "1rem", fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{res.name}</h5>
-                                           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                             <span style={{ padding: "2px 8px", borderRadius: "6px", background: "#f1f5f9", fontSize: "0.7rem", fontWeight: 700, color: "#475569" }}>{res.category}</span>
-                                             <span style={{ color: t.textMuted, fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                                               <Clock size={12} /> {formatDate(res.createdAt)}
-                                             </span>
-                                           </div>
-                                         </div>
-                                         <button onClick={() => {
-                                           if (res.type === 'LINK') window.open(res.url, '_blank');
-                                           else {
-                                             const win = window.open();
-                                             if (win) win.document.write(`<iframe src="${res.data}" style="width:100%;height:100%;border:0;top:0;left:0;width:100%;height:100%;" allowfullscreen></iframe>`);
-                                           }
-                                         }} style={{ width: "100%", padding: "12px", borderRadius: "12px", border: "none", background: "#4f46e5", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "auto" }}>
-                                           <Eye size={18} /> View Resource
-                                         </button>
-                                       </div>
-                                     );
-                                   })}
-                                 </div>
-                               );
-                             })()}
-                           </div>
-                         )}
-                       </>
-                     )}
-                   </div>
+                              {/* Level 3: Resources in Subfolder */}
+                              {currentSubfolderId && (
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
+                                  {resources.filter(r => r.subfolderId === currentSubfolderId).map(res => renderResourceCard(res, libraryViewMode, t, isAdmin, handleDeleteResource))}
+                                  {resources.filter(r => r.subfolderId === currentSubfolderId).length === 0 && (
+                                    <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "80px", background: "#f8fafc", borderRadius: "20px", border: `1px dashed ${t.border}` }}>
+                                       <FileText size={40} style={{ color: "#94a3b8", opacity: 0.3, marginBottom: "16px" }} />
+                                       <p style={{ color: t.textMuted, fontWeight: 500 }}>This folder is currently empty.</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
                 </div>
               ) : (
                 <div style={{ minHeight: "600px" }}>
@@ -11969,7 +12043,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>CATEGORY / SUBJECT</label>
                 <select 
                   value={resourceCategory}
-                  onChange={e => setResourceCategory(e.target.value)}
+                  onChange={e => { setResourceCategory(e.target.value); setResourceSubfolderId(""); }}
                   style={getInputStyle(t)}
                 >
                   {settings.masterResourceCategories?.split(',').map(c => c.trim()).filter(Boolean).map(cat => (
@@ -11977,6 +12051,35 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>SUBFOLDER (OPTIONAL)</label>
+                <select 
+                  value={resourceSubfolderId}
+                  onChange={e => setResourceSubfolderId(e.target.value)}
+                  style={getInputStyle(t)}
+                >
+                  <option value="">-- No Subfolder (Direct in Category) --</option>
+                  {subfolders.filter(f => f.category === resourceCategory).map(sf => (
+                    <option key={sf.id} value={sf.id}>{sf.name}</option>
+                  ))}
+                  <option value="NEW">+ Create New Subfolder...</option>
+                </select>
+              </div>
+
+              {resourceSubfolderId === "NEW" && (
+                <div style={{ animation: "slideDown 0.2s ease-out" }}>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>NEW SUBFOLDER NAME</label>
+                  <input 
+                    type="text"
+                    value={newSubfolderName}
+                    onChange={e => setNewSubfolderName(e.target.value)}
+                    style={getInputStyle(t)}
+                    placeholder="Enter folder name..."
+                    autoFocus
+                  />
+                </div>
+              )}
 
               <div>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>TYPE</label>
@@ -12119,6 +12222,48 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Subfolder Modal */}
+      {showAddSubfolderModal && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "24px" }}>
+          <div style={{ background: t.card, borderRadius: "24px", width: "100%", maxWidth: "400px", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px", background: "#4f46e5", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700 }}>Add Folder in {currentLibraryPath}</h3>
+              <button onClick={() => setShowAddSubfolderModal(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.75rem", fontWeight: 700, color: t.textMuted }}>FOLDER NAME</label>
+              <input 
+                type="text"
+                value={newSubfolderName}
+                onChange={e => setNewSubfolderName(e.target.value)}
+                style={getInputStyle(t)}
+                placeholder="e.g. FY 2024-25"
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+                <button onClick={() => setShowAddSubfolderModal(false)} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontWeight: 600 }}>Cancel</button>
+                <button 
+                  onClick={async () => {
+                    if (currentLibraryPath) {
+                      const res = await handleCreateSubfolder(newSubfolderName, currentLibraryPath);
+                      if (res) {
+                        setShowAddSubfolderModal(false);
+                        setNewSubfolderName("");
+                        showNotification("Folder created successfully!");
+                      }
+                    }
+                  }} 
+                  disabled={isAddingSubfolder || !newSubfolderName.trim()}
+                  style={{ flex: 2, padding: "10px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "white", fontWeight: 600, cursor: (isAddingSubfolder || !newSubfolderName.trim()) ? "not-allowed" : "pointer" }}
+                >
+                  {isAddingSubfolder ? "Creating..." : "Create Folder"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

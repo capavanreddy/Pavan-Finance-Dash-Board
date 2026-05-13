@@ -171,9 +171,25 @@ export async function authenticate(
           "url" TEXT,
           "data" TEXT, -- Base64 for files
           "uploadedBy" TEXT,
+          "category" TEXT DEFAULT 'Miscellaneous',
+          "department" TEXT DEFAULT 'General',
+          "subfolderId" INTEGER,
           "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
       `;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS "KnowledgeSubfolder" (
+          id SERIAL PRIMARY KEY,
+          "name" TEXT NOT NULL,
+          "category" TEXT NOT NULL,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `;
+
+      await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'Miscellaneous'`;
+      await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "department" TEXT DEFAULT 'General'`;
+      await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "subfolderId" INTEGER`;
 
       // --- Payment Workflow Migration ---
       await sql`
