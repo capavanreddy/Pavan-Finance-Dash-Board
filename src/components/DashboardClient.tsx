@@ -1241,18 +1241,27 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       fetchPaymentRequests(true);
     };
 
-    // 1. Auto-refresh every 10 seconds
-    const interval = setInterval(refreshAll, 10000);
+    // 1. Smart Sync: Refresh every 60 seconds (increased from 10s), but ONLY if the user is looking at the tab
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshAll();
+      }
+    }, 60000);
 
-    // 2. Refresh on window focus
-    const handleFocus = () => {
+    // 2. Instant Sync: If user returns to the tab or focus, refresh immediately
+    const handleActivity = () => {
       refreshAll();
     };
 
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener("focus", handleActivity);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === 'visible') handleActivity();
+    });
+
     return () => {
       clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleActivity);
+      document.removeEventListener("visibilitychange", handleActivity);
     };
   }, []);
 
