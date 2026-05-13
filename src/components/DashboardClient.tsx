@@ -4012,31 +4012,37 @@ const handleResourceUpload = async (e: React.FormEvent) => {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: t.bg, color: t.text, overflow: "hidden", transition: "all 0.3s ease" }}>
       <GlobalStyles />
-      {/* Top Navigation Bar (Full Width - Premium Dark Branding) */}
+      {/* Top Navigation Bar (Full Width - Clean White Theme) */}
       <header style={{ 
         height: "80px", width: "100%", 
-        background: "#1e293b", // Premium Dark (Matches Email Header)
+        background: t.card, 
         display: "flex", 
         alignItems: "center", justifyContent: "space-between", padding: "0 32px", 
-        borderBottom: `1px solid rgba(255,255,255,0.1)`, zIndex: 100, flexShrink: 0,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.2)", transition: "all 0.3s ease"
+        borderBottom: `1px solid ${t.border}`, zIndex: 100, flexShrink: 0,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "all 0.3s ease"
       }}>
-        {/* Brand Area (Matching Email Pattern) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "28px", cursor: "pointer" }} 
+        {/* Brand Area with Dynamic Greeting */}
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", cursor: "pointer" }} 
              onClick={() => { setActiveView('HOME'); setActiveMainView('DASHBOARD'); }}>
           <img 
             src="/logo.png" 
             alt="Logo" 
-            style={{ height: "42px", width: "auto", objectFit: "contain", filter: "brightness(1.2)" }} 
+            style={{ height: "42px", width: "auto", objectFit: "contain", transition: "transform 0.3s ease" }} 
+            onMouseOver={e => e.currentTarget.style.transform = "scale(1.05) rotate(-2deg)"}
+            onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
           />
-          <div style={{ height: "32px", width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
-          <div>
-            <div style={{ color: "#94a3b8", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "2.5px", marginBottom: "4px" }}>
-              INTELLICAR TELEMATICS PVT. LTD.
-            </div>
-            <h1 style={{ color: "#ffffff", fontSize: "1.25rem", fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>
-              FinPulse Management System
-            </h1>
+          <div style={{ height: "28px", width: "1px", background: t.border, opacity: 0.6 }}></div>
+          <div style={{ animation: "fade-in 0.5s ease-out" }}>
+            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#3b82f6", margin: 0, letterSpacing: "-0.01em" }}>
+              {(() => {
+                const hour = new Date().getHours();
+                let g = "Good Evening";
+                if (hour < 12) g = "Good Morning";
+                else if (hour < 17) g = "Good Afternoon";
+                return `${g}, ${user?.name || "User"}`;
+              })()}
+            </h3>
+            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.75rem", fontWeight: 500 }}>Finance Hub • Welcome back!</p>
           </div>
         </div>
 
