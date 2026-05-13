@@ -6155,33 +6155,36 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             </td>
                             <td style={getTdStyle(t)}>
                               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                <span 
-                                  style={{ 
-                                    padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
-                                    background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
-                                    color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
-                                    textAlign: "center", whiteSpace: "nowrap"
-                                  }}
-                                  title={task.processedSubmissionAt ? `[Audit Log]\nProcessed: ${formatDateTime(task.processedSubmissionAt)}\nBy: ${task.processedBy || "Unknown"}` : ""}
-                                >
-                                  {task.requestStatus || "Pending"}
-                                </span>
-                                {task.requestStatus === 'Processed' && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setViewingProcessedTask(task);
-                                      fetchTaskDetails(task.id);
-                                    }}
-                                    style={{ 
-                                      marginTop: "4px", padding: "4px 8px", borderRadius: "8px", border: "1px solid #e2e8f0", 
-                                      background: "white", color: "#64748b", fontSize: "0.7rem", fontWeight: 700, 
-                                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" 
-                                    }}
-                                  >
-                                    <Eye size={12} /> View Details
-                                  </button>
-                                )}
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                 <span 
+                                   style={{ 
+                                     padding: "4px 10px", borderRadius: "12px", fontSize: "0.75rem", fontWeight: 700,
+                                     background: task.requestStatus === 'Processed' ? "#dcfce7" : "#fef3c7",
+                                     color: task.requestStatus === 'Processed' ? "#15803d" : "#b45309",
+                                     textAlign: "center", whiteSpace: "nowrap"
+                                   }}
+                                   title={task.processedSubmissionAt ? `[Audit Log]\nProcessed: ${formatDateTime(task.processedSubmissionAt)}\nBy: ${task.processedBy || "Unknown"}` : ""}
+                                 >
+                                   {task.requestStatus || "Pending"}
+                                 </span>
+                                 {task.requestStatus === 'Processed' && (
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setViewingProcessedTask(task);
+                                       fetchTaskDetails(task.id);
+                                     }}
+                                     title="View Processing Details"
+                                     style={{ 
+                                       padding: "4px", borderRadius: "6px", border: "1px solid #e2e8f0", 
+                                       background: "white", color: "#64748b", 
+                                       cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
+                                     }}
+                                   >
+                                     <Eye size={14} />
+                                   </button>
+                                 )}
+                               </div>
                                 {isFinished(task) && task.requestStatus !== 'Processed' && 
                                  (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
                                  (isCurrentUserOwner || isAdmin) && (
@@ -7384,34 +7387,6 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                         </div>
                         {!isViewer && (
                           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            {isAdmin && (
-                              <button 
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/users/sync-schema", { method: "POST" });
-                                    if (res.ok) showNotification("Database schema synced successfully!", "success");
-                                    else showNotification("Schema sync failed", "error");
-                                  } catch (err) {
-                                    showNotification("Network error during sync", "error");
-                                  }
-                                }}
-                                style={{ 
-                                  background: "rgba(79, 70, 229, 0.1)", 
-                                  color: "#4f46e5", 
-                                  padding: "10px 18px", 
-                                  borderRadius: "14px", 
-                                  border: "1px solid rgba(79, 70, 229, 0.2)", 
-                                  cursor: "pointer", 
-                                  fontWeight: 700, 
-                                  fontSize: "0.8125rem",
-                                  display: "flex", 
-                                  alignItems: "center", 
-                                  gap: "8px"
-                                }}
-                              >
-                                <RefreshCw size={16} /> Sync DB
-                              </button>
-                            )}
                             <div style={{ position: "relative", overflow: "hidden", borderRadius: "14px" }}>
                               <style dangerouslySetInnerHTML={{ __html: `
                                 @keyframes shimmer-btn {
@@ -8471,6 +8446,27 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           style={{ background: "#0f172a", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 600, cursor: "pointer" }}
                         >
                           Reverse Back to Stable State
+                        </button>
+                      </div>
+
+                      <div style={{ border: `1px solid ${t.border}`, borderRadius: "12px", padding: "20px", background: "#f0fdf4", borderStyle: "dashed" }}>
+                        <h5 style={{ margin: "0 0 12px 0", fontWeight: 700, color: "#166534" }}>3. Sync Database Schema</h5>
+                        <p style={{ fontSize: "0.8125rem", color: t.textMuted, marginBottom: "20px" }}>
+                          Need to apply latest database changes or fix missing tables? Use this to sync the schema.
+                        </p>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const res = await fetch("/api/users/sync-schema", { method: "POST" });
+                              if (res.ok) showNotification("Database schema synced successfully!", "success");
+                              else showNotification("Schema sync failed", "error");
+                            } catch (err) {
+                              showNotification("Network error during sync", "error");
+                            }
+                          }}
+                          style={{ background: "#22c55e", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                        >
+                          <RefreshCw size={16} /> Sync Database Schema
                         </button>
                       </div>
                     </div>
