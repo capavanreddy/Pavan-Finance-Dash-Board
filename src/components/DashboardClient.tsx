@@ -581,6 +581,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [newPaymentEmailInput, setNewPaymentEmailInput] = useState("");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const [viewingProcessedTask, setViewingProcessedTask] = useState<any>(null);
+  const [processedDetails, setProcessedDetails] = useState<{ task: any, auditLogs: any[] } | null>(null);
+  const [isUpdatingProcessed, setIsUpdatingProcessed] = useState(false);
+
   // Sorting and Filtering State
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
   const [taskEntityFilter, setTaskEntityFilter] = useState<string[]>([]);
@@ -915,6 +919,83 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const [taskTypeFilter, setTaskTypeFilter] = useState<string[]>([]);
   const [taskDeptFilter, setTaskDeptFilter] = useState<string[]>([]);
   const [requestTypeFilter, setRequestTypeFilter] = useState<string[]>([]);
+
+  const fetchTaskDetails = async (taskId: number) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProcessedDetails(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch task details:", err);
+    }
+  };
+
+  const handleRevertProcessedStatus = async (task: any) => {
+    if (!isAdmin) return;
+    if (!confirm(`Are you sure you want to revert the status of "${task.taskName}" to Pending? This will clear all processing data.`)) return;
+
+    setIsUpdatingProcessed(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestStatus: "Pending" })
+      });
+
+      if (res.ok) {
+        showNotification("Task status reverted successfully!", "success");
+        setViewingProcessedTask(null);
+        setProcessedDetails(null);
+        // Refresh tasks
+        fetchTasks(true);
+      } else {
+        const err = await res.json();
+        showNotification(`Failed to revert status: ${err.message}`, "error");
+      }
+    } catch (err) {
+      showNotification("Network error while reverting status", "error");
+    } finally {
+      setIsUpdatingProcessed(false);
+    }
+  };
+
+  const handleDeleteProcessedAttachment = async (task: any, attachmentToDelete: any) => {
+    if (!isAdmin) return;
+    if (!confirm("Are you sure you want to remove this attachment?")) return;
+
+    setIsUpdatingProcessed(true);
+    try {
+      const newAttachments = (task.processedAttachments || []).filter((a: any) => a.url !== attachmentToDelete.url);
+      
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ processedAttachments: newAttachments })
+      });
+
+      if (res.ok) {
+        showNotification("Attachment removed successfully!", "success");
+        // Update local state in the details modal
+        if (processedDetails) {
+          setProcessedDetails({
+            ...processedDetails,
+            task: { ...processedDetails.task, processedAttachments: newAttachments }
+          });
+        }
+        // Refresh main task list
+        fetchTasks(true);
+      } else {
+        const err = await res.json();
+        showNotification(`Failed to remove attachment: ${err.message}`, "error");
+      }
+    } catch (err) {
+      showNotification("Network error while removing attachment", "error");
+    } finally {
+      setIsUpdatingProcessed(false);
+    }
+  };
 
   const fetchTasks = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -6085,6 +6166,22 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                                 >
                                   {task.requestStatus || "Pending"}
                                 </span>
+                                {task.requestStatus === 'Processed' && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setViewingProcessedTask(task);
+                                      fetchTaskDetails(task.id);
+                                    }}
+                                    style={{ 
+                                      marginTop: "4px", padding: "4px 8px", borderRadius: "8px", border: "1px solid #e2e8f0", 
+                                      background: "white", color: "#64748b", fontSize: "0.7rem", fontWeight: 700, 
+                                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" 
+                                    }}
+                                  >
+                                    <Eye size={12} /> View Details
+                                  </button>
+                                )}
                                 {isFinished(task) && task.requestStatus !== 'Processed' && 
                                  (task.reviewStatus === 'Completed' || task.reviewStatus === 'Review Not Required' || task.reviewerName === 'Not Applicable') && 
                                  (isCurrentUserOwner || isAdmin) && (
@@ -12671,6 +12768,136 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                 {isProcessing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                 {isProcessing ? "Processing..." : processingAttachments.some(att => !att.isLoaded) ? "Loading Files..." : "Submit Delivery"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Processed Details View Modal */}
+      {viewingProcessedTask && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ background: "white", width: "100%", maxWidth: "600px", borderRadius: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden", position: "relative" }} className="animate-fade-in-up">
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#ecfdf5", display: "flex", alignItems: "center", justifyContent: "center", color: "#10b981" }}>
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#1e293b" }}>Processing Details</h3>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b" }}>{viewingProcessedTask.taskName}</p>
+                </div>
+              </div>
+              <button onClick={() => { setViewingProcessedTask(null); setProcessedDetails(null); }} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "4px" }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: "24px", maxHeight: "70vh", overflowY: "auto" }}>
+              {!processedDetails ? (
+                <div style={{ textAlign: "center", padding: "40px" }}>
+                  <RefreshCw size={32} className="animate-spin" style={{ color: "#4f46e5", margin: "0 auto 16px" }} />
+                  <p style={{ color: "#64748b" }}>Loading details...</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* Basic Info */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", padding: "16px", background: "#f8fafc", borderRadius: "16px", border: "1px solid #f1f5f9" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: "4px" }}>Mode</label>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{processedDetails.task.processedMode || "Not Specified"}</span>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: "4px" }}>Date</label>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{processedDetails.task.processedSubmissionAt ? formatDateTime(processedDetails.task.processedSubmissionAt) : "--"}</span>
+                    </div>
+                    <div style={{ gridColumn: "1/-1" }}>
+                      <label style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: "4px" }}>Processed By</label>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{processedDetails.task.processedBy || "Unknown"}</span>
+                    </div>
+                  </div>
+
+                  {/* Attachments */}
+                  <div>
+                    <h4 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#475569", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Paperclip size={16} /> Attachments
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {processedDetails.task.processedAttachments && processedDetails.task.processedAttachments.length > 0 ? (
+                        processedDetails.task.processedAttachments.map((att: any, idx: number) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px", background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", transition: "all 0.2s" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                              <div style={{ padding: "8px", background: "#f1f5f9", borderRadius: "8px" }}>
+                                <FileText size={16} color="#64748b" />
+                              </div>
+                              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.name || "Document"}</span>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <button onClick={() => window.open(att.url, '_blank')} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <Download size={14} /> View
+                              </button>
+                              {isAdmin && (
+                                <button 
+                                  onClick={() => handleDeleteProcessedAttachment(processedDetails.task, att)}
+                                  disabled={isUpdatingProcessed}
+                                  style={{ padding: "6px", borderRadius: "8px", border: "none", background: "#fee2e2", color: "#ef4444", cursor: "pointer" }}
+                                >
+                                  {isUpdatingProcessed ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p style={{ fontSize: "0.875rem", color: "#94a3b8", textAlign: "center", fontStyle: "italic" }}>No attachments found.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Audit History */}
+                  <div>
+                    <h4 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#475569", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Clock size={16} /> History & Audit Trail
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingLeft: "12px", borderLeft: "2px solid #f1f5f9" }}>
+                      {processedDetails.auditLogs && processedDetails.auditLogs.length > 0 ? (
+                        processedDetails.auditLogs.map((log: any, idx: number) => (
+                          <div key={idx} style={{ position: "relative" }}>
+                            <div style={{ position: "absolute", left: "-17px", top: "4px", width: "8px", height: "8px", borderRadius: "50%", background: "#4f46e5", border: "2px solid white" }} />
+                            <div style={{ fontSize: "0.8125rem", color: "#1e293b", fontWeight: 600 }}>{log.action.replace(/_/g, ' ')}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{log.details}</div>
+                            <div style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "4px", fontWeight: 600 }}>{log.performedBy} • {formatDateTime(log.createdAt)}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p style={{ fontSize: "0.8125rem", color: "#94a3b8", fontStyle: "italic" }}>No specific audit entries found yet.</p>
+                      )}
+                      {/* Initial Processing Log */}
+                      {processedDetails.task.processedSubmissionAt && (
+                        <div style={{ position: "relative" }}>
+                          <div style={{ position: "absolute", left: "-17px", top: "4px", width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", border: "2px solid white" }} />
+                          <div style={{ fontSize: "0.8125rem", color: "#1e293b", fontWeight: 600 }}>TASK PROCESSED</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>Task was marked as processed.</div>
+                          <div style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "4px", fontWeight: 600 }}>{processedDetails.task.processedBy} • {formatDateTime(processedDetails.task.processedSubmissionAt)}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Admin Revert Action */}
+                  {isAdmin && (
+                    <div style={{ marginTop: "8px", padding: "16px", background: "#fff1f2", borderRadius: "16px", border: "1px solid #ffe4e6" }}>
+                      <h4 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#9f1239", margin: "0 0 8px 0" }}>Danger Zone</h4>
+                      <p style={{ fontSize: "0.75rem", color: "#be123c", margin: "0 0 12px 0" }}>If this task was processed by mistake, you can revert it. This will reset the status to Pending and clear all processing data.</p>
+                      <button 
+                        onClick={() => handleRevertProcessedStatus(processedDetails.task)}
+                        disabled={isUpdatingProcessed}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#ef4444", color: "white", fontWeight: 700, fontSize: "0.8125rem", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      >
+                        {isUpdatingProcessed ? <RefreshCw size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+                        Revert Processed Status
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

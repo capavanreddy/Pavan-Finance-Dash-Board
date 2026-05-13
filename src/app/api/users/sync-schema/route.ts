@@ -54,6 +54,18 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "department" TEXT DEFAULT 'General'`;
     await sql`ALTER TABLE "LearningResource" ADD COLUMN IF NOT EXISTS "subfolderId" INTEGER`;
 
+    // Audit Log Table
+    await sql`
+      CREATE TABLE IF NOT EXISTS "AuditLog" (
+        id SERIAL PRIMARY KEY,
+        "taskId" INTEGER,
+        "action" TEXT,
+        "details" TEXT,
+        "performedBy" TEXT,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `;
+
     console.log("Schema sync completed successfully.");
 
     return NextResponse.json({ 

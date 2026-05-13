@@ -4,6 +4,25 @@ import { getServerSession } from "@/lib/session";
 import { sendEmail, getEmailFromName } from "@/lib/email";
 import { triggerNotification } from "@/services/notificationService";
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const sql = getDb();
+    const session = await getServerSession();
+    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    const resolvedParams = await params;
+    const taskId = parseInt(resolvedParams.id);
+
+    const tasks = await sql`SELECT * FROM "Task" WHERE id = ${taskId}`;
+    if (tasks.length === 0) return NextResponse.json({ message: "Task not found" }, { status: 404 });
+
+    const auditLogs = await sql`SELECT * FROM "AuditLog" WHERE "taskId" = ${taskId} ORDER BY "createdAt" DESC`;
+
+    return NextResponse.json({ task: tasks[0], auditLogs });
+  } catch (error: any) {
+    return NextResponse.json({ message: "Failed to fetch task details", error: error.message }, { status: 500 });
+  }
+}
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -169,13 +188,52 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    let processedMode = existingTask.processedMode;
-    let processedMailLink = existingTask.processedMailLink;
-    let processedAttachments = existingTask.processedAttachments;
-
     if (data.processedMode !== undefined) processedMode = data.processedMode;
     if (data.processedMailLink !== undefined) processedMailLink = data.processedMailLink;
     if (data.processedAttachments !== undefined) processedAttachments = data.processedAttachments;
+
+    // Handle Audit Logging and Admin Restrictions
+    const auditEntries = [];
+    
+    // 1. Check for Revert from Processed
+    if (existingTask.requestStatus === "Processed" && requestStatus !== "Processed") {
+      if (!isMasterAdmin) {
+        return NextResponse.json({ message: "Forbidden: Only Admins can revert Processed status" }, { status: 403 });
+      }
+      auditEntries.push({
+        action: "STATUS_REVERTED",
+        details: `Request Status reverted from Processed to ${requestStatus}. Processed data cleared.`,
+        performedBy: userName
+      });
+      // Clear processed data on revert
+      processedMode = null;
+      processedMailLink = null;
+      processedAttachments = null;
+      processedBy = null;
+      processedSubmissionAt = null;
+    }
+
+    // 2. Check for Attachment Deletion
+    if (existingTask.requestStatus === "Processed" && data.processedAttachments !== undefined) {
+      if (!isMasterAdmin) {
+        return NextResponse.json({ message: "Forbidden: Only Admins can modify processed attachments" }, { status: 403 });
+      }
+      const oldAttachments = existingTask.processedAttachments || [];
+      const newAttachments = data.processedAttachments || [];
+      if (newAttachments.length < oldAttachments.length) {
+        auditEntries.push({
+          action: "ATTACHMENT_DELETED",
+          details: `Admin removed ${oldAttachments.length - newAttachments.length} attachment(s) from processed task.`,
+          performedBy: userName
+        });
+      } else if (JSON.stringify(oldAttachments) !== JSON.stringify(newAttachments)) {
+        auditEntries.push({
+          action: "PROCESSED_DATA_UPDATED",
+          details: `Admin updated processing details/attachments.`,
+          performedBy: userName
+        });
+      }
+    }
 
     const updatedTasks = await sql`
       UPDATE "Task"
@@ -218,6 +276,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     `;
     
     const updatedTask = updatedTasks[0];
+
+    // Insert Audit Logs
+    if (auditEntries.length > 0) {
+      for (const entry of auditEntries) {
+        await sql`
+          INSERT INTO "AuditLog" ("taskId", "action", "details", "performedBy", "createdAt")
+          VALUES (${taskId}, ${entry.action}, ${entry.details}, ${entry.performedBy}, NOW())
+        `;
+      }
+    }
 
     // Send email to reviewer if status just changed to Completed and review is required
     if (taskStatus === "Completed" && existingTask.taskStatus !== "Completed" && updatedTask.reviewStatus === "Pending") {
