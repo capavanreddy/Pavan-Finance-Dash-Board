@@ -599,7 +599,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     recipientInput: "",
     ccInput: "",
     format: "excel" as "excel" | "pdf" | "both",
-    subject: "LO Analytics Report",
+    subject: "LO Analytics Report - " + new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-').toUpperCase(),
     reportType: "lo" as "lo" | "task"
   });
   const [anaShareLoading, setAnaShareLoading] = useState(false);
@@ -2972,7 +2972,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (!res.ok) throw new Error('Failed to send mail');
       showNotification('LO Analytics report shared successfully!');
       setShowAnaShareModal(false);
-      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report', reportType: 'lo' });
+      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: `LO Analytics Report - ${formatDate(new Date())}`, reportType: 'lo' });
     } catch (err: any) {
       showNotification('Error sharing report: ' + err.message);
     } finally {
@@ -3074,7 +3074,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (!res.ok) throw new Error('Failed to send mail');
       showNotification('Task Analytics report shared successfully!');
       setShowAnaShareModal(false);
-      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: 'LO Analytics Report', reportType: 'lo' });
+      setAnaShareConfig({ recipients: [], ccEmails: [], recipientInput: '', ccInput: '', format: 'excel', subject: `Task Analytics Report - ${formatDate(new Date())}`, reportType: 'task' });
     } catch (err: any) {
       showNotification('Error sharing report: ' + err.message);
     } finally {
@@ -4012,34 +4012,31 @@ const handleResourceUpload = async (e: React.FormEvent) => {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: t.bg, color: t.text, overflow: "hidden", transition: "all 0.3s ease" }}>
       <GlobalStyles />
-      {/* Top Navigation Bar (Full Width) */}
+      {/* Top Navigation Bar (Full Width - Premium Dark Branding) */}
       <header style={{ 
-        height: "80px", width: "100%", background: t.card, display: "flex", 
+        height: "80px", width: "100%", 
+        background: "#1e293b", // Premium Dark (Matches Email Header)
+        display: "flex", 
         alignItems: "center", justifyContent: "space-between", padding: "0 32px", 
-        borderBottom: `1px solid ${t.border}`, zIndex: 100, flexShrink: 0,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "all 0.3s ease"
+        borderBottom: `1px solid rgba(255,255,255,0.1)`, zIndex: 100, flexShrink: 0,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.2)", transition: "all 0.3s ease"
       }}>
-        {/* Brand Area */}
-        <div style={{ display: "flex", alignItems: "center", gap: "24px", cursor: "default" }} className="brand-container">
+        {/* Brand Area (Matching Email Pattern) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "28px", cursor: "pointer" }} 
+             onClick={() => { setActiveView('HOME'); setActiveMainView('DASHBOARD'); }}>
           <img 
             src="/logo.png" 
             alt="Logo" 
-            style={{ height: "40px", width: "auto", objectFit: "contain", transition: "transform 0.3s ease" }} 
-            onMouseOver={e => e.currentTarget.style.transform = "scale(1.05) rotate(-2deg)"}
-            onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
+            style={{ height: "42px", width: "auto", objectFit: "contain", filter: "brightness(1.2)" }} 
           />
-          <div style={{ height: "24px", width: "1px", background: t.border, opacity: 0.5 }}></div>
-          <div style={{ animation: "fade-in 0.5s ease-out" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#3b82f6", margin: 0, letterSpacing: "-0.01em" }}>
-              {(() => {
-                const hour = new Date().getHours();
-                let g = "Good Evening";
-                if (hour < 12) g = "Good Morning";
-                else if (hour < 17) g = "Good Afternoon";
-                return `${g}, ${user?.name || "User"}`;
-              })()}
-            </h3>
-            <p style={{ margin: "2px 0 0 0", color: t.textMuted, fontSize: "0.7rem", fontWeight: 500 }}>Finance Hub • Welcome back!</p>
+          <div style={{ height: "32px", width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
+          <div>
+            <div style={{ color: "#94a3b8", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "2.5px", marginBottom: "4px" }}>
+              INTELLICAR TELEMATICS PVT. LTD.
+            </div>
+            <h1 style={{ color: "#ffffff", fontSize: "1.25rem", fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>
+              FinPulse Management System
+            </h1>
           </div>
         </div>
 
@@ -4955,7 +4952,15 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                             <FileText size={18} /> Download PDF (.pdf)
                           </button>
                           <button
-                            onClick={() => { setShowAnaShareModal(true); setShowAnaDownloadDropdown(false); }}
+                            onClick={() => { 
+                              setAnaShareConfig({
+                                ...anaShareConfig, 
+                                reportType: 'lo', 
+                                subject: `LO Analytics Report - ${formatDate(new Date())}`
+                              });
+                              setShowAnaShareModal(true); 
+                              setShowAnaDownloadDropdown(false); 
+                            }}
                             style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#6366f1", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
                             onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.08)"}
                             onMouseLeave={e => e.currentTarget.style.background = "none"}
@@ -6142,7 +6147,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           setAnaShareConfig({
                             ...anaShareConfig, 
                             reportType: 'task', 
-                            subject: `Task Analytics Report - ${new Date().toISOString().split('T')[0]}`
+                            subject: `Task Analytics Report - ${formatDate(new Date())}`
                           });
                           setShowAnaShareModal(true); 
                           setShowTaskAnaDownloadDropdown(false); 

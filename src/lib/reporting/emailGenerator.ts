@@ -70,8 +70,15 @@ export function generateProfessionalReportEmail({
                   <!-- CTA Button (Bulletproof) -->
                   <table border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
-                      <td align="center">
-                        <a href="${ctaLink}" target="_blank" style="background-color: ${BRAND_COLORS.INTELLICAR_BLUE}; border-radius: 12px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 700; line-height: 60px; text-align: center; text-decoration: none; width: 260px; -webkit-text-size-adjust: none; box-shadow: 0 8px 15px rgba(79, 70, 229, 0.3);">View Live Dashboard</a>
+                      <td align="center" style="padding: 20px 0 10px 0;">
+                        <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate !important;">
+                          <tr>
+                            <td align="center" bgcolor="${BRAND_COLORS.INTELLICAR_BLUE}" style="border-radius: 12px; color: #ffffff; display: block; font-size: 16px; font-weight: 800; line-height: 1; padding: 22px 40px; text-align: center; text-decoration: none; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);">
+                              <a href="${ctaLink}" target="_blank" style="color: #ffffff; text-decoration: none; display: block;">VIEW LIVE DASHBOARD</a>
+                            </td>
+                          </tr>
+                        </table>
+                        <p style="font-size: 11px; color: #94a3b8; margin-top: 15px; font-weight: 600;">Link expires in 7 days for security.</p>
                       </td>
                     </tr>
                   </table>
