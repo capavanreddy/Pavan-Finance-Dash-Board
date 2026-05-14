@@ -2687,15 +2687,29 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   };
   const taskAnalyticsData = useMemo(() => {
     const now = new Date();
-    const todayNum = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDate = now.getDate();
+    const todayNum = new Date(currentYear, currentMonth, currentDate).getTime();
 
     const isDateBeforeToday = (dateStr: string | Date) => {
+      if (!dateStr) return false;
       const d = new Date(dateStr);
-      const taskDateNum = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const taskYear = d.getFullYear();
+      const taskMonth = d.getMonth();
+      const taskDate = d.getDate();
+
+      // EXPLICIT BYPASS: If it's exactly today (Local Time), it is NOT overdue
+      if (taskYear === currentYear && taskMonth === currentMonth && taskDate === currentDate) {
+        return false;
+      }
+
+      const taskDateNum = new Date(taskYear, taskMonth, taskDate).getTime();
       return taskDateNum < todayNum;
     };
 
     const isDateSameOrBefore = (dateStr1: string | Date, dateStr2: string | Date) => {
+      if (!dateStr1 || !dateStr2) return false;
       const d1 = new Date(dateStr1);
       const d2 = new Date(dateStr2);
       const n1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
