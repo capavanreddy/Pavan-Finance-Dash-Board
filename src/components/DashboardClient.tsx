@@ -2598,9 +2598,9 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       const reviewerEmail = getEmailFromName(t.reviewerName);
       const isOwner = ownerEmail?.toLowerCase() === user?.email?.toLowerCase();
       const isReviewer = (reviewerEmail || "").toLowerCase() === user?.email?.toLowerCase();
-      const isCreator = (t.createdByEmail || "").toLowerCase() === user?.email?.toLowerCase();
-      if (!isOwner && !isReviewer && !isCreator) return false;
+      if (!isOwner && !isReviewer) return false;
     }
+
 
     if (t.isApproved === false) return false;
 
@@ -6605,7 +6605,7 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                   {[
                     { label: "Total Tasks", value: taskAnalyticsData.totalTasks, icon: <LayoutDashboard />, color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)" },
                     { label: "On-Time Completion", value: `${taskAnalyticsData.totalTasks > 0 ? Math.round((taskAnalyticsData.onTimeTasks / taskAnalyticsData.totalTasks) * 100) : 0}%`, icon: <CheckCircle2 />, color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
-                    { label: "Overdue Tasks", value: taskAnalyticsData.overdueTasks, icon: <AlertTriangle />, color: "#a855f7", bg: "rgba(168, 85, 247, 0.1)" },
+                    { label: "Overdue Tasks", value: taskAnalyticsData.overdueTasks, icon: <AlertTriangle />, color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
                     { label: "IDR Conversion", value: `${taskAnalyticsData.totalIDR > 0 ? Math.round((taskAnalyticsData.convertedIDR / taskAnalyticsData.totalIDR) * 100) : 0}%`, icon: <RefreshCw />, color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)" }
                   ].map((m, i) => (
                     <div key={i} style={{ padding: "24px", borderRadius: "24px", background: t.card, border: `1px solid ${t.border}`, position: "relative", overflow: "hidden", boxShadow: isDarkMode ? "none" : "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
