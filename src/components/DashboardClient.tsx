@@ -2685,8 +2685,10 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
-
   const taskAnalyticsData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const filteredTasks = tasks.filter(t => {
       const matchesEntity = anaTaskEntityFilter === 'ALL' || t.entityName === anaTaskEntityFilter;
       const matchesDept = anaTaskDeptFilter === 'ALL' || t.departmentName === anaTaskDeptFilter;
@@ -2705,17 +2707,27 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     
     const onTimeTasks = filteredTasks.filter(t => {
       if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
-      return new Date(t.completionDate) <= new Date(t.dueDate);
+      const d = new Date(t.dueDate);
+      d.setHours(0, 0, 0, 0);
+      const c = new Date(t.completionDate);
+      c.setHours(0, 0, 0, 0);
+      return c <= d;
     }).length;
 
     const overdueTasks = filteredTasks.filter(t => {
       if (isFinished(t) || !t.dueDate) return false;
-      return new Date() > new Date(t.dueDate);
+      const d = new Date(t.dueDate);
+      d.setHours(0, 0, 0, 0);
+      return d < today;
     }).length;
 
     const lateTasks = filteredTasks.filter(t => {
       if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
-      return new Date(t.completionDate) > new Date(t.dueDate);
+      const d = new Date(t.dueDate);
+      d.setHours(0, 0, 0, 0);
+      const c = new Date(t.completionDate);
+      c.setHours(0, 0, 0, 0);
+      return c > d;
     }).length;
 
     const totalIDR = filteredIDR.length;
@@ -2726,9 +2738,31 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
     const userPerformance = users.map(user => {
       const uTasks = filteredTasks.filter(t => t.ownerName === user);
       const uCompleted = uTasks.filter(t => isFinished(t)).length;
-      const uOnTime = uTasks.filter(t => isFinished(t) && t.dueDate && t.completionDate && new Date(t.completionDate) <= new Date(t.dueDate)).length;
-      const uLate = uTasks.filter(t => isFinished(t) && t.dueDate && t.completionDate && new Date(t.completionDate) > new Date(t.dueDate)).length;
-      const uOverdue = uTasks.filter(t => !isFinished(t) && t.dueDate && new Date() > new Date(t.dueDate)).length;
+      
+      const uOnTime = uTasks.filter(t => {
+        if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
+        const d = new Date(t.dueDate);
+        d.setHours(0, 0, 0, 0);
+        const c = new Date(t.completionDate);
+        c.setHours(0, 0, 0, 0);
+        return c <= d;
+      }).length;
+
+      const uLate = uTasks.filter(t => {
+        if (!isFinished(t) || !t.dueDate || !t.completionDate) return false;
+        const d = new Date(t.dueDate);
+        d.setHours(0, 0, 0, 0);
+        const c = new Date(t.completionDate);
+        c.setHours(0, 0, 0, 0);
+        return c > d;
+      }).length;
+
+      const uOverdue = uTasks.filter(t => {
+        if (isFinished(t) || !t.dueDate) return false;
+        const d = new Date(t.dueDate);
+        d.setHours(0, 0, 0, 0);
+        return d < today;
+      }).length;
       
       return {
         name: user,
@@ -2740,6 +2774,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
         rate: uTasks.length > 0 ? Math.round((uOnTime / uTasks.length) * 100) : 0
       };
     }).sort((a, b) => b.total - a.total);
+
 
     const depts = Array.from(new Set(filteredTasks.map(t => t.departmentName)));
     const deptWorkload = depts.map(dept => {
