@@ -1852,7 +1852,7 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
       if (res.ok) {
         const result = await res.json();
         if (type === 'tasks' && result.errorCount > 0) {
-          showNotification(`${result.successCount} tasks imported. ${result.errorCount} failed name verification.`, "warning");
+          showNotification(`${result.successCount} tasks imported. ${result.errorCount} failed name verification.`, "error");
           // Update preview with server-side errors so user can download the report
           setImportPreview(prev => prev ? {
             ...prev,
