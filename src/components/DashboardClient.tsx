@@ -5113,15 +5113,9 @@ const handleResourceUpload = async (e: React.FormEvent) => {
                           </button>
                           <button
                             onClick={() => { handleTaskAnaExportPDF(); setShowTaskAnaDownloadDropdown(false); }}
-                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left", borderBottom: `1px solid ${t.border}` }}
+                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
                           >
                             <FileText size={18} /> Export as PDF
-                          </button>
-                          <button
-                            onClick={() => { handleTaskAnaExportImage(); setShowTaskAnaDownloadDropdown(false); }}
-                            style={{ width: "100%", padding: "14px 20px", background: "none", border: "none", color: "#6366f1", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}
-                          >
-                            <ImageIcon size={18} /> Export as Image
                           </button>
                         </div>
                       )}
