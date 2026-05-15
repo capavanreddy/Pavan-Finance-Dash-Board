@@ -69,7 +69,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       console.error("Task update migration check failed", e);
     }
 
-    const existingTasks = await sql`SELECT * FROM "Task" WHERE id = ${taskId}`;
+    const existingTasks = await sql`
+      SELECT t.*, u_owner.email as "owner_email", u_reviewer.email as "reviewer_email"
+      FROM "Task" t
+      LEFT JOIN "User" u_owner ON LOWER(TRIM(t."ownerName")) = LOWER(TRIM(u_owner.name))
+      LEFT JOIN "User" u_reviewer ON LOWER(TRIM(t."reviewerName")) = LOWER(TRIM(u_reviewer.name))
+      WHERE t.id = ${taskId}
+    `;
     const existingTask = existingTasks[0];
     
     if (!existingTask) {
@@ -80,8 +86,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     
     // Check if the user is authorized to edit this task
     const isMasterAdmin = userEmail?.toLowerCase() === "pavanreddy@intellicar.in" || userRole === "ADMIN";
-    const isOwner = getEmailFromName(existingTask.ownerName)?.toLowerCase() === userEmail?.toLowerCase();
-    const isReviewer = getEmailFromName(existingTask.reviewerName)?.toLowerCase() === userEmail?.toLowerCase();
+    const isOwner = (existingTask.owner_email || getEmailFromName(existingTask.ownerName))?.toLowerCase() === userEmail?.toLowerCase();
+    const isReviewer = (existingTask.reviewer_email || getEmailFromName(existingTask.reviewerName))?.toLowerCase() === userEmail?.toLowerCase();
     const isCreator = existingTask.createdByEmail?.toLowerCase() === userEmail?.toLowerCase();
 
     if (!isMasterAdmin && !isOwner && !isReviewer && !isCreator) {

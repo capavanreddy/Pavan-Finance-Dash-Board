@@ -35,14 +35,17 @@ export async function GET(req: NextRequest) {
 
     // Regular users only see tasks assigned to them or created by them AND approved tasks
     const allTasks = await sql`
-      SELECT * FROM "Task"
-      WHERE "isApproved" = TRUE
-      ORDER BY "createdAt" DESC
+      SELECT t.*, u_owner.email as "owner_email", u_reviewer.email as "reviewer_email"
+      FROM "Task" t
+      LEFT JOIN "User" u_owner ON LOWER(TRIM(t."ownerName")) = LOWER(TRIM(u_owner.name))
+      LEFT JOIN "User" u_reviewer ON LOWER(TRIM(t."reviewerName")) = LOWER(TRIM(u_reviewer.name))
+      WHERE t."isApproved" = TRUE
+      ORDER BY t."createdAt" DESC
     `;
 
     const filteredTasks = allTasks.filter(task => {
-      const ownerEmail = getEmailFromName(task.ownerName)?.toLowerCase();
-      const reviewerEmail = getEmailFromName(task.reviewerName)?.toLowerCase();
+      const ownerEmail = (task.owner_email || getEmailFromName(task.ownerName))?.toLowerCase();
+      const reviewerEmail = (task.reviewer_email || getEmailFromName(task.reviewerName))?.toLowerCase();
       const requesterEmail = getEmailFromName(task.requestFrom)?.toLowerCase();
       const creatorEmail = task.createdByEmail?.toLowerCase();
       const currentUserEmail = userEmail?.toLowerCase();
@@ -62,6 +65,8 @@ export async function GET(req: NextRequest) {
       return false;
     }).map(t => ({
       ...t,
+      ownerEmail: t.owner_email || getEmailFromName(t.ownerName),
+      reviewerEmail: t.reviewer_email || getEmailFromName(t.reviewerName),
       trackingStatus: getTrackingStatus(t as any)
     }));
 
