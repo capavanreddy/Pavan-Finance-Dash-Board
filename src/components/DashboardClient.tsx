@@ -2958,11 +2958,16 @@ export default function DashboardClient({ user: initialUser }: { user: any }) {
   const filteredTasksToDisplay = tasks.filter(t => {
     // 0. Admin View Mode Filter
     if (isAdmin && !isAdminViewMode) {
-      const ownerEmail = getEmailFromName(t.ownerName);
-      const reviewerEmail = getEmailFromName(t.reviewerName);
-      const isOwner = ownerEmail?.toLowerCase() === user?.email?.toLowerCase();
-      const isReviewer = (reviewerEmail || "").toLowerCase() === user?.email?.toLowerCase();
-      if (!isOwner && !isReviewer) return false;
+      const ownerEmail = getEmailFromName(t.ownerName)?.toLowerCase();
+      const reviewerEmail = getEmailFromName(t.reviewerName)?.toLowerCase();
+      const creatorEmail = (t as any).createdByEmail?.toLowerCase();
+      const currentUserEmail = user?.email?.toLowerCase();
+
+      const isOwner = ownerEmail === currentUserEmail;
+      const isReviewer = (reviewerEmail || "") === currentUserEmail;
+      const isCreator = creatorEmail === currentUserEmail;
+
+      if (!isOwner && !isReviewer && !isCreator) return false;
     }
 
     // Basic Approval Filter

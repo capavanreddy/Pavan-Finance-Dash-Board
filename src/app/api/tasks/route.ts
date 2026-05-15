@@ -41,18 +41,23 @@ export async function GET(req: NextRequest) {
     `;
 
     const filteredTasks = allTasks.filter(task => {
-      const ownerEmail = getEmailFromName(task.ownerName);
-      const reviewerEmail = getEmailFromName(task.reviewerName);
-      const requesterEmail = getEmailFromName(task.requestFrom);
+      const ownerEmail = getEmailFromName(task.ownerName)?.toLowerCase();
+      const reviewerEmail = getEmailFromName(task.reviewerName)?.toLowerCase();
+      const requesterEmail = getEmailFromName(task.requestFrom)?.toLowerCase();
+      const creatorEmail = task.createdByEmail?.toLowerCase();
+      const currentUserEmail = userEmail?.toLowerCase();
       
       // Owner can always see their tasks
-      if (ownerEmail === userEmail) return true;
+      if (ownerEmail === currentUserEmail) return true;
 
       // Reviewer can always see their tasks
-      if (reviewerEmail === userEmail) return true;
+      if (reviewerEmail === currentUserEmail) return true;
 
       // Requester of an Inter-Dept Request should see the task details for transparency
-      if (requesterEmail === userEmail) return true;
+      if (requesterEmail === currentUserEmail) return true;
+
+      // Creator/Uploader should see the tasks they created
+      if (creatorEmail === currentUserEmail) return true;
 
       return false;
     }).map(t => ({
