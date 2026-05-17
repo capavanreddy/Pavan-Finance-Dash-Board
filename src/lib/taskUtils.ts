@@ -38,21 +38,25 @@ export const getEmailFromName = (name: string | null) => {
     "Pavan": "pavanreddy@intellicar.in",
     "Pavan Reddy": "pavanreddy@intellicar.in",
     "Saikath": "saikatdas@intellicar.in",
+    "Saikat Das": "saikatdas@intellicar.in",
     "Sami": "sami@intellicar.in",
     "Hanusha": "hanusha@intellicar.in",
     "Sreenivas": "sreenivasulu.t@intellicar.in",
+    "Sreenivasulu T": "sreenivasulu.t@intellicar.in",
     "Sharath": "sharath.shetty@intellicar.in",
     "Sharath R Shetty": "sharath.shetty@intellicar.in",
     "Chandana": "chandanak@intellicar.in",
     "Nikhat": "nikhat@intellicar.in",
+    "Nikhat Parveen": "nikhat@intellicar.in",
     "Venkat": "venkata.g@intellicar.in",
     "Venkat Gottapu": "venkata.g@intellicar.in",
     "Sidharth Saneja": "saneja@intellicar.in",
     "Saneja": "saneja@intellicar.in"
   };
   
-  if (emailMap[normalized]) return emailMap[normalized];
+  // Case-insensitive lookup
+  const found = Object.entries(emailMap).find(([key]) => key.toLowerCase() === normalized.toLowerCase());
+  if (found) return found[1];
   
-  const cleanName = normalized.toLowerCase().replace(/\s+/g, '');
-  return `${cleanName}@intellicar.in`;
+  return null;
 };
